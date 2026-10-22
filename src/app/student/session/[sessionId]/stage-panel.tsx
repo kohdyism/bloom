@@ -4,11 +4,10 @@ import { useState } from "react";
 import { Check, Compass, MessagesSquare, Trophy, Vote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/primitives";
-import { SproutBuddy } from "@/components/sprout-buddy";
+import { Buddy } from "@/components/buddy";
 import { useRun } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 import { useWorkspace, roleName } from "./context";
-import { ReadinessBar } from "./readiness-bar";
 import { Brainstorm } from "./stage-brainstorm";
 import { Synthesis } from "./stage-synthesis";
 import { Discussion } from "./chat";
@@ -17,7 +16,7 @@ import { Submission } from "./stage-submission";
 import { PresentationViewer } from "./presentation";
 import { MediaUploader } from "./media";
 
-/** The activity for the current stage (the task and Sprout sit above it in StageHero). */
+/** The activity for the current stage (the task and Nova sit above it). */
 export function StagePanel() {
   const { group } = useWorkspace();
   if (group.stageStatus === "complete") return <AllDone />;
@@ -36,7 +35,6 @@ export function StagePanel() {
       {kind === "submission" ? <Submission /> : null}
       {kind === "presentation" ? <PresentationStage /> : null}
       {kind === "reflection" ? <GroupReflection /> : null}
-      <ReadinessBar readyLabel={kind === "brainstorm" ? "I'm done thinking" : "I'm ready"} />
     </div>
   );
 }
@@ -55,8 +53,6 @@ function Orientation() {
   );
 }
 
-const ROLE_TINTS = ["border-sun bg-sun-soft", "border-teal bg-teal-soft", "border-purple bg-purple-soft", "border-coral bg-coral-soft", "border-blue bg-blue-soft", "border-mint bg-mint-soft"];
-
 function RoleSelection() {
   const { state, group, act } = useWorkspace();
   const run = useRun();
@@ -70,12 +66,12 @@ function RoleSelection() {
     <Panel className="flex flex-col gap-3">
       <p className="text-[1.05rem]">Choose one or more roles{state.session.rolesOptional ? " — or none, if you'd rather join in your own way" : ""}. Talk with your group so the important jobs are covered.</p>
       <ul className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">
-        {state.session.roles.map((r, i) => {
+        {state.session.roles.map((r) => {
           const holders = group.members.filter((m) => m.roles.includes(r.key));
           const selected = mine.has(r.key);
           return (
             <li key={r.key}>
-              <button type="button" aria-pressed={selected} onClick={() => toggle(r.key)} className={cn("flex h-full w-full flex-col gap-1 rounded-2xl border-2 p-4 text-left transition", selected ? cn(ROLE_TINTS[i % ROLE_TINTS.length], "shadow-lift") : "border-line bg-white hover:-translate-y-0.5 hover:shadow-lift")}>
+              <button type="button" aria-pressed={selected} onClick={() => toggle(r.key)} className={cn("flex h-full w-full flex-col gap-1 rounded-2xl border-2 p-4 text-left transition", selected ? "border-sun bg-sun-soft shadow-lift" : "border-line bg-white hover:-translate-y-0.5 hover:shadow-lift")}>
                 <span className="flex items-center justify-between gap-2 font-display text-lg font-bold">{r.name}{selected ? <span className="inline-flex size-7 items-center justify-center rounded-full bg-ink text-white"><Check className="size-4" aria-hidden="true" /></span> : null}</span>
                 <span className="text-sm text-ink-muted">{r.description}</span>
                 <span className={cn("mt-1 text-xs font-semibold", holders.length ? "text-purple" : "text-ink-faint")}>{holders.length ? holders.map((h) => (h.id === state.me.id ? "You" : h.name)).join(", ") : "Nobody yet"}</span>
@@ -192,7 +188,7 @@ function GroupReflection() {
         {prompts.map((p, i) => <li key={p} className={cn("rounded-2xl p-4 font-display text-lg font-semibold", ["bg-sun-soft", "bg-purple-soft", "bg-teal-soft", "bg-coral-soft"][i % 4])}>{p}</li>)}
       </ul>
       <p className="text-ink-muted">Talk about these together. You can jot your thoughts in the group chat if that&apos;s easier.</p>
-      <Button variant="secondary" className="self-start xl:hidden" onClick={openChat}><MessagesSquare />Open group chat</Button>
+      <Button variant="secondary" className="self-start" onClick={openChat}><MessagesSquare />Open group chat</Button>
       {group.stage?.config.evidenceUpload ? <MediaUploader title="Add a photo" /> : null}
     </Panel>
   );
@@ -204,7 +200,7 @@ function AllDone() {
   const latest = group.submissions[0];
   return (
     <Panel className="flex flex-col items-center gap-4 py-8 text-center">
-      <SproutBuddy size={130} mood="celebrate" />
+      <Buddy who="nova" size={130} mood="celebrate" />
       <h1 className="font-display text-3xl font-bold">Your group finished every stage. Nice teamwork!</h1>
       {latest ? <p className="text-ink-muted">Submitted version {latest.version} — {latest.status === "reviewed" ? "reviewed by your teacher" : latest.status === "returned" ? "returned for revision" : "waiting for your teacher"}.</p> : null}
       {latest?.feedback ? <Notice tone="teal" title="Teacher feedback" className="max-w-xl text-left">{latest.feedback}</Notice> : null}

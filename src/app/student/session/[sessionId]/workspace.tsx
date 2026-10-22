@@ -1,26 +1,25 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Lightbulb, Megaphone, MessagesSquare, PauseCircle } from "lucide-react";
+import { Megaphone, PauseCircle } from "lucide-react";
 import type { StudentState } from "@/lib/modules/sessions/state";
 import { useLiveState } from "@/lib/realtime/use-live-state";
 import { api } from "@/lib/realtime/client";
 import { useMediaQuery } from "@/lib/use-media-query";
 import { useToast } from "@/components/ui/toast";
 import { useA11y } from "@/components/a11y-provider";
-import { SproutBuddy } from "@/components/sprout-buddy";
+import { Buddy } from "@/components/buddy";
 import { Avatar } from "@/components/ui/primitives";
-import { Dialog, SheetContent } from "@/components/ui/overlay";
 import { artifactBus } from "@/components/collab/artifact-bus";
 import { useNow } from "@/lib/use-now";
 import { cn } from "@/lib/utils";
 import { WorkspaceContext, type Inserter, type StudentAction, type WorkspaceCtx } from "./context";
 import { SessionHeader } from "./session-header";
-import { StageHero } from "./stage-hero";
+import { NovaCard } from "./nova-card";
 import { StagePanel } from "./stage-panel";
-import { IdeaBank } from "./idea-bank";
+import { SidePanel, type PanelTab } from "./side-panel";
+import { BottomBar } from "./bottom-bar";
 import { AssistantPanel } from "./assistant-panel";
-import { Chat, ChatDrawer } from "./chat";
 import { Reflection } from "./reflection";
 import { PresentationViewer } from "./presentation";
 import { Materials } from "./materials";
@@ -31,8 +30,7 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [assistantPrefill, setAssistantPrefill] = useState<{ action?: string; text?: string } | undefined>();
   const [assistantTick, setAssistantTick] = useState(0);
-  const [chatOpen, setChatOpen] = useState(false);
-  const [bankOpen, setBankOpen] = useState(false);
+  const [panel, setPanel] = useState<PanelTab | null>(null);
   const [inserter, setInserter] = useState<Inserter | null>(null);
   const [editRequest, setEditRequest] = useState<WorkspaceCtx["editRequest"]>(null);
   const me = initial.me.id;
@@ -79,7 +77,7 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
     if (!g) return;
     if (lastStage.current !== undefined && g.stageIndex !== lastStage.current) {
       setAnnounce(g.stageStatus === "complete" ? "Your group finished every stage." : `New stage: ${g.stage?.title}`);
-      if (prefs.celebrations) toast({ title: g.stageStatus === "complete" ? "Every stage complete — well done, team!" : `Stage complete! Next: ${g.stage?.title}`, tone: "teal" });
+      if (prefs.celebrations) toast({ title: g.stageStatus === "complete" ? "Every stage complete — well done, team!" : `Next: ${g.stage?.title}`, tone: "teal" });
     }
     lastStage.current = g.stageIndex;
   }, [state.group, prefs.celebrations, toast]);
@@ -96,30 +94,27 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
   }, []);
   const requestEdit = useCallback((id: string, body: string) => setEditRequest((r) => ({ id, body, n: (r?.n ?? 0) + 1 })), []);
 
-  // Layout: idea bank | activity | chat. Columns appear when there's room;
-  // otherwise they open as panels from the right.
-  const isXL = useMediaQuery("(min-width: 1280px)");
-  const isLG = useMediaQuery("(min-width: 1024px)");
   const s = state.session;
   const g = state.group;
   const inLesson = !!g && (s.status === "active" || s.status === "paused");
   const kind = g?.stageStatus === "complete" ? "complete" : g?.stage?.kind;
-  const bankWanted = inLesson && kind !== "synthesis" && kind !== "voting";
-  const chatWanted = inLesson && kind !== "discussion";
-  const bankColumn = bankWanted && (isXL || (isLG && !chatWanted));
-  const chatColumn = chatWanted && isLG;
+  // Ideas and chat live in one side panel. Where the ideas or the chat ARE the activity, they aren't offered twice.
+  const tabs: PanelTab[] = [...(kind !== "synthesis" && kind !== "voting" ? ["ideas" as const] : []), ...(kind !== "discussion" ? ["chat" as const] : [])];
+  const activePanel = panel && tabs.includes(panel) ? panel : null;
+  const overlay = !useMediaQuery("(min-width: 1024px)");
 
   const openChat = useCallback(() => {
-    if (kind === "discussion" || chatColumn) document.getElementById("chat-input")?.focus();
-    else setChatOpen(true);
-  }, [kind, chatColumn]);
+    if (kind === "discussion") document.getElementById("chat-input")?.focus();
+    else setPanel("chat");
+  }, [kind]);
+  const openIdeas = useCallback(() => setPanel("ideas"), []);
 
   const now = useNow();
   const latestAnnouncement = state.announcements[0];
   const recentAnnouncement = latestAnnouncement && now - new Date(latestAnnouncement.createdAt!).getTime() < 10 * 60_000 ? latestAnnouncement : null;
 
   const ctxValue: WorkspaceCtx | null = g
-    ? { sessionId, state, group: g, act, refresh, openAssistant, openChat, inserter, setInserter, editRequest, requestEdit }
+    ? { sessionId, state, group: g, act, refresh, openAssistant, openChat, openIdeas, inserter, setInserter, editRequest, requestEdit }
     : null;
 
   let body: React.ReactNode;
@@ -130,39 +125,34 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
   } else if (s.status === "lobby") {
     body = <GroupReveal state={state} />;
   } else {
-    const panelButtons = (bankWanted && !bankColumn) || (chatWanted && !chatColumn);
+    const stage = g.stage;
     body = (
-      <div className="flex min-h-0 flex-1 gap-3 p-3">
-        {bankColumn ? <IdeaBank className="w-[18.5rem] shrink-0 2xl:w-[21rem]" /> : null}
-        <div className="flex min-w-0 flex-1 flex-col gap-3 overflow-y-auto rounded-3xl tall:overflow-hidden">
-          {recentAnnouncement ? (
-            <div className="flex items-start gap-2 rounded-2xl border-2 border-blue/30 bg-blue-soft px-4 py-3" role="status">
-              <Megaphone className="mt-0.5 size-5 shrink-0 text-blue" aria-hidden="true" />
-              <p><strong>{recentAnnouncement.toGroup ? "Teacher (to your group): " : "Teacher: "}</strong>{recentAnnouncement.body}</p>
-            </div>
-          ) : null}
-          {panelButtons ? (
-            <div className="flex flex-wrap gap-2">
-              {bankWanted && !bankColumn ? (
-                <button type="button" onClick={() => setBankOpen(true)} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-sun px-4 font-semibold text-ink shadow-soft hover:brightness-95">
-                  <Lightbulb className="size-5" aria-hidden="true" />Idea bank<span className="rounded-full bg-white/70 px-2 text-sm">{kind === "brainstorm" ? g.ideas.mine.length : g.ideas.shared.length}</span>
-                </button>
+      <>
+        <div className="flex min-h-0 flex-1 gap-4 p-4">
+          <div className="min-w-0 flex-1 overflow-y-auto rounded-[1.75rem]" id="activity">
+            <div className="mx-auto flex min-h-full max-w-4xl flex-col gap-4 pb-2">
+              {recentAnnouncement ? (
+                <div className="flex items-start gap-2 rounded-2xl border-2 border-blue/30 bg-blue-soft px-4 py-3" role="status">
+                  <Megaphone className="mt-0.5 size-5 shrink-0 text-blue" aria-hidden="true" />
+                  <p><strong>{recentAnnouncement.toGroup ? "Teacher (to your group): " : "Teacher: "}</strong>{recentAnnouncement.body}</p>
+                </div>
               ) : null}
-              {chatWanted && !chatColumn ? (
-                <button type="button" onClick={() => setChatOpen(true)} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-purple px-4 font-semibold text-white shadow-soft hover:bg-purple-strong">
-                  <MessagesSquare className="size-5" aria-hidden="true" />Group chat<span className="rounded-full bg-white/25 px-2 text-sm">{g.messages.filter((m) => m.kind !== "system").length}</span>
-                </button>
+              {s.presentation && kind !== "presentation" ? <PresentationViewer compact /> : null}
+              {kind !== "complete" && stage ? (
+                <>
+                  <h1 className="sr-only">{stage.title}</h1>
+                  {stage.instructions ? <TaskText text={stage.instructions} simplified={prefs.simplifiedInstructions} /> : null}
+                  <NovaCard />
+                </>
               ) : null}
+              <StagePanel />
             </div>
-          ) : null}
-          {kind !== "complete" ? <StageHero /> : null}
-          <div className="flex flex-col gap-3 rounded-3xl tall:min-h-0 tall:flex-1 tall:overflow-y-auto" id="activity">
-            {s.presentation && kind !== "presentation" ? <PresentationViewer compact /> : null}
-            <StagePanel />
           </div>
+          {activePanel && !overlay ? <SidePanel tab={activePanel} tabs={tabs} onTab={setPanel} onClose={() => setPanel(null)} overlay={false} /> : null}
         </div>
-        {chatColumn ? <Chat title="Group chat" className="w-[20rem] shrink-0 2xl:w-[23rem]" /> : null}
-      </div>
+        <BottomBar panel={activePanel} tabs={tabs} onToggle={(t) => setPanel((p) => (p === t ? null : t))} />
+        {activePanel && overlay ? <SidePanel tab={activePanel} tabs={tabs} onTab={setPanel} onClose={() => setPanel(null)} overlay /> : null}
+      </>
     );
   }
 
@@ -174,38 +164,38 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
         {body}
       </div>
       {s.status === "paused" ? <PausedOverlay /> : null}
-      {ctxValue ? <AssistantPanel open={assistantOpen} onOpenChange={setAssistantOpen} prefill={assistantPrefill} tick={assistantTick} /> : null}
-      {ctxValue && chatWanted && !chatColumn ? <ChatDrawer open={chatOpen} onOpenChange={setChatOpen} /> : null}
-      {ctxValue && bankWanted && !bankColumn ? (
-        <Dialog open={bankOpen} onOpenChange={setBankOpen}>
-          <SheetContent title="Idea bank" description="Your group's ideas — copy them or add them to your work." className="bg-[#fffbea]">
-            <IdeaBank className="h-full rounded-none border-0 shadow-none" />
-          </SheetContent>
-        </Dialog>
-      ) : null}
+      {ctxValue && inLesson ? <AssistantPanel open={assistantOpen} onOpenChange={setAssistantOpen} prefill={assistantPrefill} tick={assistantTick} /> : null}
     </WorkspaceContext.Provider>
   );
 }
 
+/** The teacher's task for this stage, in big friendly text. */
+function TaskText({ text, simplified }: { text: string; simplified: boolean }) {
+  const sentences = text.split(/(?<=[.?!])\s+/).filter(Boolean);
+  const [all, setAll] = useState(!simplified || sentences.length <= 1);
+  return (
+    <div className="px-1 pt-1">
+      <p className="text-sm font-bold uppercase tracking-wide text-purple">Your task</p>
+      <p className="mt-0.5 whitespace-pre-line font-display text-[1.6rem] font-semibold leading-snug">{all ? text : sentences[0]}</p>
+      {!all ? <button type="button" className="mt-1 font-semibold text-teal underline-offset-4 hover:underline" onClick={() => setAll(true)}>Show full instructions</button> : null}
+    </div>
+  );
+}
+
 function Centered({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <div className={cn("flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-6", className)}><div className="mx-auto w-full max-w-3xl">{children}</div></div>;
+  return <div className={cn("flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-8", className)}><div className="mx-auto w-full max-w-3xl">{children}</div></div>;
 }
 
 function WaitingRoom({ state }: { state: StudentState }) {
   return (
     <Centered>
-      <div className="flex flex-col items-center gap-6 text-center">
-        <div className="flex flex-col items-center gap-6 rounded-[2rem] border-2 border-white bg-white/80 px-6 py-10 shadow-soft sm:px-12">
-          <SproutBuddy size={150} mood="happy" />
-          <div>
-            <h1 className="font-display text-4xl font-bold">You&apos;re in!</h1>
-            <p className="mt-2 text-lg text-ink-muted">Waiting for your teacher to set up groups for <strong className="text-ink">{state.session.title}</strong>.</p>
-            <p className="mt-3 inline-flex rounded-full bg-sun px-4 py-1 font-semibold" aria-live="polite">{state.session.joinedCount} classmate{state.session.joinedCount === 1 ? " has" : "s have"} joined</p>
-          </div>
-          <p className="text-sm text-ink-muted">While you wait, tap Sprout to say hi.</p>
-        </div>
-        <LessonGoals state={state} />
+      <div className="flex flex-col items-center gap-5 rounded-[2rem] border-2 border-white bg-white/85 px-6 py-12 text-center shadow-soft">
+        <div className="flex items-end gap-2"><Buddy who="nova" size={120} mood="happy" /><Buddy who="pip" size={96} mood="happy" /></div>
+        <h1 className="font-display text-4xl font-bold">You&apos;re in!</h1>
+        <p className="max-w-md text-lg text-ink-muted">Waiting for your teacher to set up groups for <strong className="text-ink">{state.session.title}</strong>.</p>
+        <p className="rounded-full bg-sun px-4 py-1 font-semibold" aria-live="polite">{state.session.joinedCount} classmate{state.session.joinedCount === 1 ? " has" : "s have"} joined</p>
       </div>
+      <LessonGoals state={state} />
     </Centered>
   );
 }
@@ -214,22 +204,20 @@ function GroupReveal({ state }: { state: StudentState }) {
   const g = state.group!;
   return (
     <Centered>
-      <div className="flex flex-col items-center gap-6 text-center">
-        <div className="flex w-full flex-col items-center gap-5 rounded-[2rem] border-2 border-white bg-white/85 px-6 py-8 shadow-soft">
-          <SproutBuddy size={130} mood="celebrate" />
-          <h1 className="font-display text-4xl font-bold">You&apos;re in group {g.name}!</h1>
-          <ul className="flex flex-wrap justify-center gap-5">
-            {g.members.map((m) => (
-              <li key={m.id} className="flex flex-col items-center gap-1.5">
-                <Avatar name={m.name} color={m.avatarColor} size="lg" className="size-16 text-xl" />
-                <span className="font-semibold">{m.id === state.me.id ? "You" : m.name}</span>
-              </li>
-            ))}
-          </ul>
-          <p className="text-ink-muted">Your teacher will start the lesson soon. Groups can&apos;t begin until then.</p>
-        </div>
-        <LessonGoals state={state} />
+      <div className="flex flex-col items-center gap-5 rounded-[2rem] border-2 border-white bg-white/85 px-6 py-10 text-center shadow-soft">
+        <Buddy who="nova" size={110} mood="celebrate" />
+        <h1 className="font-display text-4xl font-bold">You&apos;re in group {g.name}!</h1>
+        <ul className="flex flex-wrap justify-center gap-6">
+          {g.members.map((m) => (
+            <li key={m.id} className="flex flex-col items-center gap-1.5">
+              <Avatar name={m.name} color={m.avatarColor} size="lg" className="size-16 text-xl" />
+              <span className="font-semibold">{m.id === state.me.id ? "You" : m.name}</span>
+            </li>
+          ))}
+        </ul>
+        <p className="text-ink-muted">Your teacher will start the lesson soon.</p>
       </div>
+      <LessonGoals state={state} />
     </Centered>
   );
 }
@@ -237,11 +225,11 @@ function GroupReveal({ state }: { state: StudentState }) {
 function LessonGoals({ state }: { state: StudentState }) {
   if (!state.session.objectives.length && !state.session.materials.length) return null;
   return (
-    <div className="w-full rounded-3xl border-2 border-white bg-white/80 p-5 text-left shadow-soft">
+    <div className="mt-4 rounded-[2rem] border-2 border-white bg-white/85 p-6 shadow-soft">
       {state.session.objectives.length ? (
         <>
           <h2 className="font-display text-xl font-bold">Today you&apos;ll…</h2>
-          <ul className="mt-2 grid gap-2 sm:grid-cols-2">{state.session.objectives.map((o, i) => <li key={o} className={cn("rounded-2xl px-3 py-2 font-medium", ["bg-sun-soft", "bg-teal-soft", "bg-purple-soft", "bg-coral-soft"][i % 4])}>{o}</li>)}</ul>
+          <ul className="mt-2 flex flex-col gap-1.5 text-[1.05rem]">{state.session.objectives.map((o) => <li key={o} className="flex gap-2"><span className="mt-2 size-2 shrink-0 rounded-full bg-purple" aria-hidden="true" />{o}</li>)}</ul>
         </>
       ) : null}
       <Materials materials={state.session.materials} className="mt-4" />
@@ -252,7 +240,7 @@ function LessonGoals({ state }: { state: StudentState }) {
 function PausedOverlay() {
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-[#efe9ff]/90 p-6 backdrop-blur-sm" role="alertdialog" aria-modal="true" aria-labelledby="paused-title" aria-describedby="paused-desc">
-      <div className="flex max-w-md flex-col items-center gap-4 rounded-[2rem] border-2 border-white bg-white/90 px-8 py-10 text-center shadow-lift">
+      <div className="flex max-w-md flex-col items-center gap-4 rounded-[2rem] border-2 border-white bg-white px-8 py-10 text-center shadow-lift">
         <PauseCircle className="size-16 text-purple" aria-hidden="true" />
         <h2 id="paused-title" className="font-display text-4xl font-bold">Paused</h2>
         <p id="paused-desc" className="text-lg text-ink-muted">Your teacher has paused the lesson. Look up and listen in. Your work is saved and the timer has stopped.</p>

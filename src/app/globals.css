@@ -170,66 +170,53 @@ h1, h2, h3, .font-display {
   scroll-behavior: auto !important;
 }
 
-/* Mascot motion (all disabled by the reduced-motion rules above). */
-@keyframes sprout-blink {
-  0%, 92%, 100% { transform: scaleY(1); }
-  95% { transform: scaleY(0.1); }
+/* Helper motion (all disabled by the reduced-motion rules above). */
+@keyframes buddy-blink {
+  0%, 93%, 100% { transform: scaleY(1); }
+  96% { transform: scaleY(0.1); }
 }
-@keyframes sprout-leaf {
-  0%, 100% { transform: rotate(-6deg); }
-  50% { transform: rotate(8deg); }
+@keyframes buddy-float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-4px) rotate(3deg); }
 }
-@keyframes sprout-hop {
+@keyframes buddy-breathe {
+  0%, 100% { transform: scale(1, 1); }
+  50% { transform: scale(1.03, 0.97); }
+}
+@keyframes buddy-hop {
   0% { transform: translateY(0) scale(1, 1); }
   20% { transform: translateY(0) scale(1.08, 0.9); }
-  45% { transform: translateY(-22%) scale(0.95, 1.06); }
-  70% { transform: translateY(0) scale(1.06, 0.94); }
+  45% { transform: translateY(-20%) scale(0.95, 1.06); }
+  70% { transform: translateY(0) scale(1.05, 0.95); }
   100% { transform: translateY(0) scale(1, 1); }
 }
-@keyframes sprout-wiggle {
+@keyframes buddy-wiggle {
   0%, 100% { transform: rotate(0deg); }
   20% { transform: rotate(-10deg); }
   40% { transform: rotate(9deg); }
   60% { transform: rotate(-6deg); }
   80% { transform: rotate(4deg); }
 }
-@keyframes sprout-spin {
-  0% { transform: rotate(0deg) scale(1); }
-  50% { transform: rotate(180deg) scale(1.08); }
-  100% { transform: rotate(360deg) scale(1); }
-}
-@keyframes sprout-breathe {
-  0%, 100% { transform: scale(1, 1); }
-  50% { transform: scale(1.03, 0.97); }
-}
-@keyframes zzz-float {
-  0% { transform: translate(0, 4px) scale(0.8); opacity: 0; }
-  20% { opacity: 1; }
-  100% { transform: translate(14px, -26px) scale(1.15); opacity: 0; }
-}
 @keyframes bubble-in {
   0% { transform: translateY(6px) scale(0.85); opacity: 0; }
   100% { transform: translateY(0) scale(1); opacity: 1; }
-}
-@keyframes sparkle-pop {
-  0% { transform: scale(0) rotate(0deg); opacity: 0; }
-  40% { transform: scale(1.2) rotate(20deg); opacity: 1; }
-  100% { transform: scale(0.6) rotate(45deg) translateY(-10px); opacity: 0; }
 }
 @keyframes timer-pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgb(194 37 92 / 0.45); }
   50% { box-shadow: 0 0 0 8px rgb(194 37 92 / 0); }
 }
-.sprout-eyes { animation: sprout-blink 4.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
-.sprout-leaf { animation: sprout-leaf 2.8s ease-in-out infinite; transform-box: fill-box; transform-origin: 0% 100%; }
-.sprout-body { animation: sprout-breathe 3.6s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
-.sprout-hop { animation: sprout-hop 700ms cubic-bezier(.3,.7,.4,1) both; transform-origin: 50% 100%; }
-.sprout-wiggle { animation: sprout-wiggle 700ms ease-in-out both; transform-origin: 50% 90%; }
-.sprout-spin { animation: sprout-spin 800ms ease-in-out both; transform-origin: 50% 55%; }
-.zzz { animation: zzz-float 2.4s ease-in infinite; }
+@keyframes panel-in {
+  0% { transform: translateX(16px); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+.buddy-blink { animation: buddy-blink 4.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.buddy-float { animation: buddy-float 3.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.buddy-breathe { animation: buddy-breathe 3.6s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
+.buddy-hop { animation: buddy-hop 700ms cubic-bezier(.3,.7,.4,1) both; transform-origin: 50% 100%; }
+.buddy-wiggle { animation: buddy-wiggle 700ms ease-in-out both; transform-origin: 50% 80%; }
 .bubble-in { animation: bubble-in 220ms cubic-bezier(.3,.7,.4,1.4) both; transform-origin: 0% 100%; }
-.sparkle { animation: sparkle-pop 900ms ease-out both; }
 .timer-urgent { animation: timer-pulse 1.6s ease-in-out infinite; }
+.panel-in { animation: panel-in 200ms ease-out both; }
 
 /* Gentle mascot idle motion (disabled by the rules above). */
 @keyframes bloom-bob {

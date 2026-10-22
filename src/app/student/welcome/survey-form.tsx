@@ -24,8 +24,8 @@ export function SurveyForm({ name, initial, editing, supports }: { name: string;
   if (step === 0) {
     return (
       <div className="flex flex-col gap-6">
-        <MascotSays mood="wave" size={80}>
-          <p className="font-display text-2xl font-semibold">Hi {name}, I&apos;m Sprout.</p>
+        <MascotSays mood="happy" size={84} who="pip">
+          <p className="font-display text-2xl font-semibold">Hi {name}, I&apos;m Pip.</p>
           <p className="mt-1 text-ink-muted">Before we start, a few quick questions about how you like to work in groups. There are no right answers, you can skip any of them, and you can change them later.</p>
         </MascotSays>
         <Notice tone="teal">Your answers help Bloom and your teacher set up groups and tasks that suit you. Other students don&apos;t see them.</Notice>

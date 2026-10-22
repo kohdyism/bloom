@@ -14,7 +14,7 @@ test("school improvement: vote, whiteboard, slides, present", async ({ browser }
   const teacher = await signInAs(browser, TEACHER.username, TEACHER.password);
   const t = teacher.page;
   await t.goto("/teacher/lessons");
-  await t.getByRole("heading", { name: "School Improvement Challenge" }).click();
+  await t.getByRole("heading", { name: "School Improvement Challenge", exact: true }).click();
   await shot(t, "t-lesson-builder");
   await t.getByRole("button", { name: "Launch lesson" }).click();
   await t.waitForURL(/\/teacher\/sessions\//);
@@ -48,14 +48,14 @@ test("school improvement: vote, whiteboard, slides, present", async ({ browser }
   // Brainstorm (anonymous in this lesson).
   const ideas = ["Quiet room at lunch for people who find the canteen loud", "Ramps and wider doors in the old block", "More plants and a quiet garden area"];
   for (const [i, a] of s.entries()) {
-    await expect(a.page.getByRole("heading", { name: "Individual thinking" })).toBeVisible();
+    await expect(a.page.getByRole("heading", { name: "Individual thinking", exact: true })).toBeVisible();
     await a.page.getByLabel("Your idea").fill(ideas[i]);
     await a.page.getByRole("button", { name: "Add idea" }).click();
   }
   await shot(s[0].page, "s-brainstorm");
   for (const a of s) await ready(a.page, "I'm done thinking");
 
-  await expect(s[0].page.getByRole("heading", { name: "Cluster ideas" })).toBeVisible();
+  await expect(s[0].page.getByRole("heading", { name: "Cluster ideas", exact: true })).toBeVisible();
   await expect(s[0].page.getByText("Ramps and wider doors in the old block")).toBeVisible();
   // Anonymity: other people's ideas show no names.
   await expect(s[0].page.getByText("— A groupmate").first()).toBeVisible();
@@ -66,13 +66,14 @@ test("school improvement: vote, whiteboard, slides, present", async ({ browser }
   await expect(s[0].page.getByRole("heading", { name: "Discuss", exact: true })).toBeVisible();
   await s[1].page.getByLabel("Message your group").fill("I think the quiet room helps the most people.");
   await s[1].page.getByRole("button", { name: "Send message" }).click();
-  await s[0].page.getByRole("group", { name: "Ask Sprout as a group" }).getByRole("button", { name: "Give us a discussion question" }).click();
+  await s[0].page.getByRole("button", { name: "Ask Nova" }).click();
+  await s[0].page.getByRole("menuitem", { name: "Give us a discussion question" }).click();
   await expect(s[2].page.getByText("Simulated AI").first()).toBeVisible();
   await shot(s[2].page, "s-discussion");
   for (const a of s) await ready(a.page);
 
   // Voting.
-  await expect(s[0].page.getByRole("heading", { name: "Vote" })).toBeVisible();
+  await expect(s[0].page.getByRole("heading", { name: "Vote", exact: true })).toBeVisible();
   for (const a of s) {
     const row = a.page.getByRole("listitem").filter({ hasText: "Quiet room at lunch" });
     await row.getByRole("button", { name: "Vote" }).click();
@@ -83,7 +84,7 @@ test("school improvement: vote, whiteboard, slides, present", async ({ browser }
   for (const a of s) await ready(a.page);
 
   // Whiteboard: add a sticky note, visible to a groupmate without refreshing.
-  await expect(s[0].page.getByRole("heading", { name: "Whiteboard & slides" })).toBeVisible();
+  await expect(s[0].page.getByRole("heading", { name: "Whiteboard & slides", exact: true })).toBeVisible();
   const board = s[0].page.getByRole("application", { name: /Group whiteboard/ });
   await s[0].page.getByRole("button", { name: "Sticky note" }).click();
   await board.click({ position: { x: 300, y: 200 } });
@@ -108,7 +109,7 @@ test("school improvement: vote, whiteboard, slides, present", async ({ browser }
   await shot(s[0].page, "s-slides");
   for (const a of s) await ready(a.page);
 
-  await expect(s[0].page.getByRole("heading", { name: "Submission" })).toBeVisible();
+  await expect(s[0].page.getByRole("heading", { name: "Submission", exact: true })).toBeVisible();
   await s[0].page.getByRole("button", { name: "Submit for my group" }).click();
   await expect(s[1].page.getByText(/Version 1 submitted/)).toBeVisible();
   await shot(s[1].page, "s-submitted");

@@ -13,11 +13,11 @@ test("complete inclusive classroom lesson", async ({ browser }) => {
   const t = teacher.page;
   await t.goto("/teacher/classes");
   await t.getByRole("link", { name: /Year 8 Literature — Class 1/ }).click();
-  await expect(t.getByRole("heading", { name: "Year 8 Literature — Class 1" })).toBeVisible();
+  await expect(t.getByRole("heading", { name: "Year 8 Literature — Class 1", exact: true })).toBeVisible();
 
   // 3–4. Open the lesson; configure stages (add role selection), timings and group sizes.
   await t.goto("/teacher/lessons");
-  await t.getByRole("heading", { name: "Reading 'Alone' together" }).click();
+  await t.getByRole("heading", { name: "Reading 'Alone' together", exact: true }).click();
   await expect(t.getByLabel("Lesson title")).toHaveValue("Reading 'Alone' together");
   await t.getByRole("button", { name: "Add stage" }).click();
   await t.getByRole("dialog").getByRole("button", { name: /^Role selection/ }).click();
@@ -48,7 +48,7 @@ test("complete inclusive classroom lesson", async ({ browser }) => {
   for (const u of usernames) {
     const s = await signInAs(browser, u, STUDENT_PASSWORD);
     await joinSession(s, code);
-    await expect(s.page.getByRole("heading", { name: "You're in!" })).toBeVisible();
+    await expect(s.page.getByRole("heading", { name: "You're in!", exact: true })).toBeVisible();
     students.push(s);
   }
   await expect(t.getByText("4 of 20")).toBeVisible();
@@ -76,7 +76,7 @@ test("complete inclusive classroom lesson", async ({ browser }) => {
   const early = await apiAs(a1, "POST", "/api/live/student", { action: "readiness", sessionId, state: "ready" });
   expect(early.status).toBe(409);
   await t.getByRole("button", { name: "Start lesson" }).click();
-  await expect(t.getByRole("heading", { name: "Groups" })).toBeVisible();
+  await expect(t.getByRole("heading", { name: "Groups", exact: true })).toBeVisible();
 
   // 10. Students choose roles (multiple allowed), then confirm readiness.
   await a1.page.getByRole("button", { name: /^Facilitator/ }).click();
@@ -87,7 +87,7 @@ test("complete inclusive classroom lesson", async ({ browser }) => {
   await ready(a2.page);
 
   // 12. Private individual ideas.
-  await expect(a1.page.getByRole("heading", { name: "Think" })).toBeVisible();
+  await expect(a1.page.getByRole("heading", { name: "Think", exact: true })).toBeVisible();
   await a1.page.getByLabel("Your idea").fill("The speaker feels lonely because he sees the world differently from others.");
   await a1.page.getByRole("button", { name: "Add idea" }).click();
   await expect(a1.page.getByText("Added — private until thinking time ends")).toBeVisible();
@@ -100,7 +100,7 @@ test("complete inclusive classroom lesson", async ({ browser }) => {
   await ready(a2.page, "I'm done thinking");
 
   // 13. AI synthesis grounded in the submitted ideas, labelled as AI.
-  await expect(a1.page.getByRole("heading", { name: "AI idea synthesis" })).toBeVisible();
+  await expect(a1.page.getByRole("heading", { name: "AI idea synthesis", exact: true })).toBeVisible();
   await expect(a1.page.getByText("Simulated AI").first()).toBeVisible();
   await expect(a1.page.getByText("Lonely childhood: nature and the storm reflect his feelings.")).toBeVisible();
   await expect(a2.page.getByText("sees the world differently from others")).toBeVisible();
@@ -108,21 +108,23 @@ test("complete inclusive classroom lesson", async ({ browser }) => {
   await ready(a2.page);
 
   // 14. Discussion: message, reply, reaction, build on an idea.
-  await expect(a1.page.getByRole("heading", { name: "Discussion" })).toBeVisible();
+  await expect(a1.page.getByRole("heading", { name: "Discussion", exact: true })).toBeVisible();
   await a1.page.getByLabel("Message your group").fill("I think the storm line is the strongest evidence.");
   await a1.page.getByRole("button", { name: "Send message" }).click();
   await expect(a2.page.getByText("I think the storm line is the strongest evidence.")).toBeVisible();
   await a2.page.getByRole("button", { name: "Agree", exact: true }).first().click();
   await expect(a1.page.getByRole("button", { name: "Agree (1)" })).toBeVisible();
-  await a2.page.getByRole("button", { name: "Build on this" }).first().click();
+  // Earlier ideas live in the Ideas panel, one tap away.
+  await a2.page.getByRole("button", { name: /^Ideas/ }).click();
+  await a2.page.getByRole("button", { name: /^Build on idea/ }).first().click();
   await a2.page.getByLabel("Build on that idea").fill("Yes — and 'all I lov'd — I lov'd alone' shows it clearly.");
-  await a2.page.getByRole("button", { name: "Add", exact: true }).click();
+  await a2.page.getByRole("button", { name: "Add to idea bank" }).click();
   await expect(a1.page.getByText("shows it clearly").first()).toBeVisible();
 
   // 15. Private AI assistance (student-only).
-  await a1.page.getByRole("button", { name: "Ask Sprout (private)" }).click();
+  await a1.page.getByRole("button", { name: "Ask Pip (private)" }).click();
   await a1.page.getByRole("button", { name: "Explain simply" }).click();
-  await expect(a1.page.getByRole("log", { name: "Conversation with Sprout" }).getByText("Simulated AI")).toBeVisible();
+  await expect(a1.page.getByRole("log", { name: "Conversation with Pip" }).getByText("Simulated AI")).toBeVisible();
   await a1.page.keyboard.press("Escape");
 
   // 16–17. Another student requests teacher help; the teacher receives it immediately.
@@ -140,7 +142,7 @@ test("complete inclusive classroom lesson", async ({ browser }) => {
   // 18. Group advances after meeting readiness conditions.
   await ready(a1.page);
   await ready(a2.page);
-  await expect(a1.page.getByRole("heading", { name: "Collaborative writing" })).toBeVisible();
+  await expect(a1.page.getByRole("heading", { name: "Collaborative writing", exact: true })).toBeVisible();
 
   // 19–20. Multiple students edit the shared document; edits are visible to both.
   const ed1 = a1.page.getByRole("textbox", { name: "Shared document" });
@@ -174,7 +176,7 @@ test("complete inclusive classroom lesson", async ({ browser }) => {
   // 22–23. One student submits; all group members see the status.
   await ready(a1.page);
   await ready(a2.page);
-  await expect(a1.page.getByRole("heading", { name: "Submission" })).toBeVisible();
+  await expect(a1.page.getByRole("heading", { name: "Submission", exact: true })).toBeVisible();
   await a1.page.getByRole("button", { name: "Submit for my group" }).click();
   await expect(a2.page.getByText(/Version 1 submitted by Ben O/)).toBeVisible();
   await expect(a2.page.getByRole("list", { name: "Submission status" }).getByText("Submitted")).toBeVisible();
@@ -237,7 +239,7 @@ test("complete inclusive classroom lesson", async ({ browser }) => {
 
   // 28–29. Teacher views the report and deliberately opens one reflection.
   await t.goto(`/teacher/reports/${sessionId}`);
-  await expect(t.getByRole("heading", { name: "Reading 'Alone' together" })).toBeVisible();
+  await expect(t.getByRole("heading", { name: "Reading 'Alone' together", exact: true })).toBeVisible();
   await expect(t.getByText("Simulated AI").first()).toBeVisible();
   await expect(t.getByText("Thinking time before discussing")).toBeVisible();
   await t.getByLabel("Student").selectOption({ label: "Ben O" });

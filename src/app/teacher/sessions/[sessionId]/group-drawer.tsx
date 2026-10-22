@@ -90,9 +90,9 @@ export function GroupDrawer({ sessionId, groupId, onClose, state, act, refreshAl
                 <h3 className="font-semibold">Facilitation</h3>
                 <div className="flex flex-wrap gap-2">
                   {g.aiEnabled
-                    ? <Button size="sm" variant="secondary" onClick={() => doAct({ action: "group_ai", enabled: false }, "Sprout's group prompts paused")}><BotOff />Take over (pause AI prompts)</Button>
-                    : <Button size="sm" variant="secondary" onClick={() => doAct({ action: "group_ai", enabled: true }, "Sprout's group prompts back on")}><Bot />Turn AI prompts back on</Button>}
-                  <Button size="sm" variant="ghost" disabled={!g.aiEnabled} onClick={() => doAct({ action: "group_prompt_ai" }, "Asked Sprout for a discussion prompt")}><Sparkles />Ask Sprout to prompt discussion</Button>
+                    ? <Button size="sm" variant="secondary" onClick={() => doAct({ action: "group_ai", enabled: false }, "Nova's group prompts paused")}><BotOff />Take over (pause AI prompts)</Button>
+                    : <Button size="sm" variant="secondary" onClick={() => doAct({ action: "group_ai", enabled: true }, "Nova's group prompts back on")}><Bot />Turn AI prompts back on</Button>}
+                  <Button size="sm" variant="ghost" disabled={!g.aiEnabled} onClick={() => doAct({ action: "group_prompt_ai" }, "Asked Nova for a discussion prompt")}><Sparkles />Ask Nova to prompt discussion</Button>
                 </div>
                 <form className="flex gap-2" onSubmit={async (e) => { e.preventDefault(); if (msg.trim() && await doAct({ action: "group_message", body: msg })) setMsg(""); }}>
                   <label htmlFor="grp-msg" className="sr-only">Message to the group</label>

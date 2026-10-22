@@ -228,7 +228,7 @@ async function groupContent(db: Db, s: SessionRow, g: GroupRow, viewerId: string
     synthesis: synthesis ? { version: synthesis.version, origin: synthesis.origin, aiOrigin: firstSynthesis?.origin ?? null, clusters: synthesis.clusters, note: synthesis.note, editedBy: synthesis.created_by ? name(synthesis.created_by) : null, createdAt: iso(synthesis.created_at) } : null,
     messages: messages.map((m) => ({
       id: m.id, kind: m.kind, aiOrigin: m.ai_origin, body: m.body, replyTo: m.reply_to, pinned: m.pinned, createdAt: iso(m.created_at),
-      authorId: m.author_id, author: m.kind === "teacher" ? "Teacher" : m.kind === "ai" ? "Sprout" : m.kind === "system" ? "Bloom" : name(m.author_id ?? ""),
+      authorId: m.author_id, author: m.kind === "teacher" ? "Teacher" : m.kind === "ai" ? "Nova" : m.kind === "system" ? "Bloom" : name(m.author_id ?? ""),
       reactions: Object.entries(reactions.filter((r) => r.message_id === m.id).reduce<Record<string, string[]>>((acc, r) => { (acc[r.kind] ??= []).push(r.user_id); return acc; }, {})).map(([kind, users]) => ({ kind, count: users.length, mine: users.includes(viewerId) })),
     })),
     votes: {

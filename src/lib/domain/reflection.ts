@@ -6,7 +6,7 @@ export const REFLECTION_RATINGS = [
   { key: "opportunity", question: "Did you get the chance to take part?", low: "Hardly any chance", high: "Plenty of chances" },
   { key: "listened", question: "Did your group listen to your ideas?", low: "Not really", high: "Yes, really listened" },
   { key: "clarity", question: "How clear were the activity instructions?", low: "Very unclear", high: "Very clear" },
-  { key: "ai_helpful", question: "How helpful was Sprout (the AI helper)?", low: "Not helpful", high: "Very helpful", allowNa: true },
+  { key: "ai_helpful", question: "How helpful were Nova and Pip (the AI helpers)?", low: "Not helpful", high: "Very helpful", allowNa: true },
   { key: "overall", question: "Overall, how did working together go?", low: "Not well", high: "Really well" },
 ] as const;
 

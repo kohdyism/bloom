@@ -1,120 +1,145 @@
 import { cn } from "@/lib/utils";
 
-export type MascotMood = "idle" | "happy" | "thinking" | "celebrate" | "wave" | "sleepy" | "surprised";
+/**
+ * Bloom's two helpers. Both are decorative (aria-hidden); callers always
+ * provide what they "say" as real, readable text.
+ *  - Nova (a soft spark) is the GROUP facilitator: what Nova says, the whole group sees.
+ *  - Pip (a calm pebble) is the PRIVATE helper: only the student who asks sees Pip's answers.
+ * Pure SVG with CSS-only motion so they render anywhere; motion stops under reduced-motion.
+ */
+export type Mood = "idle" | "thinking" | "happy" | "resting" | "celebrate";
+/** Older mood names still used around the app map onto the new set. */
+export type MascotMood = Mood | "wave" | "sleepy" | "surprised";
+const normalise = (m: MascotMood): Mood => (m === "wave" || m === "surprised" ? "happy" : m === "sleepy" ? "resting" : m);
 
 const INK = "#1d1a2e";
 
-/**
- * Sprout — Bloom's companion: a round seedling with two leaves on top.
- * Decorative by default (aria-hidden); callers provide any text the mascot
- * "says" as real, readable content. Pure SVG with CSS-only motion, so it can
- * render in server components; all motion stops under reduced-motion.
- */
-export function Mascot({ mood = "idle", size = 72, className, animate = true }: { mood?: MascotMood; size?: number; className?: string; animate?: boolean }) {
+export function Nova({ mood = "idle", size = 64, className, animate = true }: { mood?: MascotMood; size?: number; className?: string; animate?: boolean }) {
+  const m = normalise(mood);
   return (
-    <svg viewBox="0 0 120 124" width={size} height={size} className={cn("shrink-0 overflow-visible", className)} aria-hidden="true" focusable="false">
-      {/* ground shadow */}
-      <ellipse cx="60" cy="118" rx="28" ry="4.5" fill="rgb(45 25 110 / 0.14)" />
-      <g className={animate ? "sprout-body" : undefined}>
-        {/* feet */}
-        <ellipse cx="46" cy="113" rx="9" ry="5" fill="#16884d" />
-        <ellipse cx="74" cy="113" rx="9" ry="5" fill="#16884d" />
-        {/* arms */}
-        {mood === "wave" || mood === "celebrate" ? (
-          <>
-            <path d="M99 74c8-6 11-15 9-23" stroke="#25a865" strokeWidth="8" strokeLinecap="round" fill="none" />
-            {mood === "celebrate" ? <path d="M21 74c-8-6-11-15-9-23" stroke="#25a865" strokeWidth="8" strokeLinecap="round" fill="none" /> : <path d="M22 80c-6 3-9 8-9 12" stroke="#25a865" strokeWidth="8" strokeLinecap="round" fill="none" />}
-          </>
-        ) : (
-          <>
-            <path d="M22 80c-6 3-9 8-9 12" stroke="#25a865" strokeWidth="8" strokeLinecap="round" fill="none" />
-            <path d="M98 80c6 3 9 8 9 12" stroke="#25a865" strokeWidth="8" strokeLinecap="round" fill="none" />
-          </>
-        )}
-        {/* body */}
-        <path d="M60 30c27 0 41 21 41 46 0 23-17 37-41 37S19 99 19 76c0-25 14-46 41-46z" fill="#2fbf71" />
-        <ellipse cx="42" cy="50" rx="11" ry="6" fill="#ffffff" opacity="0.32" transform="rotate(-32 42 50)" />
-        <ellipse cx="60" cy="88" rx="25" ry="19" fill="#dffbe9" />
-        {/* stem + leaves */}
-        <path d="M60 31c0-8 1.5-14 4-18" stroke="#16884d" strokeWidth="3.2" fill="none" strokeLinecap="round" />
-        <g className={animate ? "sprout-leaf" : undefined}>
-          <path d="M63 14c-9-9-22-8-27 0 9 7 20 7 27 0z" fill="#86e05f" />
-          <path d="M63 14c-7-1-15-1-22 0" stroke="#4cae3a" strokeWidth="1.4" fill="none" strokeLinecap="round" opacity="0.7" />
-          <path d="M64 13c6-11 19-13 27-7-6 10-17 12-27 7z" fill="#3fca6e" />
-          <path d="M64 13c7-3 14-5 22-6" stroke="#1f9d55" strokeWidth="1.4" fill="none" strokeLinecap="round" opacity="0.7" />
-        </g>
-        {/* cheeks */}
-        <ellipse cx="40" cy="79" rx="6.5" ry="4" fill="#ff6fa3" opacity="0.5" />
-        <ellipse cx="80" cy="79" rx="6.5" ry="4" fill="#ff6fa3" opacity="0.5" />
-        <Face mood={mood} animate={animate} />
+    <svg viewBox="0 0 200 200" width={size} height={size} className={cn("shrink-0 overflow-visible", className)} aria-hidden="true" focusable="false">
+      <g className={animate ? "buddy-float" : undefined}>
+        <path d="M100 18c10 42 24 56 66 66-42 10-56 24-66 66-10-42-24-56-66-66 42-10 56-24 66-66z" fill="#ff7f6e" stroke="#ff7f6e" strokeWidth="24" strokeLinejoin="round" />
+        <path d="M100 40c8 30 18 40 46 46-28 6-38 16-46 46-8-30-18-40-46-46 28-6 38-16 46-46z" fill="#ffb067" stroke="#ffb067" strokeWidth="14" strokeLinejoin="round" opacity="0.75" />
+        <path d="M100 118c6 20 14 28 34 32-20 4-28 12-34 30" fill="none" stroke="#ff5fa2" strokeWidth="10" strokeLinecap="round" opacity="0.45" />
+        <NovaFace mood={m} animate={animate} />
       </g>
-      {mood === "celebrate" ? (
+      {m === "celebrate" || m === "happy" ? (
         <g>
-          <path d="M14 30l2.5 5 5 1.5-5 2-2.5 5-1.5-5-5-2 5-1.5z" fill="var(--sun)" />
-          <path d="M104 24l2 4 4 1-4 2-2 4-1-4-4-2 4-1z" fill="#ff6fa3" />
-          <circle cx="98" cy="44" r="3" fill="var(--purple)" />
-          <circle cx="22" cy="52" r="2.5" fill="#3fa9f5" />
+          <circle cx="166" cy="34" r="6" fill="#ffc83d" />
+          <circle cx="34" cy="158" r="5" fill="#ff8fc2" />
+          {m === "celebrate" ? <path d="M176 120l3 7 7 3-7 3-3 7-3-7-7-3 7-3z" fill="#7c5cff" /> : null}
         </g>
       ) : null}
+      {m === "resting" ? <Zzz x={150} y={40} color="#ff5fa2" /> : null}
+      {m === "thinking" ? <g fill="#ffb067"><circle cx="160" cy="44" r="6" /><circle cx="176" cy="24" r="9" /></g> : null}
     </svg>
   );
 }
 
-function Face({ mood, animate }: { mood: MascotMood; animate: boolean }) {
-  if (mood === "happy" || mood === "celebrate" || mood === "wave") {
+function NovaFace({ mood, animate }: { mood: Mood; animate: boolean }) {
+  if (mood === "happy" || mood === "celebrate") {
     return (
-      <g stroke={INK} strokeWidth="3.4" strokeLinecap="round" fill="none">
-        <path d="M43 68c2.5-4.5 8-4.5 10.5 0" />
-        <path d="M66.5 68c2.5-4.5 8-4.5 10.5 0" />
-        <path d="M51 80c4 5 14 5 18 0" fill="#ff8fb4" strokeWidth="2.6" />
+      <g stroke={INK} strokeWidth="5" strokeLinecap="round" fill="none">
+        <path d="M77 90c3-8 13-8 16 0M107 90c3-8 13-8 16 0" />
+        <path d="M88 102c7 10 17 10 24 0z" fill={INK} strokeWidth="3" />
       </g>
     );
   }
-  if (mood === "sleepy") {
+  if (mood === "resting") {
     return (
-      <g stroke={INK} strokeWidth="3" strokeLinecap="round" fill="none">
-        <path d="M43 68c2.5 3 8 3 10.5 0" />
-        <path d="M66.5 68c2.5 3 8 3 10.5 0" />
-        <ellipse cx="60" cy="82" rx="3" ry="3.6" fill={INK} stroke="none" />
+      <g stroke={INK} strokeWidth="5" strokeLinecap="round" fill="none">
+        <path d="M77 90c3 5 13 5 16 0M107 90c3 5 13 5 16 0" />
+        <circle cx="100" cy="106" r="4" fill={INK} stroke="none" />
       </g>
     );
   }
-  if (mood === "surprised") {
-    return (
-      <g>
-        <circle cx="48" cy="67" r="5.5" fill={INK} />
-        <circle cx="72" cy="67" r="5.5" fill={INK} />
-        <circle cx="49.8" cy="65" r="1.8" fill="#fff" />
-        <circle cx="73.8" cy="65" r="1.8" fill="#fff" />
-        <ellipse cx="60" cy="83" rx="4.5" ry="5.5" fill={INK} />
-      </g>
-    );
-  }
-  const look = mood === "thinking" ? -3 : 0;
+  const up = mood === "thinking" ? -5 : 0;
   return (
     <g>
-      <g className={animate ? "sprout-eyes" : undefined}>
-        <ellipse cx="48" cy={68 + look} rx="4.4" ry="5.6" fill={INK} />
-        <ellipse cx="72" cy={68 + look} rx="4.4" ry="5.6" fill={INK} />
-        <circle cx="49.6" cy={65.8 + look} r="1.7" fill="#fff" />
-        <circle cx="73.6" cy={65.8 + look} r="1.7" fill="#fff" />
+      <g className={animate ? "buddy-blink" : undefined}>
+        <circle cx="86" cy={88 + up} r="8.5" fill={INK} />
+        <circle cx="114" cy={88 + up} r="8.5" fill={INK} />
+        <circle cx="88.8" cy={85.2 + up} r="2.8" fill="#fff" />
+        <circle cx="116.8" cy={85.2 + up} r="2.8" fill="#fff" />
       </g>
-      {mood === "thinking" ? (
-        <path d="M55 82h10" stroke={INK} strokeWidth="2.8" strokeLinecap="round" />
-      ) : (
-        <path d="M53 79c4 4 10 4 14 0" stroke={INK} strokeWidth="2.8" strokeLinecap="round" fill="none" />
-      )}
+      {mood === "thinking" ? <path d="M94 108h12" stroke={INK} strokeWidth="5" strokeLinecap="round" /> : <path d="M90 104c6 5 14 5 20 0" stroke={INK} strokeWidth="5" strokeLinecap="round" fill="none" />}
     </g>
   );
 }
 
-/** A mascot with a speech bubble. The text is real content for screen readers. */
-export function MascotSays({ children, mood = "idle", className, size = 56, label = "Sprout" }: { children: React.ReactNode; mood?: MascotMood; className?: string; size?: number; label?: string }) {
+export function Pip({ mood = "idle", size = 64, className, animate = true }: { mood?: MascotMood; size?: number; className?: string; animate?: boolean }) {
+  const m = normalise(mood);
+  return (
+    <svg viewBox="0 0 200 200" width={size} height={size} className={cn("shrink-0 overflow-visible", className)} aria-hidden="true" focusable="false">
+      <ellipse cx="100" cy="188" rx="50" ry="7" fill="rgb(45 25 110 / 0.12)" />
+      <g className={animate ? "buddy-breathe" : undefined}>
+        <path d="M100 30c48 0 70 38 70 82 0 42-30 70-70 70s-70-28-70-70c0-44 22-82 70-82z" fill="#7c5cff" />
+        <path d="M62 60c10-14 26-20 40-20" stroke="#fff" strokeWidth="9" strokeLinecap="round" opacity="0.32" fill="none" />
+        <ellipse cx="68" cy="128" rx="9" ry="5.5" fill="#ff8fc2" opacity="0.55" />
+        <ellipse cx="132" cy="128" rx="9" ry="5.5" fill="#ff8fc2" opacity="0.55" />
+        <PipFace mood={m} animate={animate} />
+      </g>
+      {m === "celebrate" ? <g><circle cx="168" cy="40" r="6" fill="#ffc83d" /><path d="M30 54l3 7 7 3-7 3-3 7-3-7-7-3 7-3z" fill="#ff7f6e" /></g> : null}
+      {m === "resting" ? <Zzz x={150} y={44} color="#7c5cff" /> : null}
+      {m === "thinking" ? <g fill="#c9bcff"><circle cx="160" cy="46" r="6" /><circle cx="176" cy="26" r="9" /></g> : null}
+    </svg>
+  );
+}
+
+function PipFace({ mood, animate }: { mood: Mood; animate: boolean }) {
+  if (mood === "happy" || mood === "celebrate") {
+    return (
+      <g stroke={INK} strokeWidth="5.5" strokeLinecap="round" fill="none">
+        <path d="M70 108c4-9 16-9 20 0M110 108c4-9 16-9 20 0" />
+        <path d="M84 126c9 12 23 12 32 0z" fill={INK} strokeWidth="3" />
+      </g>
+    );
+  }
+  if (mood === "resting") {
+    return (
+      <g stroke={INK} strokeWidth="5.5" strokeLinecap="round" fill="none">
+        <path d="M70 108c4 6 16 6 20 0M110 108c4 6 16 6 20 0" />
+        <circle cx="100" cy="132" r="5" fill={INK} stroke="none" />
+      </g>
+    );
+  }
+  const up = mood === "thinking" ? -6 : 0;
+  return (
+    <g>
+      <g className={animate ? "buddy-blink" : undefined}>
+        <circle cx="80" cy={106 + up} r="9.5" fill={INK} />
+        <circle cx="120" cy={106 + up} r="9.5" fill={INK} />
+        <circle cx="83" cy={103 + up} r="3.2" fill="#fff" />
+        <circle cx="123" cy={103 + up} r="3.2" fill="#fff" />
+      </g>
+      {mood === "thinking" ? <path d="M92 132h16" stroke={INK} strokeWidth="5.5" strokeLinecap="round" /> : <path d="M88 128c7 6 17 6 24 0" stroke={INK} strokeWidth="5.5" strokeLinecap="round" fill="none" />}
+    </g>
+  );
+}
+
+function Zzz({ x, y, color }: { x: number; y: number; color: string }) {
+  return (
+    <g fill={color} fontFamily="var(--font-display)" fontWeight="700">
+      <text x={x} y={y} fontSize="26">z</text>
+      <text x={x + 18} y={y - 18} fontSize="20">z</text>
+    </g>
+  );
+}
+
+/** Default character (Nova) — kept under the old name for existing call sites. */
+export function Mascot(props: { mood?: MascotMood; size?: number; className?: string; animate?: boolean }) {
+  return <Nova {...props} />;
+}
+
+/** A helper with a speech bubble. The text is real content for screen readers. */
+export function MascotSays({ children, mood = "idle", className, size = 56, who = "nova" }: { children: React.ReactNode; mood?: MascotMood; className?: string; size?: number; who?: "nova" | "pip"; label?: string }) {
+  const C = who === "pip" ? Pip : Nova;
   return (
     <div className={cn("flex items-end gap-3", className)}>
-      <Mascot mood={mood} size={size} />
+      <C mood={mood} size={size} />
       <div className="relative rounded-2xl rounded-bl-md border border-line bg-surface px-4 py-3 text-[0.95rem] shadow-soft">
-        <span className="sr-only">{label} says: </span>
+        <span className="sr-only">{who === "pip" ? "Pip" : "Nova"} says: </span>
         {children}
       </div>
     </div>

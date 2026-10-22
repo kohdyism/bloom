@@ -318,7 +318,7 @@ export async function setGroupAi(uid: string, sessionId: string, groupId: string
   const g = await asUser(uid, async (db) => {
     const g = await teacherGroup(db, uid, sessionId, groupId);
     await db.query("update session_groups set ai_enabled = $2 where id = $1", [groupId, enabled]);
-    notes.push(enabled ? "Sprout's group prompts are back on." : "Your teacher is facilitating this group directly for now, so Sprout's group prompts are paused. Your private assistant still works.");
+    notes.push(enabled ? "Nova's group prompts are back on." : "Your teacher is facilitating this group directly for now, so Nova's group prompts are paused. Pip, your private helper, still works.");
     await audit(db, uid, sessionId, enabled ? "group.ai_enabled" : "group.ai_disabled", groupId);
     return g;
   });

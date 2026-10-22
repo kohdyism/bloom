@@ -5,8 +5,8 @@ import { Lock, Send, LifeBuoy } from "lucide-react";
 import { Dialog, SheetContent } from "@/components/ui/overlay";
 import { Button } from "@/components/ui/button";
 import { Notice, Textarea } from "@/components/ui/primitives";
-import { Mascot } from "@/components/mascot";
-import { SproutBuddy } from "@/components/sprout-buddy";
+import { Pip } from "@/components/mascot";
+import { Buddy } from "@/components/buddy";
 import { AiOriginBadge } from "@/components/live/ai-badge";
 import { SpeechButton } from "@/components/live/speech-button";
 import { api } from "@/lib/realtime/client";
@@ -87,25 +87,25 @@ export function AssistantPanel({ open, onOpenChange, prefill, tick }: { open: bo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <SheetContent title="Ask Sprout — just for you" description="Your private learning helper" className="bg-[#f6f2ff]">
+      <SheetContent title="Ask Pip" description="Your private helper — just for you" className="bg-[#f6f2ff]">
         <div className="flex h-full flex-col">
           <Notice tone="purple" className="m-4 mb-2">
-            <span className="flex items-start gap-2"><Lock className="mt-0.5 size-4 shrink-0" aria-hidden="true" /><span>Your group can&apos;t see this. Your teacher sees only how many times you asked for each kind of help — not what you wrote. Sprout gives hints and explanations, not your group&apos;s answers.</span></span>
+            <span className="flex items-start gap-2"><Lock className="mt-0.5 size-4 shrink-0" aria-hidden="true" /><span>Your group can&apos;t see this. Your teacher sees only how many times you asked for each kind of help — not what you wrote. Pip gives hints and explanations, not your group&apos;s answers.</span></span>
           </Notice>
-          <ol ref={listRef} className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 py-2" aria-label="Conversation with Sprout" role="log" aria-live="polite">
+          <ol ref={listRef} className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 py-2" aria-label="Conversation with Pip" role="log" aria-live="polite">
             {messages.length === 0 && !busy ? (
-              <li className="flex flex-col items-center gap-3 py-6 text-center text-ink-muted"><SproutBuddy size={110} mood="wave" bubbleSide="top" /><span className="max-w-xs">Pick a button below or type your own question. Nothing is too small to ask.</span></li>
+              <li className="flex flex-col items-center gap-3 py-6 text-center text-ink-muted"><Buddy who="pip" size={110} mood="happy" /><span className="max-w-xs">Pick a button below or type your own question. Nothing is too small to ask.</span></li>
             ) : null}
             {messages.map((m) => (
               <li key={m.id} className={cn("flex flex-col gap-1", m.role === "student" ? "items-end" : "items-start")}>
                 {m.role !== "student" ? <AiOriginBadge origin={m.origin} /> : null}
                 <div className={cn("max-w-[90%] whitespace-pre-line rounded-2xl px-3.5 py-2.5 text-[0.95rem] shadow-soft", m.role === "student" ? "bg-teal-soft" : "border-2 border-purple/25 bg-white")}>
-                  <span className="sr-only">{m.role === "student" ? "You: " : "Sprout: "}</span>{m.body}
+                  <span className="sr-only">{m.role === "student" ? "You: " : "Pip: "}</span>{m.body}
                 </div>
                 {m.role !== "student" && /Need help/.test(m.body) ? <span className="inline-flex items-center gap-1 text-xs font-semibold text-coral"><LifeBuoy className="size-3.5" aria-hidden="true" />Use the “Need help” button at the top to reach your teacher.</span> : null}
               </li>
             ))}
-            {busy ? <li className="flex items-center gap-2 text-sm text-ink-muted" role="status"><Mascot size={28} mood="thinking" animate={false} />Sprout is thinking…</li> : null}
+            {busy ? <li className="flex items-center gap-2 text-sm text-ink-muted" role="status"><Pip size={30} mood="thinking" animate={false} />Pip is thinking…</li> : null}
           </ol>
           {error ? <Notice tone="coral" className="mx-4" role="alert">{error} Your lesson work isn&apos;t affected.</Notice> : null}
           <div className="border-t-2 border-white bg-purple-soft/50 p-4">

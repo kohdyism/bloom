@@ -20,7 +20,7 @@ test("paper aeroplane: check-ins, photo evidence, teacher interventions", async 
   const teacher = await signInAs(browser, TEACHER.username, TEACHER.password);
   const t = teacher.page;
   await t.goto("/teacher/lessons");
-  await t.getByRole("heading", { name: "Paper Aeroplane Challenge" }).click();
+  await t.getByRole("heading", { name: "Paper Aeroplane Challenge", exact: true }).click();
   await t.getByRole("tab", { name: "Settings" }).click();
   await t.getByLabel("Smallest group").fill("2");
   await t.getByLabel("Largest group").fill("2");
@@ -38,13 +38,13 @@ test("paper aeroplane: check-ins, photo evidence, teacher interventions", async 
   await t.getByRole("button", { name: "Start lesson" }).click();
 
   // Orientation → roles → planning.
-  await expect(a.page.getByRole("heading", { name: "Orientation" })).toBeVisible();
+  await expect(a.page.getByRole("heading", { name: "Orientation", exact: true })).toBeVisible();
   for (const s of [a, b]) await ready(s.page);
   await a.page.getByRole("button", { name: /^Materials coordinator/ }).click();
   await b.page.getByRole("button", { name: /^Timekeeper/ }).click();
   await expect(a.page.getByText("Kiara S", { exact: true }).first()).toBeVisible();
   for (const s of [a, b]) await ready(s.page);
-  await expect(a.page.getByRole("heading", { name: "Planning" })).toBeVisible();
+  await expect(a.page.getByRole("heading", { name: "Planning", exact: true })).toBeVisible();
 
   // Teacher interventions: extend time and take over facilitation.
   await t.getByRole("button", { name: "+2 min" }).first().click();
@@ -62,7 +62,7 @@ test("paper aeroplane: check-ins, photo evidence, teacher interventions", async 
   await expect(a.page.getByRole("alertdialog", { name: "Paused" })).toHaveCount(0);
 
   for (const s of [a, b]) await ready(s.page);
-  await expect(a.page.getByRole("heading", { name: "Build and test" })).toBeVisible();
+  await expect(a.page.getByRole("heading", { name: "Build and test", exact: true })).toBeVisible();
   await expect(a.page.getByText("Bloom doesn't listen to your group")).toBeVisible();
 
   // Check-ins sync between devices.
@@ -77,7 +77,7 @@ test("paper aeroplane: check-ins, photo evidence, teacher interventions", async 
   for (const s of [a, b]) await ready(s.page);
 
   // Evidence capture: submit with a results note.
-  await expect(a.page.getByRole("heading", { name: "Evidence capture" })).toBeVisible();
+  await expect(a.page.getByRole("heading", { name: "Evidence capture", exact: true })).toBeVisible();
   await b.page.getByLabel(/^Note or results/).fill("3.1 m, 4.2 m, 3.8 m");
   await b.page.getByRole("button", { name: "Submit for my group" }).click();
   await expect(a.page.getByText(/Version 1 submitted by Kiara S/)).toBeVisible();

@@ -38,7 +38,7 @@ export function AccessibilitySettingsPanel({ showStudentOptions = false }: { sho
         checked={prefs.sound} onCheckedChange={(v) => update({ sound: v })} />
       {showStudentOptions ? (
         <>
-          <Segmented label="Sprout (the helper character)" value={prefs.mascot} onChange={(v) => update({ mascot: v })}
+          <Segmented label="Nova and Pip (the helper characters)" value={prefs.mascot} onChange={(v) => update({ mascot: v })}
             options={[{ value: "show", label: "Show" }, { value: "minimised", label: "Small" }, { value: "hidden", label: "Hide" }]} />
           <Segmented label="Group progress picture" value={prefs.gamification} onChange={(v) => update({ gamification: v })}
             options={[{ value: "show", label: "Show" }, { value: "minimised", label: "Minimise" }]} />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Check, Copy, CornerDownRight, Lightbulb, Lock, Pencil, Plus, PlusCircle, Trash2, X } from "lucide-react";
+import { Check, Copy, CornerDownRight, Lock, Pencil, Plus, PlusCircle, Trash2, X } from "lucide-react";
 import { Textarea } from "@/components/ui/primitives";
 import { Button } from "@/components/ui/button";
 import { useRun, useToast } from "@/components/ui/toast";
@@ -13,25 +13,14 @@ type SharedIdea = ReturnType<typeof useWorkspace>["group"]["ideas"]["shared"][nu
 const THEME_TINTS = ["bg-sun-soft", "bg-teal-soft", "bg-purple-soft", "bg-coral-soft", "bg-blue-soft", "bg-mint-soft"];
 
 /**
- * The group's ideas, always within reach — so what you thought of in the
- * brainstorm is right there when you're writing, voting or presenting.
- * During private thinking time it shows only your own ideas.
+ * The group's ideas, one tap away — so what you thought of earlier is right
+ * there when you're writing, voting or presenting. During private thinking
+ * time it shows only your own ideas.
  */
-export function IdeaBank({ className }: { className?: string }) {
+export function IdeaBank() {
   const { group } = useWorkspace();
   const brainstorming = group.stage?.kind === "brainstorm" && group.stageStatus !== "complete";
-  return (
-    <section aria-labelledby="idea-bank-title" className={cn("flex min-h-0 flex-col overflow-hidden rounded-3xl border-2 border-white bg-white/80 shadow-soft", className)}>
-      <div className="flex items-center gap-2 border-b border-line/70 bg-sun-soft/80 px-4 py-3">
-        <span className="inline-flex size-9 items-center justify-center rounded-xl bg-sun text-ink" aria-hidden="true"><Lightbulb className="size-5" /></span>
-        <div className="min-w-0 flex-1">
-          <h2 id="idea-bank-title" className="font-display text-lg font-bold leading-tight">{brainstorming ? "My ideas" : "Idea bank"}</h2>
-          <p className="text-xs text-ink-muted">{brainstorming ? "Private until thinking time ends" : `${group.ideas.shared.length} idea${group.ideas.shared.length === 1 ? "" : "s"} from your group`}</p>
-        </div>
-      </div>
-      {brainstorming ? <MyPrivateIdeas /> : <SharedIdeas />}
-    </section>
-  );
+  return <div className="flex min-h-0 flex-1 flex-col">{brainstorming ? <MyPrivateIdeas /> : <SharedIdeas />}</div>;
 }
 
 function MyPrivateIdeas() {
@@ -40,7 +29,7 @@ function MyPrivateIdeas() {
   const mine = group.ideas.mine;
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-3">
-      <p className="flex items-start gap-2 rounded-2xl bg-teal-soft px-3 py-2 text-sm"><Lock className="mt-0.5 size-4 shrink-0 text-teal-strong" aria-hidden="true" />Only you can see these. They&apos;re shared with your group when thinking time ends.</p>
+      <p className="flex items-start gap-2 rounded-2xl bg-teal-soft px-3 py-2 text-sm"><Lock className="mt-0.5 size-4 shrink-0 text-teal-strong" aria-hidden="true" />Only you can see these until thinking time ends.</p>
       {mine.length === 0 ? <p className="px-1 py-6 text-center text-sm text-ink-muted">Your ideas will appear here as you add them.</p> : (
         <ul className="flex flex-col gap-2" aria-label="Your ideas">
           {mine.map((i) => (
@@ -92,7 +81,7 @@ function SharedIdeas() {
   return (
     <>
       <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3">
-        {inserter ? <p className="rounded-2xl bg-mint-soft px-3 py-2 text-sm"><strong>Tip:</strong> press <PlusCircle className="inline size-4 align-[-3px] text-mint" aria-label="the add button" /> on any idea to add it to your {inserter.label}.</p> : null}
+        {inserter ? <p className="rounded-2xl bg-mint-soft px-3 py-2 text-sm">Press <strong>Add</strong> to put an idea into your {inserter.label}.</p> : null}
         {ideas.length === 0 ? (
           <p className="px-2 py-8 text-center text-sm text-ink-muted">No ideas were shared in writing yet. Add one below — or talk it through in the room.</p>
         ) : sections.map((s, si) => (
@@ -108,7 +97,7 @@ function SharedIdeas() {
         ))}
       </div>
       {canAdd ? (
-        <form className="flex flex-col gap-2 border-t border-line/70 bg-white/70 p-3" onSubmit={async (e) => {
+        <form className="flex flex-col gap-2 border-t border-line bg-white p-3" onSubmit={async (e) => {
           e.preventDefault();
           if (text.trim() && await run(() => act({ action: "idea_save", body: text, submit: true, buildsOn: buildOn }), "Added to your group's ideas")) { setText(""); setBuildOn(null); }
         }}>

@@ -52,7 +52,7 @@ const LEVELS: Record<number, string> = {
 };
 
 function systemPrompt(ctx: TutorContext) {
-  return `You are Sprout, a private learning assistant in Bloom for one student aged 13–14. Only this student sees this conversation (their teacher sees only how many times they asked for each kind of help, not the words).
+  return `You are Pip, a private learning assistant in Bloom for one student aged 13–14. Only this student sees this conversation (their teacher sees only how many times they asked for each kind of help, not the words).
 
 ${LEVELS[ctx.level] ?? LEVELS[2]}
 

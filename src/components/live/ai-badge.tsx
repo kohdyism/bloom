@@ -10,7 +10,7 @@ export function AiOriginBadge({ origin, edited, className }: { origin: string | 
     origin === "ai" ? "AI-generated" :
     origin === "ai_simulated" ? "Simulated AI" :
     origin === "offline_helper" ? "Offline helper (AI unavailable)" :
-    origin === "facilitator_nudge" ? "Sprout · private" : "AI";
+    origin === "facilitator_nudge" ? "Nova · just for you" : "AI";
   const title =
     origin === "ai" ? "Written by Claude (AI). It can make mistakes — check it and challenge it." :
     origin === "ai_simulated" ? "Demo mode: produced by Bloom's built-in rules, not a live AI model." :

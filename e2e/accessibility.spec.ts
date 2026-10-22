@@ -35,7 +35,7 @@ test("main screens have no serious automated accessibility violations", async ({
   await t.getByRole("link", { name: "Ben O" }).click();
   await audit(t, "student support editor");
   await t.goto("/teacher/lessons");
-  await t.getByRole("heading", { name: "Reading 'Alone' together" }).click();
+  await t.getByRole("heading", { name: "Reading 'Alone' together", exact: true }).click();
   await audit(t, "lesson builder");
   await t.getByRole("button", { name: "Launch lesson" }).click();
   await t.waitForURL(/\/teacher\/sessions\//);
@@ -56,7 +56,7 @@ test("main screens have no serious automated accessibility violations", async ({
   await t.getByRole("button", { name: "Suggest groups" }).click();
   await t.getByRole("button", { name: "Approve groups" }).click();
   await t.getByRole("button", { name: "Start lesson" }).click();
-  await expect(s.page.getByRole("heading", { name: "Think" })).toBeVisible();
+  await expect(s.page.getByRole("heading", { name: "Think", exact: true })).toBeVisible();
   await audit(s.page, "student workspace (brainstorm)");
   await audit(t, "teacher live dashboard");
 
