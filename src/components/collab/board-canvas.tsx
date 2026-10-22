@@ -229,12 +229,10 @@ export function BoardCanvas({
           <span className="mx-1 h-6 w-px bg-line" aria-hidden="true" />
           <button type="button" className="inline-flex size-9 items-center justify-center rounded-lg text-ink-muted hover:bg-surface-2" aria-label="Undo my last change" title="Undo (Ctrl+Z)" onClick={() => undo.undo()}><Undo2 className="size-4" /></button>
           <button type="button" className="inline-flex size-9 items-center justify-center rounded-lg text-ink-muted hover:bg-surface-2" aria-label="Redo" title="Redo" onClick={() => undo.redo()}><Redo2 className="size-4" /></button>
-          {sel ? (
-            <>
-              <button type="button" className="inline-flex size-9 items-center justify-center rounded-lg text-ink-muted hover:bg-surface-2" aria-label="Bring to front" title="Bring to front" onClick={() => setProps(sel.id, { z: maxZ() + 1 })}><BringToFront className="size-4" /></button>
-              <button type="button" className="inline-flex size-9 items-center justify-center rounded-lg text-coral hover:bg-coral-soft" aria-label="Delete selected" title="Delete" onClick={() => remove(sel.id)}><Trash2 className="size-4" /></button>
-            </>
-          ) : null}
+          {/* Always present (disabled with nothing selected) so the toolbar never
+              changes size mid-click — a reflow would move the board under the pointer. */}
+          <button type="button" disabled={!sel} className="inline-flex size-9 items-center justify-center rounded-lg text-ink-muted hover:bg-surface-2 disabled:opacity-35" aria-label="Bring to front" title="Bring to front" onClick={() => sel && setProps(sel.id, { z: maxZ() + 1 })}><BringToFront className="size-4" /></button>
+          <button type="button" disabled={!sel} className="inline-flex size-9 items-center justify-center rounded-lg text-coral hover:bg-coral-soft disabled:opacity-35" aria-label="Delete selected" title="Delete" onClick={() => sel && remove(sel.id)}><Trash2 className="size-4" /></button>
         </div>
       ) : null}
       <div ref={boxRef} className={cn("relative overflow-hidden rounded-2xl border border-line", background === "grid" ? "bg-white bg-[radial-gradient(var(--line)_1px,transparent_1px)] bg-[length:24px_24px]" : "bg-white")}>
