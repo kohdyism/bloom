@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, X } from "lucide-react";
 import { Nova, Pip, type MascotMood } from "@/components/mascot";
-import { useReducedMotion } from "@/components/a11y-provider";
 import { cn } from "@/lib/utils";
 
 export const TOUR_KEY = "bloom.lessonTour.v1";
@@ -39,7 +38,6 @@ function findTarget(name?: string): HTMLElement | null {
  * It's a modal dialog: focus moves to it, Escape skips it.
  */
 export function LessonTour({ onClose }: { onClose: () => void }) {
-  const reduced = useReducedMotion();
   // Only the parts of the screen that are showing right now.
   const [steps] = useState<Step[]>(() => STEPS.filter((s) => !s.target || findTarget(s.target)));
   const [i, setI] = useState(0);
@@ -111,7 +109,7 @@ export function LessonTour({ onClose }: { onClose: () => void }) {
       <div
         ref={cardRef}
         tabIndex={-1}
-        className={cn("absolute flex w-[340px] max-w-[calc(100vw-24px)] flex-col gap-3 rounded-3xl border-2 border-white bg-white p-5 shadow-lift outline-none", !reduced && "animate-pop")}
+        className="absolute flex w-[340px] max-w-[calc(100vw-24px)] flex-col gap-3 rounded-3xl border-2 border-white bg-white p-5 shadow-lift outline-none"
         style={cardStyle}
       >
         <div className="flex items-start gap-3">
