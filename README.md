@@ -1,10 +1,10 @@
-# Bloom
+# Canopy
 
 **Inclusive classroom collaboration with a supportive AI facilitator.**
-Bloom helps secondary students (aged 13–14), including students with SEND,
+Canopy helps secondary students (aged 13–14), including students with SEND,
 take part confidently in group work: quiet thinking time before discussion,
-structured roles, an AI facilitator that helps the group without taking over,
-a private learning assistant, discreet teacher help, and shared documents,
+screens-down talk time, structured roles, an AI facilitator (Bloom) that helps
+the group without taking over, a private learning assistant (Pip), discreet teacher help, and shared documents,
 whiteboards and slides that several students can edit at once.
 
 > **Demo status.** This MVP ships with fictional students and simulated,
@@ -94,7 +94,7 @@ container host; `railway.json` configures Railway.
    Database → PostgreSQL** in the same project. Railway's Postgres gives the
    app the role privileges the migrations need; some managed Postgres
    services (e.g. ones without `BYPASSRLS`) don't.
-3. On the Bloom service: **Settings → Volumes → add a volume** mounted at
+3. On the Canopy service: **Settings → Volumes → add a volume** mounted at
    `/data` (uploaded photos live there).
 4. **Variables:**
    `DATABASE_URL=${{Postgres.DATABASE_URL}}`,

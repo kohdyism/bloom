@@ -84,12 +84,14 @@ export async function setRoles(uid: string, sessionId: string, roleKeys: string[
   await syncGroup(group.id);
 }
 
-export async function setReadiness(uid: string, sessionId: string, state: "ready" | "need_time" | null) {
+export async function setReadiness(uid: string, sessionId: string, state: "ready" | "need_time" | null, stageIndex?: number) {
   const { group, announceNeedTime } = await asUser(uid, async (db) => {
     const ctx = await studentContext(db, uid, sessionId);
     const group = requireGroup(ctx);
     requireActive(ctx);
     if (group.stage_status === "complete") throw conflict("Your group has finished every stage.");
+    // A tap from a screen that hadn't caught up yet mustn't count for the next stage.
+    if (stageIndex !== undefined && stageIndex !== group.stage_index) throw conflict("Your group has already moved on — have a look at the new stage.");
     const prev = await db.maybeOne<{ state: string }>("select state from stage_readiness where group_id = $1 and stage_index = $2 and student_id = $3", [group.id, group.stage_index, uid]);
     if (state === null) await db.query("delete from stage_readiness where group_id = $1 and stage_index = $2 and student_id = $3", [group.id, group.stage_index, uid]);
     else await db.query(

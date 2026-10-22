@@ -236,6 +236,9 @@ test("complete inclusive classroom lesson", async ({ browser }) => {
   await t.getByRole("dialog").getByRole("button", { name: "End lesson" }).click();
   for (const s of [a1, a2]) {
     await expect(s.page.getByText("The lesson has ended — how did it go?")).toBeVisible();
+    // The group submitted its work, so its plant blooms into a flower for everyone's garden.
+    await expect(s.page.getByText("Your group's plant bloomed!")).toBeVisible();
+    await s.page.getByRole("button", { name: "Lovely!" }).click();
     for (const q of ["comfort", "opportunity", "listened", "clarity", "overall"]) {
       await s.page.locator(`label:has(input[name="${q}"][value="4"])`).click();
       await expect(s.page.locator(`input[name="${q}"][value="4"]`)).toBeChecked();

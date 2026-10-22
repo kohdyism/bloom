@@ -4,9 +4,14 @@ import { canSubscribe, ch, latestEventId, publish, ready, replay, subscribe, typ
 import { syncStudentGroup, tickSession } from "@/lib/modules/sessions/engine";
 
 export const dynamic = "force-dynamic";
+
+declare global {
+  var __canopyConnections: Map<string, number> | undefined;
+}
 export const runtime = "nodejs";
 
 const HEARTBEAT_MS = 20_000;
+const LEAVE_GRACE_MS = 5_000;
 
 /**
  * Server-Sent Events stream.
@@ -80,16 +85,31 @@ export async function GET(req: Request) {
       replaying = false;
       for (const e of buffered) if (e.id > lastSent) { lastSent = e.id; sendEvent(e); }
 
+      // Count this student's open connections. A page swapping connections
+      // (channel change, reconnect, reload) briefly has none, so leaving is
+      // only recorded after a short grace period with no connection at all.
+      const presenceKey = presence ? `${presence.sessionId}:${presence.userId}` : "";
+      const open = (globalThis.__canopyConnections ??= new Map<string, number>());
+      if (presence) open.set(presenceKey, (open.get(presenceKey) ?? 0) + 1);
       const touchPresence = async (event: "presence.online" | "presence.offline" | null) => {
         if (!presence) return;
-        // Leaving (tab closed, page changed) counts as away straight away, so a
-        // student who has gone never holds their group up. A reload, or another
-        // open tab, marks them present again within one heartbeat.
+        // Leaving (tab closed) counts as away straight away, so a student who
+        // has gone never holds their group up.
         const seen = event === "presence.offline" ? "now() - interval '1 hour'" : "now()";
         await asServer((db) =>
           db.query(`update session_participants set last_seen_at = ${seen} where session_id = $1 and student_id = $2`, [presence!.sessionId, presence!.userId]),
         ).catch(() => {});
         if (event) await publish([{ channel: ch.teacher(presence.sessionId), event, payload: { studentId: presence.userId } }]).catch(() => {});
+      };
+      const leave = () => {
+        if (!presence) return;
+        const left = (open.get(presenceKey) ?? 1) - 1;
+        if (left > 0) { open.set(presenceKey, left); return; }
+        open.delete(presenceKey);
+        setTimeout(() => {
+          if (open.has(presenceKey)) return; // came straight back
+          void touchPresence("presence.offline").then(() => syncStudentGroup(presence!.sessionId, presence!.userId)).catch(() => {});
+        }, LEAVE_GRACE_MS);
       };
       void touchPresence("presence.online");
 
@@ -105,7 +125,7 @@ export async function GET(req: Request) {
         closed = true;
         clearInterval(heartbeat);
         unsubscribe();
-        void touchPresence("presence.offline").then(() => { if (presence) return syncStudentGroup(presence.sessionId, presence.userId).catch(() => {}); });
+        leave();
         try { controller.close(); } catch { /* already closed */ }
       };
       req.signal.addEventListener("abort", () => cleanup());

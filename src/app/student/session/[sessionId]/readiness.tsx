@@ -46,12 +46,12 @@ export function Readiness({ className }: { className?: string }) {
             <span className="max-sm:hidden">{mine === "ready" ? "You're ready" : "You asked for more time"}</span>
             <span className="sm:hidden">{mine === "ready" ? "Ready" : "More time"}</span>
           </span>
-          <Button variant="ghost" size="sm" onClick={() => run(() => act({ action: "readiness", state: null }))}><Undo2 />Undo</Button>
+          <Button variant="ghost" size="sm" onClick={() => run(() => act({ action: "readiness", state: null, stageIndex: group.stageIndex }))}><Undo2 />Undo</Button>
         </span>
       ) : (
         <span className="flex shrink-0 items-center gap-1.5 max-sm:justify-end">
-          <Button variant="secondary" className="h-11 rounded-2xl px-3" onClick={() => run(() => act({ action: "readiness", state: "need_time" }))} aria-label="More time"><Clock3 /><span className="max-sm:hidden">More time</span></Button>
-          <Button className="h-11 rounded-2xl px-4 text-base sm:px-6" onClick={() => run(() => act({ action: "readiness", state: "ready" }))}><Check />{readyLabel}</Button>
+          <Button variant="secondary" className="h-11 rounded-2xl px-3" onClick={() => run(() => act({ action: "readiness", state: "need_time", stageIndex: group.stageIndex }))} aria-label="More time"><Clock3 /><span className="max-sm:hidden">More time</span></Button>
+          <Button className="h-11 rounded-2xl px-4 text-base sm:px-6" onClick={() => run(() => act({ action: "readiness", state: "ready", stageIndex: group.stageIndex }))}><Check />{readyLabel}</Button>
         </span>
       )}
     </div>

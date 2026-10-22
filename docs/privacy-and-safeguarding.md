@@ -1,6 +1,6 @@
 # Privacy, security and safeguarding notes
 
-**Status: MVP using fictional data only.** Bloom has not been assessed or
+**Status: MVP using fictional data only.** Canopy has not been assessed or
 approved for real pupil data. Nothing in this repository should be read as a
 claim of UK GDPR compliance or safeguarding sign-off.
 
@@ -17,11 +17,11 @@ claim of UK GDPR compliance or safeguarding sign-off.
 - **Rate limiting** for sign-in, joining, AI calls, help requests, messages and uploads.
 - **Audit log** (`audit_events`) for teacher controls, accommodation changes, AI-draft approvals and every individual reflection view.
 - **No advertising, no behavioural tracking, no third-party analytics.** No diagnosis inference or compatibility scoring anywhere.
-- **No listening.** Speech-to-text is push-to-talk in the browser; Bloom never records or streams audio.
+- **No listening.** Speech-to-text is push-to-talk in the browser; Canopy never records or streams audio.
 
 ## Safeguarding position in the MVP
 
-- Bloom does **not** infer risk from student text and does **not** automatically disclose anything. The private assistant (live or simulated) is instructed to signpost the student to "Need help" / a trusted adult when they say they feel unsafe, and the help panel tells students their teacher may follow school safeguarding procedures.
+- Canopy does **not** infer risk from student text and does **not** automatically disclose anything. The private assistant (live or simulated) is instructed to signpost the student to "Need help" / a trusted adult when they say they feel unsafe, and the help panel tells students their teacher may follow school safeguarding procedures.
 - The assistant panel tells students exactly what the teacher can see (counts by type, not words). It never describes conversations as absolutely confidential.
 - **Before real use**, the school's Designated Safeguarding Lead must define whether any exceptional disclosure route is needed, who may trigger it, how it is logged and how students are told. No such route exists today.
 

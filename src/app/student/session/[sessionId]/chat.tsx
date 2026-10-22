@@ -166,11 +166,18 @@ export function Chat({ className, header, empty, after, composerClassName, onAct
         {group.messages.length === 0 ? (empty ?? (
           <li className="flex items-center gap-3 text-sm text-ink-muted"><Mascot size={40} mood="idle" />No messages yet. Chat is optional — talking in the room counts too.</li>
         )) : null}
-        {group.messages.slice(0, cut).map(renderMsg)}
-        {inline ? <li key={inline.key} className="list-none">{inline.node}</li> : null}
-        {group.messages.slice(cut).map(renderMsg)}
-        {after}
+        {(inline ? group.messages.slice(0, cut) : group.messages).map(renderMsg)}
+        {inline ? null : <>{after}</>}
       </ol>
+      {inline ? (
+        <>
+          <div key={inline.key} className="my-3">{inline.node}</div>
+          <ol className="flex flex-col gap-3">
+            {group.messages.slice(cut).map(renderMsg)}
+            {after}
+          </ol>
+        </>
+      ) : null}
       {unseen > 0 ? (
         <button type="button" onClick={toBottom} className="sticky bottom-0 z-10 mx-auto mt-2 flex w-fit items-center gap-1.5 rounded-full bg-teal px-4 py-1.5 text-sm font-semibold text-white shadow-lift">
           <ArrowDown className="size-4" aria-hidden="true" />{unseen} new message{unseen === 1 ? "" : "s"}

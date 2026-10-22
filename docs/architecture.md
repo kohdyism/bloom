@@ -1,6 +1,6 @@
-# Bloom architecture
+# Canopy architecture
 
-Bloom is a single Next.js 16 (App Router) application backed by Postgres. It is
+Canopy is a single Next.js 16 (App Router) application backed by Postgres. It is
 designed to deploy on Vercel + Supabase, and runs fully locally against plain
 Postgres for development, demos and tests.
 
