@@ -275,6 +275,20 @@ h1, h2, h3, .font-display {
 }
 .plant-sway { animation: plant-sway 900ms ease-in-out both; transform-origin: 50% 90%; }
 .plant-idle { animation: plant-idle 4s ease-in-out infinite; transform-origin: 50% 90%; }
+@keyframes plant-drop {
+  0% { transform: translate(-50%, -14px); opacity: 0; }
+  20% { opacity: 1; }
+  80% { transform: translate(-50%, 26px); opacity: 1; }
+  100% { transform: translate(-50%, 30px) scale(1.6, 0.4); opacity: 0; }
+}
+@keyframes plant-water {
+  0%, 40% { transform: scale(1); }
+  65% { transform: scale(1.08, 0.94); }
+  85% { transform: scale(0.97, 1.05); }
+  100% { transform: scale(1); }
+}
+.plant-drop { animation: plant-drop 700ms ease-in both; }
+.plant-water { animation: plant-water 1s ease-out both; transform-origin: 50% 90%; }
 .plant-grow { animation: plant-grow 900ms cubic-bezier(.3,.7,.4,1.4) both; transform-origin: 50% 90%; }
 
 /* Gentle mascot idle motion (disabled by the rules above). */

@@ -1,12 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useReducedMotion } from "@/components/a11y-provider";
+import { useA11y, useReducedMotion } from "@/components/a11y-provider";
+import { playSfx, type Sfx } from "@/lib/sfx";
 import { cn } from "@/lib/utils";
 import { Nova, Pip, type Mood } from "./mascot";
 
 type Anim = "buddy-hop" | "buddy-wiggle" | "buddy-nod" | "buddy-cheer" | null;
-type Reaction = { anim: Anim; mood: Mood; say?: string };
+type Reaction = { anim: Anim; mood: Mood; say?: string; sfx?: Sfx; ms?: number };
 export type CueKind = "hop" | "wiggle" | "nod" | "cheer";
 export type Cue = { kind: CueKind; say?: string; key: number };
 
@@ -17,20 +18,29 @@ const CUE: Record<CueKind, { anim: Anim; mood: Mood }> = {
   cheer: { anim: "buddy-cheer", mood: "celebrate" },
 };
 
+/** What each character does when tapped — a little sound and a line to say. */
 const TAPS: Record<"nova" | "pip", Reaction[]> = {
   nova: [
-    { anim: "buddy-hop", mood: "happy", say: "Hi team!" },
-    { anim: "buddy-wiggle", mood: "happy", say: "Hehe!" },
-    { anim: null, mood: "resting", say: "zzz…" },
-    { anim: "buddy-cheer", mood: "celebrate", say: "You've got this!" },
+    { anim: "buddy-hop", mood: "happy", say: "Hi team!", sfx: "nova" },
+    { anim: "buddy-wiggle", mood: "happy", say: "Hehe, that tickles!", sfx: "wiggle" },
+    { anim: "buddy-nod", mood: "happy", say: "Everyone's ideas count.", sfx: "nod" },
+    { anim: null, mood: "thinking", say: "Hmm… what does everyone think?", sfx: "pip" },
+    { anim: "buddy-hop", mood: "happy", say: "Need a question? Ask me!", sfx: "nova" },
+    { anim: null, mood: "resting", say: "zzz…", sfx: "snooze", ms: 3000 },
+    { anim: "buddy-cheer", mood: "celebrate", say: "You've got this!", sfx: "cheer" },
   ],
   pip: [
-    { anim: "buddy-hop", mood: "happy", say: "Hi!" },
-    { anim: "buddy-wiggle", mood: "happy", say: "That tickles!" },
-    { anim: null, mood: "resting", say: "zzz…" },
-    { anim: "buddy-nod", mood: "happy", say: "I'm here if you need me." },
+    { anim: "buddy-hop", mood: "happy", say: "Hi! It's just us.", sfx: "pip" },
+    { anim: "buddy-wiggle", mood: "happy", say: "That tickles!", sfx: "wiggle" },
+    { anim: "buddy-nod", mood: "happy", say: "Take your time.", sfx: "nod" },
+    { anim: null, mood: "thinking", say: "Stuck? Ask me anything.", sfx: "pip" },
+    { anim: "buddy-hop", mood: "happy", say: "Mistakes help us learn!", sfx: "pip" },
+    { anim: null, mood: "resting", say: "zzz…", sfx: "snooze", ms: 3000 },
+    { anim: "buddy-cheer", mood: "celebrate", say: "I believe in you!", sfx: "cheer" },
   ],
 };
+const DIZZY: Reaction = { anim: "buddy-wiggle", mood: "celebrate", say: "Whoa, I'm dizzy!", sfx: "wiggle", ms: 2000 };
+const WAKE: Reaction = { anim: "buddy-hop", mood: "happy", say: "Oh — I'm awake!", sfx: "wake" };
 
 const REST_AFTER_MS = 90_000;
 
@@ -48,6 +58,8 @@ export function Buddy({ who, size = 72, mood = "idle", className, name, cue, tal
   who: "nova" | "pip"; size?: number; mood?: Mood; className?: string; name?: string; cue?: Cue | null; talking?: boolean; listening?: boolean;
 }) {
   const reduced = useReducedMotion();
+  const { prefs } = useA11y();
+  const taps = useRef<number[]>([]);
   const [i, setI] = useState(0);
   const [active, setActive] = useState<(Reaction & { key: number }) | null>(null);
   const [resting, setResting] = useState(false);
@@ -78,12 +90,15 @@ export function Buddy({ who, size = 72, mood = "idle", className, name, cue, tal
   }, [cue, play]);
 
   const poke = useCallback(() => {
-    const list = TAPS[who];
-    if (resting) { play({ anim: "buddy-hop", mood: "happy", say: "Oh — I'm awake!" }, 1800); return; }
-    const r = list[i % list.length];
-    setI((n) => n + 1);
-    play(r, r.mood === "resting" ? 3000 : 1800);
-  }, [who, resting, i, play]);
+    // Lots of quick taps in a row make them dizzy.
+    const now = Date.now();
+    taps.current = [...taps.current.filter((t) => now - t < 2000), now];
+    const r = resting ? WAKE : taps.current.length >= 5 ? DIZZY : TAPS[who][i % TAPS[who].length];
+    if (taps.current.length >= 5) taps.current = [];
+    if (!resting && r !== DIZZY) setI((n) => n + 1);
+    if (prefs.sound && r.sfx) playSfx(r.sfx);
+    play(r, r.ms ?? 1800);
+  }, [who, resting, i, play, prefs.sound]);
 
   const C = who === "pip" ? Pip : Nova;
   const shown: Mood = active ? active.mood : resting ? "resting" : talking ? "talking" : listening ? "listening" : mood;
@@ -97,7 +112,7 @@ export function Buddy({ who, size = 72, mood = "idle", className, name, cue, tal
         </span>
       </span>
       {active?.say ? (
-        <span key={`b${active.key}`} className="bubble-in pointer-events-none absolute bottom-[88%] left-[62%] z-10 whitespace-nowrap rounded-2xl rounded-bl-sm border-2 border-line bg-white px-2.5 py-1 font-display text-sm font-semibold text-ink shadow-lift" aria-live="polite">
+        <span key={`b${active.key}`} className="bubble-in pointer-events-none absolute bottom-[88%] left-[62%] z-10 w-max max-w-[13rem] rounded-2xl rounded-bl-sm border-2 border-line bg-white px-2.5 py-1 font-display text-sm font-semibold text-ink shadow-lift" aria-live="polite">
           {active.say}
         </span>
       ) : null}

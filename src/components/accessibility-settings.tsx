@@ -34,7 +34,7 @@ export function AccessibilitySettingsPanel({ showStudentOptions = false }: { sho
         checked={prefs.motion === "reduce"} onCheckedChange={(v) => update({ motion: v ? "reduce" : "system" })} />
       <Switch id="a11y-celebrate" label="Celebrations" description="Small celebrations when your group reaches a milestone."
         checked={prefs.celebrations} onCheckedChange={(v) => update({ celebrations: v })} />
-      <Switch id="a11y-sound" label="Sounds" description="Soft chimes. Every sound also has a visual signal."
+      <Switch id="a11y-sound" label="Sounds" description="Soft sounds when you tap Nova, Pip or the plant, and gentle chimes. Every sound also has a visual signal."
         checked={prefs.sound} onCheckedChange={(v) => update({ sound: v })} />
       {showStudentOptions ? (
         <>

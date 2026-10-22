@@ -6,7 +6,7 @@ export const accessibilitySchema = z.object({
   /** "system" follows the device setting; "reduce" always reduces motion. */
   motion: z.enum(["system", "reduce"]).default("system"),
   celebrations: z.boolean().default(true),
-  sound: z.boolean().default(false),
+  sound: z.boolean().default(true),
   mascot: z.enum(["show", "minimised", "hidden"]).default("show"),
   gamification: z.enum(["show", "minimised"]).default("show"),
   speechInput: z.boolean().default(true),

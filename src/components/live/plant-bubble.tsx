@@ -2,20 +2,26 @@
 
 import { useEffect, useRef, useState } from "react";
 import { HoverInfo } from "@/components/ui/hover-info";
-import { useReducedMotion } from "@/components/a11y-provider";
+import { useA11y, useReducedMotion } from "@/components/a11y-provider";
+import { playSfx, type Sfx } from "@/lib/sfx";
 import { cn } from "@/lib/utils";
 
 /**
  * The group's plant, in a small bubble pinned to the corner. It grows only
  * when the GROUP finishes a stage (spec §23: cooperative, never individual
  * or competitive): seed → sprout → leaves → bud → flower. A ring round the
- * bubble fills with progress. Tap or hover for details; tapping also makes
- * the plant sway.
+ * bubble fills with progress. Hover for details; tap and the plant sways,
+ * makes a little sound and says something (including how it's growing).
  */
+type Tap = { say: string; anim: "plant-sway" | "plant-water" | "plant-grow"; sfx: Sfx };
 export function PlantBubble({ stagesDone, totalStages, className }: { stagesDone: number; totalStages: number; className?: string }) {
   const reduced = useReducedMotion();
   const progress = totalStages ? Math.min(1, stagesDone / totalStages) : 0;
+  const { prefs } = useA11y();
   const [sway, setSway] = useState(0);
+  const [said, setSaid] = useState<(Tap & { key: number }) | null>(null);
+  const sayT = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (sayT.current) clearTimeout(sayT.current); }, []);
   const [grew, setGrew] = useState(false);
   const last = useRef(stagesDone);
   useEffect(() => {
@@ -32,6 +38,25 @@ export function PlantBubble({ stagesDone, totalStages, className }: { stagesDone
   const R = 33;
   const C = 2 * Math.PI * R;
   const stageName = progress >= 1 ? "in full bloom" : progress >= 0.6 ? "budding" : progress >= 0.3 ? "growing leaves" : progress > 0 ? "sprouting" : "a seed";
+  const status = progress >= 1 ? "I'm in full bloom! Amazing teamwork!" : progress >= 0.6 ? "I've got a bud! Nearly there…" : progress >= 0.3 ? "New leaves! Teamwork helps me grow." : progress > 0 ? "Look — I'm sprouting!" : "I'm a tiny seed. Finish a stage together and I'll sprout!";
+  const lines: Tap[] = [
+    { say: status, anim: "plant-sway", sfx: "plant" },
+    { say: "Ahh, thanks for the water!", anim: "plant-water", sfx: "water" },
+    { say: `${stagesDone} of ${totalStages} stages done!`, anim: "plant-grow", sfx: "grow" },
+    { say: "Hehe, the breeze tickles!", anim: "plant-sway", sfx: "plant" },
+    { say: progress >= 1 ? "Look at my petals!" : "Grow, grow, grow…", anim: "plant-grow", sfx: "grow" },
+  ];
+  function tap(e: React.MouseEvent) {
+    // Taps talk; the details card is for hover (the bubble says the same).
+    e.preventDefault();
+    const line = lines[sway % lines.length];
+    setSway((n) => n + 1);
+    setSaid({ ...line, key: Date.now() });
+    if (prefs.sound) playSfx(line.sfx);
+    if (sayT.current) clearTimeout(sayT.current);
+    sayT.current = setTimeout(() => setSaid(null), 2400);
+  }
+  const anim = grew ? "plant-grow" : said ? said.anim : "plant-idle";
   return (
     <HoverInfo side="top" align="start" content={
       <div className="flex flex-col gap-1">
@@ -41,7 +66,7 @@ export function PlantBubble({ stagesDone, totalStages, className }: { stagesDone
     }>
       <button
         type="button"
-        onClick={() => setSway((n) => n + 1)}
+        onClick={tap}
         className={cn("group relative flex size-[4.75rem] items-center justify-center rounded-full bg-white shadow-lift ring-2 ring-white transition-transform hover:-translate-y-0.5", className)}
         data-testid="plant-bubble"
         data-tour="plant"
@@ -50,9 +75,15 @@ export function PlantBubble({ stagesDone, totalStages, className }: { stagesDone
           <circle cx="38" cy="38" r={R} fill="none" stroke="var(--mint-soft)" strokeWidth="5" />
           <circle cx="38" cy="38" r={R} fill="none" stroke="#2fbf71" strokeWidth="5" strokeLinecap="round" strokeDasharray={C} strokeDashoffset={C * (1 - progress)} style={{ transition: "stroke-dashoffset 800ms ease" }} />
         </svg>
-        <span key={`${sway}-${grew}`} className={cn("block", !reduced && (grew ? "plant-grow" : sway ? "plant-sway" : "plant-idle"))}>
+        <span key={`${sway}-${grew}`} className={cn("block", !reduced && anim)}>
           <Plant progress={progress} size={52} />
         </span>
+        {said?.anim === "plant-water" && !reduced ? <span key={`d${said.key}`} className="plant-drop pointer-events-none absolute left-1/2 top-0 h-3 w-2 rounded-full rounded-t-[60%] bg-[#4cb8ff]" aria-hidden="true" /> : null}
+        {said ? (
+          <span key={`s${said.key}`} className="bubble-in pointer-events-none absolute bottom-[92%] left-[70%] z-10 w-max max-w-[14rem] rounded-2xl rounded-bl-sm border-2 border-line bg-white px-2.5 py-1 text-left font-display text-sm font-semibold text-ink shadow-lift" aria-live="polite">
+            {said.say}
+          </span>
+        ) : null}
         <span className="absolute -right-1 -top-1 rounded-full bg-ink px-1.5 py-0.5 text-[0.7rem] font-bold tabular-nums text-white">{stagesDone}/{totalStages}</span>
         <span className="sr-only"> stages done — your group&apos;s plant, more details</span>
       </button>
