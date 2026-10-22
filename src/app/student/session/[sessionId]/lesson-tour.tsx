@@ -127,8 +127,8 @@ export function LessonTour({ onClose }: { onClose: () => void }) {
           <span className="flex gap-1" aria-hidden="true">
             {steps.map((_, n) => <span key={n} className={cn("h-1.5 rounded-full", n === i ? "w-5 bg-purple" : "w-1.5 bg-line-strong")} />)}
           </span>
-          <span className="ml-auto flex gap-2">
-            {i > 0 ? <button type="button" onClick={() => setI(i - 1)} className="inline-flex h-10 items-center gap-1 rounded-xl px-3 font-semibold text-ink-muted hover:bg-surface-2"><ArrowLeft className="size-4" aria-hidden="true" />Back</button> : <button type="button" onClick={finish} className="inline-flex h-10 items-center rounded-xl px-3 font-semibold text-ink-muted hover:bg-surface-2">Skip tour</button>}
+          <span className="ml-auto flex shrink-0 gap-2">
+            {i > 0 ? <button type="button" onClick={() => setI(i - 1)} className="inline-flex h-10 items-center gap-1 rounded-xl px-3 font-semibold text-ink-muted hover:bg-surface-2"><ArrowLeft className="size-4" aria-hidden="true" />Back</button> : <button type="button" onClick={finish} className="inline-flex h-10 items-center whitespace-nowrap rounded-xl px-3 font-semibold text-ink-muted hover:bg-surface-2">Skip tour</button>}
             <button type="button" onClick={() => (last ? finish() : setI(i + 1))} className="inline-flex h-10 items-center gap-1 rounded-xl bg-purple px-4 font-semibold text-white hover:bg-purple-strong">
               {last ? "Let's go!" : <>Next<ArrowRight className="size-4" aria-hidden="true" /></>}
             </button>
