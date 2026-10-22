@@ -304,7 +304,7 @@ export async function askFacilitator(uid: string, sessionId: string, quick: Extr
     if (!group.ai_enabled) throw conflict("Your teacher is facilitating your group directly right now. You can still use your private assistant or ask your teacher.");
     return group;
   });
-  const labels = { explain_task: "asked Nova to explain the task", discussion_question: "asked Nova for a discussion question", we_disagree: "asked Nova for help with a disagreement", we_are_stuck: "asked Nova for help getting unstuck", question: "asked Nova a question" };
+  const labels = { explain_task: "asked Bloom to explain the task", discussion_question: "asked Bloom for a discussion question", we_disagree: "asked Bloom for help with a disagreement", we_are_stuck: "asked Bloom for help getting unstuck", question: "asked Bloom a question" };
   await asServer((db) => db.query("insert into group_messages(group_id, kind, body) values ($1, 'system', $2)", [group.id, `Your group ${labels[quick]}${quick === "question" && question ? `: “${question.slice(0, 200)}”` : "."}`]));
   await notifyGroup(group, "message.new");
   background(() => facilitate(group.id, { kind: "ask", quick, question: question?.slice(0, 500) }, null));

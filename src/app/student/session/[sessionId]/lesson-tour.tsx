@@ -2,24 +2,24 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, X } from "lucide-react";
-import { Nova, Pip, type MascotMood } from "@/components/mascot";
+import { Bloom, Pip, type MascotMood } from "@/components/mascot";
 import { cn } from "@/lib/utils";
 
 export const TOUR_KEY = "bloom.lessonTour.v1";
 
-type Step = { target?: string; title: string; body: string; who?: "nova" | "pip" | "both"; mood?: MascotMood };
+type Step = { target?: string; title: string; body: string; who?: "bloom" | "pip" | "both"; mood?: MascotMood };
 
 const STEPS: Step[] = [
   { who: "both", mood: "happy", title: "Welcome to your lesson!", body: "This is a quick tour of the screen. It takes less than a minute — you can skip it any time." },
-  { target: "group-chat", who: "nova", mood: "happy", title: "Group chat with Nova", body: "Talk with your group here. I'm Nova — I help your group discuss. Everyone in your group sees what I say. Press “Ask Nova” when your group is stuck." },
-  { target: "pip-chat", who: "pip", mood: "happy", title: "Just me · Pip", body: "I'm Pip, your private helper. Only you see what you ask me. I give hints, not answers." },
-  { target: "activity", title: "Your task", body: "What to do right now, and the activity for this stage. It changes as your group moves on." },
-  { target: "ideas-tab", title: "Your group's ideas", body: "Ideas from earlier are always here. Copy them, or add them straight into your work." },
+  { target: "group-chat", who: "bloom", mood: "happy", title: "Group chat with Bloom", body: "Talk with your group here. I'm Bloom — I help your group discuss, and everyone in your group sees what I say. Press “Ask Bloom” when your group is stuck." },
+  { target: "activity", who: "bloom", title: "Your task", body: "Each stage, I put your task right here in the chat: what to do, and the activity to do it. It changes as your group moves on." },
+  { target: "ideas-tab", title: "Your group's ideas", body: "Ideas from earlier are always one tap away. Copy them, or add them straight into your work." },
   { target: "timer", title: "Time left", body: "How long is left for this stage. Your work saves itself, even when time's up." },
   { target: "my-role", title: "Your role", body: "Your job in the group, if you have one. Tap it to see what it means." },
   { target: "help", title: "Need a hand?", body: "Raise your hand for your group, or ask your teacher privately with “Need help”. Nobody else sees that." },
-  { target: "plant", title: "Your group's plant", body: "It grows every time your group finishes a stage together. Tap it to see how it's doing." },
+  { target: "plant", title: "Your group's plant", body: "It grows every time your group finishes a stage. At the end it blooms into a flower for everyone's garden — each one is different. Tap it to say hello." },
   { target: "ready", title: "I'm ready", body: "When you've done your part, press “I'm ready”. Your group moves on when everyone is ready." },
+  { target: "pip", who: "pip", mood: "happy", title: "Pip, just for you", body: "I'm Pip, your private helper. Tap me any time — only you see what you ask me. I give hints, not answers." },
 ];
 
 type Rect = { top: number; left: number; width: number; height: number };
@@ -92,7 +92,7 @@ export function LessonTour({ onClose }: { onClose: () => void }) {
     }
   }
 
-  const Who = step.who === "pip" ? Pip : Nova;
+  const Who = step.who === "pip" ? Pip : Bloom;
   return (
     <div className="fixed inset-0 z-[70]" role="dialog" aria-modal="true" aria-labelledby="tour-title" aria-describedby="tour-body" onKeyDown={(e) => { if (e.key === "Escape") finish(); }}>
       {/* Dim everything except the highlighted area (an SVG mask is reliable at any size). */}
@@ -114,7 +114,7 @@ export function LessonTour({ onClose }: { onClose: () => void }) {
       >
         <div className="flex items-start gap-3">
           {step.who === "both" ? (
-            <span key={i} className="buddy-cheer flex shrink-0 items-end"><Nova size={56} mood="happy" /><Pip size={46} mood="happy" /></span>
+            <span key={i} className="buddy-cheer flex shrink-0 items-end"><Bloom size={56} mood="happy" /><Pip size={46} mood="happy" /></span>
           ) : step.who ? <span key={i} className="buddy-hop block shrink-0"><Who size={56} mood={step.mood === "happy" ? "talking" : step.mood ?? "talking"} /></span> : null}
           <div className="min-w-0 flex-1">
             <p className="text-xs font-bold uppercase tracking-wide text-purple">Step {i + 1} of {steps.length}</p>

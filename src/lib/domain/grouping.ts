@@ -198,7 +198,7 @@ export function recommendGroups(input: GroupingInput): GroupingResult {
         ...warnings,
         {
           kind: "keep_apart",
-          message: `These “keep apart” rules can't all be met with ${sizes.length} group${sizes.length === 1 ? "" : "s"} of sizes ${sizes.join(", ")}: ${pairs.join("; ")}. Allow more or smaller groups, or review the rules. Bloom won't break a “keep apart” rule.`,
+          message: `These “keep apart” rules can't all be met with ${sizes.length} group${sizes.length === 1 ? "" : "s"} of sizes ${sizes.join(", ")}: ${pairs.join("; ")}. Allow more or smaller groups, or review the rules. Canopy won't break a “keep apart” rule.`,
         },
       ],
       reasons: [],

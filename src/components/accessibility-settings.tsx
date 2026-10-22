@@ -34,17 +34,17 @@ export function AccessibilitySettingsPanel({ showStudentOptions = false }: { sho
         checked={prefs.motion === "reduce"} onCheckedChange={(v) => update({ motion: v ? "reduce" : "system" })} />
       <Switch id="a11y-celebrate" label="Celebrations" description="Small celebrations when your group reaches a milestone."
         checked={prefs.celebrations} onCheckedChange={(v) => update({ celebrations: v })} />
-      <Switch id="a11y-sound" label="Sounds" description="Soft sounds when you tap Nova, Pip or the plant, and gentle chimes. Every sound also has a visual signal."
+      <Switch id="a11y-sound" label="Sounds" description="Soft sounds when you tap Bloom, Pip or the plant, and gentle chimes. Every sound also has a visual signal."
         checked={prefs.sound} onCheckedChange={(v) => update({ sound: v })} />
       {showStudentOptions ? (
         <>
-          <Segmented label="Nova and Pip (the helper characters)" value={prefs.mascot} onChange={(v) => update({ mascot: v })}
+          <Segmented label="Bloom and Pip (the helper characters)" value={prefs.mascot} onChange={(v) => update({ mascot: v })}
             options={[{ value: "show", label: "Show" }, { value: "minimised", label: "Small" }, { value: "hidden", label: "Hide" }]} />
           <Segmented label="Group progress picture" value={prefs.gamification} onChange={(v) => update({ gamification: v })}
             options={[{ value: "show", label: "Show" }, { value: "minimised", label: "Minimise" }]} />
           <Switch id="a11y-simple" label="Simpler instructions first" description="Show a short, plain-language version of each task at the top."
             checked={prefs.simplifiedInstructions} onCheckedChange={(v) => update({ simplifiedInstructions: v })} />
-          <Switch id="a11y-speech" label="Speech-to-text button" description="Lets you speak instead of type, where your device supports it. Bloom never listens unless you press the button."
+          <Switch id="a11y-speech" label="Speech-to-text button" description="Lets you speak instead of type, where your device supports it. Canopy never listens unless you press the button."
             checked={prefs.speechInput} onCheckedChange={(v) => update({ speechInput: v })} />
         </>
       ) : null}
@@ -64,7 +64,7 @@ export function AccessibilitySettingsButton({ showStudentOptions, compact }: { s
           {compact ? null : <span>Settings</span>}
         </Button>
       </DialogTrigger>
-      <SheetContent title="Settings" description="Make Bloom work the way that suits you.">
+      <SheetContent title="Settings" description="Make Canopy work the way that suits you.">
         <AccessibilitySettingsPanel showStudentOptions={showStudentOptions} />
       </SheetContent>
     </Dialog>

@@ -52,7 +52,7 @@ export function Brainstorm() {
         ) : null}
         {editing ? <button type="button" className="inline-flex items-center gap-1 text-sm font-semibold text-ink-muted hover:text-ink" onClick={() => { setEditing(null); setText(""); }}><X className="size-4" aria-hidden="true" />Cancel edit</button> : null}
       </div>
-      <Textarea id="idea-text" rows={6} value={text} onChange={(e) => { setText(e.target.value); buddy.listen(); }} maxLength={1000} placeholder="Write your idea here… one thoughtful idea is great." aria-describedby="idea-hint" className="min-h-40 border-2 border-purple/25 bg-white text-[1.1rem] leading-relaxed focus-visible:border-purple" />
+      <Textarea id="idea-text" rows={4} value={text} onChange={(e) => { setText(e.target.value); buddy.listen(); }} maxLength={1000} placeholder="Write your idea here… one thoughtful idea is great." aria-describedby="idea-hint" className="min-h-28 border-2 border-purple/25 bg-white text-[1.1rem] leading-relaxed focus-visible:border-purple" />
       <div className="flex flex-wrap items-center gap-1.5" id="idea-hint" role="group" aria-label="Sentence starters">
         <span className="mr-1 text-sm text-ink-muted">Try starting with:</span>
         {STARTERS.slice(0, 3).map((s) => (

@@ -1,5 +1,5 @@
 import {
-  Compass, Users, Lightbulb, Sparkles, MessagesSquare, Vote, PenLine, Hammer, Send, Presentation, HeartHandshake, type LucideIcon,
+  Compass, Users, Lightbulb, Sparkles, MessagesSquare, Vote, PenLine, Hammer, Send, Presentation, HeartHandshake, Speech, type LucideIcon,
 } from "lucide-react";
 import type { StageKind } from "@/lib/domain/lesson";
 import { cn } from "@/lib/utils";
@@ -9,6 +9,7 @@ export const STAGE_ICONS: Record<StageKind, { icon: LucideIcon; tone: string }> 
   role_selection: { icon: Users, tone: "bg-purple-soft text-purple" },
   brainstorm: { icon: Lightbulb, tone: "bg-amber-soft text-amber" },
   synthesis: { icon: Sparkles, tone: "bg-purple-soft text-purple" },
+  talk: { icon: Speech, tone: "bg-coral-soft text-coral" },
   discussion: { icon: MessagesSquare, tone: "bg-teal-soft text-teal-strong" },
   voting: { icon: Vote, tone: "bg-blue-soft text-blue" },
   creation: { icon: PenLine, tone: "bg-mint-soft text-mint" },

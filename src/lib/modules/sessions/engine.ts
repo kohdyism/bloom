@@ -6,6 +6,7 @@ import { evaluateStage, type StageEvaluation, type StageSignals } from "@/lib/do
 import type { Stage } from "@/lib/domain/lesson";
 import { facilitatorMessage, type FacilitatorContext, type FacilitatorTrigger } from "@/lib/ai/facilitator";
 import { synthesiseIdeas } from "@/lib/ai/synthesis";
+import { FLOWERS, isFlowerId, pickFlower, type FlowerId } from "@/lib/domain/flowers";
 import { loadGroup, loadSession, PRESENCE_WINDOW_SECONDS, type GroupRow, type SessionRow } from "./common";
 
 /**
@@ -92,7 +93,10 @@ export async function syncGroup(groupId: string, opts: { quiet?: boolean } = {})
     if (evaluation.canAutoAdvance) return { advance: true as const, group };
     if (evaluation.requirementsMet && group.stage_status === "active") {
       await db.query("update session_groups set stage_status = 'ready_check' where id = $1", [groupId]);
-      return { readyCheck: true as const, group, session };
+      // Only worth a message when the group actually had something to do first.
+      const stage = currentStage(session, group);
+      const hadWork = !!stage && ["brainstorm", "voting", "physical", "submission", "role_selection"].includes(stage.kind);
+      return hadWork ? { readyCheck: true as const, group, session } : { changed: true as const, group };
     }
     if (!evaluation.requirementsMet && group.stage_status === "ready_check") {
       await db.query("update session_groups set stage_status = 'active' where id = $1", [groupId]);
@@ -174,6 +178,7 @@ export async function advanceGroup(groupId: string, opts: { by: "auto" | "teache
     if (opts.by === "teacher" && opts.actorId) {
       await db.query("insert into audit_events(actor_id, session_id, action, target, details) values ($1,$2,'group.advanced',$3,$4)", [opts.actorId, session.id, groupId, JSON.stringify({ from: group.stage_index })]);
     }
+    if (completed) await awardFlower(db, groupId);
     if (next?.kind === "creation") {
       for (const kind of next.config.artifacts) {
         await db.query("insert into collaborative_artifacts(group_id, kind) values ($1, $2) on conflict (group_id, kind) do nothing", [groupId, kind]);
@@ -388,6 +393,29 @@ export async function tickSession(sessionId: string) {
   });
   for (const t of work) await t();
 }
+
+/**
+ * The group's plant opens into a flower (once). Chosen from the ones its
+ * members have collected least, so each bloom tends to be a new one for them.
+ */
+export async function awardFlower(db: Db, groupId: string): Promise<FlowerId | null> {
+  const existing = await db.maybeOne<{ flower: string | null }>("select flower from session_groups where id = $1", [groupId]);
+  if (!existing) return null;
+  if (isFlowerId(existing.flower)) return existing.flower;
+  const rows = await db.query<{ flowers: string[] | null }>(
+    `select array_remove(array_agg(g2.flower), null) as flowers
+     from group_members gm
+     left join group_members gm2 on gm2.student_id = gm.student_id
+     left join session_groups g2 on g2.id = gm2.group_id and g2.id <> $1
+     where gm.group_id = $1
+     group by gm.student_id`,
+    [groupId],
+  );
+  const flower = pickFlower(groupId, rows.map((r) => (r.flowers ?? []).filter(isFlowerId)));
+  await db.query("update session_groups set flower = $2 where id = $1 and flower is null", [groupId, flower]);
+  return flower;
+}
+export const FLOWER_COUNT = FLOWERS.length;
 
 /** After a student leaves: their group may now be able to move on. */
 export async function syncStudentGroup(sessionId: string, studentId: string) {

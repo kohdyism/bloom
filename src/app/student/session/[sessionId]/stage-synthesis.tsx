@@ -29,7 +29,7 @@ export function Synthesis() {
       <Card className="flex items-center gap-4 p-6">
         <Mascot mood="thinking" size={64} />
         <div>
-          <p className="font-semibold" role="status">Nova is grouping your ideas…</p>
+          <p className="font-semibold" role="status">Bloom is grouping your ideas…</p>
           <p className="text-sm text-ink-muted">This only takes a moment. Your original ideas are kept exactly as you wrote them.</p>
         </div>
       </Card>
@@ -53,7 +53,7 @@ export function Synthesis() {
         {syn.origin === "student_edit" && syn.editedBy ? <span className="text-sm text-ink-muted">Last changed by {syn.editedBy}{syn.note ? `: “${syn.note}”` : ""}</span> : null}
         <span className="ml-auto flex gap-2">
           {!editing ? <Button size="sm" variant="secondary" onClick={startEdit}><Pencil />Change the groups</Button> : null}
-          <Button size="sm" variant="ghost" onClick={() => run(() => act({ action: "synthesis_refresh" }), "Asked Nova to try again")}><RefreshCw />Try another grouping</Button>
+          <Button size="sm" variant="ghost" onClick={() => run(() => act({ action: "synthesis_refresh" }), "Asked Bloom to try again")}><RefreshCw />Try another grouping</Button>
         </span>
       </div>
       <Notice>These themes are a suggestion, not the answer. If something doesn&apos;t fit, change it — and tell your group why.</Notice>

@@ -11,12 +11,12 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
   const { next } = await searchParams;
   if (user) redirect(user.role === "teacher" ? "/teacher" : "/student");
   return (
-    <main id="main" className="mx-auto grid min-h-[calc(100dvh-2rem)] max-w-5xl items-center gap-10 px-5 py-10 md:grid-cols-[1.1fr_1fr]">
+    <main id="main" className="mx-auto w-full grid min-h-[calc(100dvh-2rem)] max-w-5xl items-center gap-10 px-5 py-10 md:grid-cols-[1.1fr_1fr]">
       <section className="hidden md:block">
         <div className="flex items-center gap-3">
           <Mascot mood="wave" size={88} />
           <div>
-            <p className="font-display text-4xl font-bold tracking-tight">Bloom</p>
+            <p className="font-display text-4xl font-bold tracking-tight">Canopy</p>
             <p className="text-ink-muted">Think together. Grow together.</p>
           </div>
         </div>

@@ -20,7 +20,7 @@ export function ConstraintsPanel({ classId, students, constraints }: Props) {
     <Card>
       <CardHeader>
         <CardTitle>Grouping restrictions</CardTitle>
-        <p className="text-sm text-ink-muted">Private to you. “Keep apart” is always respected when Bloom suggests groups.</p>
+        <p className="text-sm text-ink-muted">Private to you. “Keep apart” is always respected when Canopy suggests groups.</p>
       </CardHeader>
       <CardBody className="flex flex-col gap-4">
         {constraints.length ? (

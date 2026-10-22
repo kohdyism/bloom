@@ -38,10 +38,23 @@ describe("evaluateStage", () => {
   });
 
   it("teacher_only stages never auto-advance", () => {
-    const stage = makeStage("submission");
+    const stage = makeStage("submission", { config: { completion: "teacher_only" } });
     const e = evaluateStage(stage, config, signals({ hasSubmission: true, ready: { a: "ready", b: "ready", c: "ready" } }));
     expect(e.requirementsMet).toBe(true);
     expect(e.canAutoAdvance).toBe(false);
+  });
+
+  it("submission moves on by itself once the work is in and everyone is ready", () => {
+    const stage = makeStage("submission");
+    expect(evaluateStage(stage, config, signals({ hasSubmission: false, ready: { a: "ready", b: "ready", c: "ready" } })).canAutoAdvance).toBe(false);
+    expect(evaluateStage(stage, config, signals({ hasSubmission: true, ready: { a: "ready", b: "ready", c: "ready" } })).canAutoAdvance).toBe(true);
+  });
+
+  it("talk time has nothing to complete first: it moves on when everyone is ready", () => {
+    const stage = makeStage("talk");
+    const e = evaluateStage(stage, config, signals({ ready: { a: "ready", b: "ready", c: "ready" } }));
+    expect(e.requirementsMet).toBe(true);
+    expect(e.canAutoAdvance).toBe(true);
   });
 
   it("majority_ready needs more than half and isn't blocked by a minority asking for time", () => {

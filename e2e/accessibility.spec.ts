@@ -85,13 +85,17 @@ test("main screens have no serious automated accessibility violations", async ({
   // Tablet (portrait) and phone layouts.
   for (const [w, h, name] of [[820, 1180, "tablet"], [390, 844, "phone"]] as const) {
     await s.page.setViewportSize({ width: w, height: h });
-    await expect(s.page.getByRole("tab", { name: "Chats" })).toBeVisible();
-    await shot(s.page, `${name}-chats`);
-    await s.page.getByRole("tab", { name: "Activity", exact: true }).click();
+    // One column: the task sits inside the group chat; "I'm ready" and Pip are in the dock.
     await expect(s.page.getByLabel("Your idea")).toBeVisible();
-    await shot(s.page, `${name}-activity`);
+    await expect(s.page.getByRole("button", { name: "Ask Pip (private)" })).toBeVisible();
+    await expect(s.page.getByRole("button", { name: "I'm done thinking" })).toBeVisible();
+    expect(await s.page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await shot(s.page, `${name}-lesson`);
     await audit(s.page, `student workspace (${name})`);
-    await s.page.getByRole("tab", { name: "Chats" }).click();
+    await s.page.getByRole("button", { name: "Ask Pip (private)" }).click();
+    await expect(s.page.getByLabel("Your question for Pip")).toBeVisible();
+    await audit(s.page, `Pip (${name})`);
+    await s.page.getByRole("button", { name: "Close Pip" }).click();
   }
   await s.page.setViewportSize({ width: 1280, height: 720 });
   await audit(t, "teacher live dashboard");

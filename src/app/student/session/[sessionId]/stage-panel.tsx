@@ -5,6 +5,8 @@ import { Check, Compass, MessagesSquare, Trophy, Vote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/primitives";
 import { Buddy } from "@/components/buddy";
+import { FlowerPicture } from "@/components/flower";
+import { flowerInfo } from "@/lib/domain/flowers";
 import { useRun } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 import { useWorkspace, roleName } from "./context";
@@ -16,7 +18,7 @@ import { Submission } from "./stage-submission";
 import { PresentationViewer } from "./presentation";
 import { MediaUploader } from "./media";
 
-/** The activity for the current stage (the task and Nova sit above it). */
+/** The activity for the current stage (the task and Bloom sit above it). */
 export function StagePanel() {
   const { group } = useWorkspace();
   if (group.stageStatus === "complete") return <AllDone />;
@@ -48,7 +50,7 @@ function Orientation() {
   return (
     <Panel className="flex items-center gap-4">
       <span className="inline-flex size-12 shrink-0 items-center justify-center rounded-2xl bg-blue-soft text-blue" aria-hidden="true"><Compass className="size-6" /></span>
-      <p className="text-[1.05rem]">Read the task together and check everyone knows what your group will make by the end. {state.session.modality === "mostly_in_person" ? "Most of today happens in the room — Bloom keeps track of the steps." : "You can talk in the room, use the group chat, or both."}</p>
+      <p className="text-[1.05rem]">Read the task together and check everyone knows what your group will make by the end. {state.session.modality === "mostly_in_person" ? "Most of today happens in the room — Canopy keeps track of the steps." : "You can talk in the room, use the group chat, or both."}</p>
     </Panel>
   );
 }
@@ -142,7 +144,7 @@ function Physical() {
   return (
     <div className="flex flex-col gap-3">
       <Panel className="flex flex-col gap-3">
-        <p className="rounded-2xl bg-teal-soft px-3 py-2 text-sm">This part happens in the room. Bloom doesn&apos;t listen to your group — tick off each check-in as you reach it.</p>
+        <p className="rounded-2xl bg-teal-soft px-3 py-2 text-sm">This part happens in the room. Canopy doesn&apos;t listen to your group — tick off each check-in as you reach it.</p>
         {items.length ? (
           <fieldset className="flex flex-col gap-2">
             <legend className="mb-1 flex w-full items-center justify-between font-display text-lg font-bold">Check-ins <span className="text-sm font-semibold text-mint">{doneCount} of {items.length} done</span></legend>
@@ -200,8 +202,9 @@ function AllDone() {
   const latest = group.submissions[0];
   return (
     <Panel className="flex flex-col items-center gap-4 py-8 text-center">
-      <Buddy who="nova" size={130} mood="celebrate" />
+      {group.flower ? <FlowerPicture id={group.flower} size={120} /> : <Buddy who="bloom" size={130} mood="celebrate" />}
       <h1 className="font-display text-3xl font-bold">Your group finished every stage. Nice teamwork!</h1>
+      {group.flower ? <p className="text-lg">Your plant bloomed into a <strong>{flowerInfo(group.flower).name}</strong> — it&apos;s in your garden now.</p> : null}
       {latest ? <p className="text-ink-muted">Submitted version {latest.version} — {latest.status === "reviewed" ? "reviewed by your teacher" : latest.status === "returned" ? "returned for revision" : "waiting for your teacher"}.</p> : null}
       {latest?.feedback ? <Notice tone="teal" title="Teacher feedback" className="max-w-xl text-left">{latest.feedback}</Notice> : null}
       {state.session.presentation ? <PresentationViewer /> : latest && group.presentationRequest !== "pending" ? (

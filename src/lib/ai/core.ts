@@ -5,7 +5,7 @@ import { z } from "zod";
 import { config } from "@/lib/config";
 
 /**
- * Where an AI output came from. Every AI-produced item in Bloom carries one of
+ * Where an AI output came from. Every AI-produced item in Canopy carries one of
  * these and the UI labels it accordingly — simulated output is never presented
  * as a live model response.
  *

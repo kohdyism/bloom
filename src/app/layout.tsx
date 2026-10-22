@@ -8,7 +8,7 @@ import { config } from "@/lib/config";
 import { DemoBanner } from "@/components/demo-banner";
 
 export const metadata: Metadata = {
-  title: { default: "Bloom", template: "%s · Bloom" },
+  title: { default: "Canopy", template: "%s · Canopy" },
   description: "Inclusive classroom collaboration with a supportive AI facilitator.",
 };
 

@@ -14,7 +14,7 @@ export default async function TeacherLayout({ children }: { children: React.Reac
         <div className="flex items-center justify-between gap-2 px-5 py-4 lg:py-5">
           <a href="/teacher" className="flex items-center gap-2 rounded-lg">
             <Mascot size={36} animate={false} />
-            <span className="font-display text-xl font-bold">Bloom</span>
+            <span className="font-display text-xl font-bold">Canopy</span>
           </a>
           <div className="flex items-center gap-1">
             <span className="rounded-full bg-teal-soft px-2 py-0.5 text-xs font-semibold text-teal-strong">Teacher</span>

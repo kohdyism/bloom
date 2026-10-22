@@ -2,7 +2,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowRight, Settings2 } from "lucide-react";
 import { requireUser } from "@/lib/auth/current-user";
-import { asUser } from "@/lib/db";
+import { asServer, asUser } from "@/lib/db";
+import { isFlowerId } from "@/lib/domain/flowers";
+import { Garden, type GardenEntry } from "./garden";
 import { MascotSays } from "@/components/mascot";
 import { Badge, Card } from "@/components/ui/primitives";
 import { Button } from "@/components/ui/button";
@@ -23,8 +25,17 @@ export default async function StudentHome() {
       [user.id],
     ),
   );
+  // Read on the server for this student only (their own groups).
+  const garden: GardenEntry[] = (await asServer((db) =>
+    db.query<{ flower: string; lesson: string; group_name: string; at: Date }>(
+      `select g.flower, s.snapshot ->> 'title' as lesson, g.name as group_name, coalesce(s.ended_at, g.updated_at) as at
+       from group_members gm join session_groups g on g.id = gm.group_id join activity_sessions s on s.id = g.session_id
+       where gm.student_id = $1 and g.flower is not null order by at`,
+      [user.id],
+    ),
+  )).filter((r) => isFlowerId(r.flower)).map((r) => ({ flower: r.flower as GardenEntry["flower"], lesson: r.lesson, group: r.group_name, at: new Date(r.at).toISOString() }));
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-8 px-4 py-8">
+    <div className="mx-auto w-full flex max-w-3xl flex-col gap-8 px-4 py-8">
       <MascotSays mood="happy" size={72}>
         <p className="font-display text-xl font-semibold">Hi {user.displayName.split(" ")[0]}!</p>
         <p className="text-ink-muted">Ready to join a lesson? Type the code from the board.</p>
@@ -53,6 +64,7 @@ export default async function StudentHome() {
           </ul>
         </section>
       ) : null}
+      <Garden entries={garden} />
       <Button asChild variant="ghost" className="self-start"><Link href="/student/welcome?edit=1"><Settings2 />My working preferences</Link></Button>
     </div>
   );

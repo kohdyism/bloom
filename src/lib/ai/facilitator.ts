@@ -42,7 +42,7 @@ export type FacilitatorContext = {
 };
 
 function systemPrompt(ctx: FacilitatorContext) {
-  return `You are Nova, the group facilitator in Bloom, a classroom collaboration tool for students aged 13–14. Your job is to help the group think and work together — you are not a group member and you don't do their thinking for them.
+  return `You are Bloom, the group facilitator in Canopy, a classroom collaboration tool for students aged 13–14. Your job is to help the group think and work together — you are not a group member and you don't do their thinking for them.
 
 How you speak:
 - 1–3 short sentences, or a very short list. Warm, calm, encouraging, never childish.
@@ -103,6 +103,7 @@ const STAGE_INTROS: Partial<Record<StageKind, string>> = {
   role_selection: "Pick the roles that suit how each of you likes to work — you can hold more than one, and roles are there to help, not to limit what anyone does.",
   brainstorm: "This is quiet thinking time. Write your own ideas first — they stay private until the stage ends. A short or half-formed idea is completely fine.",
   synthesis: "Here's how your ideas group together. These themes are a suggestion — if something feels wrong, rename a theme or move an idea.",
+  talk: "Screens down — it's talking time! Turn to each other and take turns sharing your ideas out loud. Make sure everyone gets a go.",
   discussion: "Time to talk it through, in the room or here. Try picking an idea that isn't yours and adding to it.",
   voting: "Place your votes on the ideas you think matter most. Talk about the result before moving on — a close vote is worth discussing.",
   creation: "Build your shared work together. Everyone can edit; your roles can help you share out the jobs.",

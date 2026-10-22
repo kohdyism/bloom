@@ -112,6 +112,12 @@ test("complete inclusive classroom lesson", async ({ browser }) => {
   await ready(a1.page);
   await ready(a2.page);
 
+  // Talk time: the screen steps back so the group talks face to face.
+  await expect(a1.page.getByRole("heading", { name: "Discussion time!" })).toBeVisible();
+  await expect(a1.page.getByLabel("Message your group")).toHaveCount(0);
+  await ready(a1.page, "We're done talking");
+  await ready(a2.page, "We're done talking");
+
   // 14. Discussion: message, reply, reaction, build on an idea.
   await expect(a1.page.getByRole("heading", { name: "Discussion", exact: true })).toBeVisible();
   await a1.page.getByLabel("Message your group").fill("I think the storm line is the strongest evidence.");

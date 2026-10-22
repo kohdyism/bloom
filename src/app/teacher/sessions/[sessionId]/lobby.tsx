@@ -177,7 +177,7 @@ function GroupBuilder({ sessionId, roster, approved, act }: {
       <CardHeader className="flex-row flex-wrap items-center justify-between gap-3">
         <div>
           <CardTitle className="flex items-center gap-2"><Sparkles className="size-5 text-purple" aria-hidden="true" />Groups</CardTitle>
-          <p className="text-sm text-ink-muted">Bloom suggests groups using size limits, your pairing rules, students&apos; own working preferences and who has worked together recently. You decide.</p>
+          <p className="text-sm text-ink-muted">Canopy suggests groups using size limits, your pairing rules, students&apos; own working preferences and who has worked together recently. You decide.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {rec ? <Button variant="secondary" onClick={() => generate(seed + 1)} pending={loading}><Shuffle />Another suggestion</Button> : null}

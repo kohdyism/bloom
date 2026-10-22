@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useA11y, useReducedMotion } from "@/components/a11y-provider";
 import { playSfx, type Sfx } from "@/lib/sfx";
 import { cn } from "@/lib/utils";
-import { Nova, Pip, type Mood } from "./mascot";
+import { Bloom, Pip, type Mood } from "./mascot";
 import { SpeechBubble } from "./speech-bubble";
 
 type Anim = "buddy-hop" | "buddy-wiggle" | "buddy-nod" | "buddy-cheer" | null;
@@ -20,13 +20,13 @@ const CUE: Record<CueKind, { anim: Anim; mood: Mood }> = {
 };
 
 /** What each character does when tapped — a little sound and a line to say. */
-const TAPS: Record<"nova" | "pip", Reaction[]> = {
-  nova: [
-    { anim: "buddy-hop", mood: "happy", say: "Hi team!", sfx: "nova" },
+const TAPS: Record<"bloom" | "pip", Reaction[]> = {
+  bloom: [
+    { anim: "buddy-hop", mood: "happy", say: "Hi team!", sfx: "bloom" },
     { anim: "buddy-wiggle", mood: "happy", say: "Hehe, that tickles!", sfx: "wiggle" },
     { anim: "buddy-nod", mood: "happy", say: "Everyone's ideas count.", sfx: "nod" },
     { anim: null, mood: "thinking", say: "Hmm… what does everyone think?", sfx: "pip" },
-    { anim: "buddy-hop", mood: "happy", say: "Need a question? Ask me!", sfx: "nova" },
+    { anim: "buddy-hop", mood: "happy", say: "Need a question? Ask me!", sfx: "bloom" },
     { anim: null, mood: "resting", say: "zzz…", sfx: "snooze", ms: 3000 },
     { anim: "buddy-cheer", mood: "celebrate", say: "You've got this!", sfx: "cheer" },
   ],
@@ -46,7 +46,7 @@ const WAKE: Reaction = { anim: "buddy-hop", mood: "happy", say: "Oh — I'm awak
 const REST_AFTER_MS = 90_000;
 
 /**
- * Nova or Pip, alive on the page:
+ * Bloom or Pip, alive on the page:
  *  - tap (or Enter/Space) for a little reaction — hop, wiggle, nap, cheer;
  *  - `cue` lets the page react to what the student does (a nod when a
  *    message is sent, a cheer when an idea is added);
@@ -56,7 +56,7 @@ const REST_AFTER_MS = 90_000;
  * With reduced motion they still change expression and speak, but don't move.
  */
 export function Buddy({ who, size = 72, mood = "idle", className, name, cue, talking, listening }: {
-  who: "nova" | "pip"; size?: number; mood?: Mood; className?: string; name?: string; cue?: Cue | null; talking?: boolean; listening?: boolean;
+  who: "bloom" | "pip"; size?: number; mood?: Mood; className?: string; name?: string; cue?: Cue | null; talking?: boolean; listening?: boolean;
 }) {
   const reduced = useReducedMotion();
   const { prefs } = useA11y();
@@ -102,10 +102,10 @@ export function Buddy({ who, size = 72, mood = "idle", className, name, cue, tal
     play(r, r.ms ?? 1800);
   }, [who, resting, i, play, prefs.sound]);
 
-  const C = who === "pip" ? Pip : Nova;
+  const C = who === "pip" ? Pip : Bloom;
   const shown: Mood = active ? active.mood : resting ? "resting" : talking ? "talking" : listening ? "listening" : mood;
   const loop = !reduced && !active && !resting ? (talking ? "buddy-chatter" : listening ? "buddy-listen" : null) : null;
-  const label = name ?? (who === "pip" ? "Pip" : "Nova");
+  const label = name ?? (who === "pip" ? "Pip" : "Bloom");
   return (
     <button ref={setBtn} type="button" onClick={poke} className={cn("relative inline-flex shrink-0 items-center justify-center rounded-full outline-offset-4", className)} style={{ width: size, height: size }} aria-label={`${label}. Press to say hi.`}>
       <span className={cn("block", loop)}>

@@ -93,6 +93,7 @@ export const DEMO_LESSONS: { classKey: string; draft: LessonDraft; materials: { 
       stages: [
         makeStage("brainstorm", { title: "Think", durationSeconds: 300, instructions: "Read the poem on your own. Write one or two ideas about how the speaker feels and why. A single word or phrase from the poem is a great place to start." }),
         makeStage("synthesis", { title: "AI idea synthesis", durationSeconds: 240, instructions: "Look at how your group's ideas have been grouped. Does anything feel wrong or missing? You can rename groups or move ideas." }),
+        makeStage("talk", { title: "Talk time", durationSeconds: 240, instructions: "Take turns sharing your ideas out loud. Which idea surprised you most, and why?" }),
         makeStage("discussion", { durationSeconds: 480, instructions: "Pick one idea that isn't yours and add to it. Which line of the poem best supports it?" }),
         makeStage("creation", { title: "Collaborative writing", durationSeconds: 720, instructions: "Write a paragraph answering: How does Poe present loneliness in 'Alone'? Include at least one quotation and more than one interpretation.", config: { artifacts: ["document"] } }),
         makeStage("submission", { durationSeconds: 120 }),
@@ -133,6 +134,7 @@ export const DEMO_LESSONS: { classKey: string; draft: LessonDraft; materials: { 
       stages: [
         makeStage("brainstorm", { durationSeconds: 300, instructions: "What would make school better for everyone? Think about people whose experience might be different from yours." }),
         makeStage("synthesis", { title: "Cluster ideas", durationSeconds: 240 }),
+        makeStage("talk", { title: "Talk time", durationSeconds: 240, instructions: "Take turns sharing your ideas out loud. Which idea surprised you most, and why?" }),
         makeStage("discussion", { title: "Discuss", durationSeconds: 420, instructions: "Which ideas would help the most people? Which are realistic?" }),
         makeStage("voting", { title: "Vote", durationSeconds: 180, config: { votesPerStudent: 3 } }),
         makeStage("creation", { title: "Whiteboard & slides", durationSeconds: 900, instructions: "Sketch your plan on the whiteboard, then make 3–4 slides to pitch your top idea.", config: { artifacts: ["whiteboard", "slides"] } }),

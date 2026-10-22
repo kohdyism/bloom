@@ -1,4 +1,5 @@
 import "server-only";
+import { isFlowerId } from "@/lib/domain/flowers";
 import { asServer, asUser, NotFoundError, type Db } from "@/lib/db";
 import { evaluateStage, progressFraction, timerState, type StageEvaluation } from "@/lib/domain/stage-engine";
 import type { Stage } from "@/lib/domain/lesson";
@@ -210,6 +211,8 @@ async function groupContent(db: Db, s: SessionRow, g: GroupRow, viewerId: string
     id: g.id, name: g.name, color: g.color,
     stageIndex: g.stage_index, stageStatus: g.stage_status, stage, nextStage: s.snapshot.stages[g.stage_index + 1] ?? null,
     timer: timer(s, g), aiEnabled: g.ai_enabled, milestones: g.milestones,
+    flower: isFlowerId(g.flower) ? g.flower : null,
+    stageStartedAt: iso(g.stage_started_at),
     progress: progressFraction(g.stage_index, g.stage_status, s.snapshot.stages.length),
     evaluation,
     myReadiness: signals.ready[viewerId] ?? null,
@@ -228,7 +231,7 @@ async function groupContent(db: Db, s: SessionRow, g: GroupRow, viewerId: string
     synthesis: synthesis ? { version: synthesis.version, origin: synthesis.origin, aiOrigin: firstSynthesis?.origin ?? null, clusters: synthesis.clusters, note: synthesis.note, editedBy: synthesis.created_by ? name(synthesis.created_by) : null, createdAt: iso(synthesis.created_at) } : null,
     messages: messages.map((m) => ({
       id: m.id, kind: m.kind, aiOrigin: m.ai_origin, body: m.body, replyTo: m.reply_to, pinned: m.pinned, createdAt: iso(m.created_at),
-      authorId: m.author_id, author: m.kind === "teacher" ? "Teacher" : m.kind === "ai" ? "Nova" : m.kind === "system" ? "Bloom" : name(m.author_id ?? ""),
+      authorId: m.author_id, author: m.kind === "teacher" ? "Teacher" : m.kind === "ai" ? "Bloom" : m.kind === "system" ? "Canopy" : name(m.author_id ?? ""),
       reactions: Object.entries(reactions.filter((r) => r.message_id === m.id).reduce<Record<string, string[]>>((acc, r) => { (acc[r.kind] ??= []).push(r.user_id); return acc; }, {})).map(([kind, users]) => ({ kind, count: users.length, mine: users.includes(viewerId) })),
     })),
     votes: {

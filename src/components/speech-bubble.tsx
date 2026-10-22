@@ -4,7 +4,7 @@ import { useLayoutEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
 /**
- * What Nova, Pip or the plant "says" when tapped. Drawn in a portal at the
+ * What Bloom, Pip or the plant "says" when tapped. Drawn in a portal at the
  * top layer so a scrolling panel or a card edge can never clip it; it sits
  * above-right of the character, or below when there's no room above.
  */

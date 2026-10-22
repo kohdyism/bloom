@@ -12,7 +12,7 @@ type Timer = { remainingSeconds: number | null; deadline: string | null; paused:
  * as time runs down; colour AND words change near the end (never colour
  * alone). Screen readers hear it only at one minute left and at zero.
  */
-export function BigTimer({ timer, totalSeconds, className }: { timer: Timer; totalSeconds?: number | null; className?: string }) {
+export function BigTimer({ timer, totalSeconds, className, compact = false }: { timer: Timer; totalSeconds?: number | null; className?: string; compact?: boolean }) {
   const now = useSecondClock();
   const remaining = timer.paused || !timer.deadline || now === null ? timer.remainingSeconds : Math.round((new Date(timer.deadline).getTime() - now) / 1000);
   if (remaining === null || remaining === undefined) return null;
@@ -40,20 +40,21 @@ export function BigTimer({ timer, totalSeconds, className }: { timer: Timer; tot
       <button
         type="button"
         className={cn(
-          "flex items-center gap-2.5 rounded-2xl border-2 bg-surface py-1 pl-1 pr-4 shadow-soft",
+          "flex items-center rounded-2xl border-2 bg-surface py-1 pl-1 shadow-soft",
+          compact ? "gap-1.5 pr-2.5" : "gap-2.5 pr-4",
           overdue ? "timer-urgent border-coral/60" : warning ? "border-[#f59f00]/60" : "border-white/70",
           className,
         )}
         data-testid="stage-timer"
         data-tour="timer"
       >
-        <svg viewBox="0 0 52 52" className="size-12 -rotate-90" aria-hidden="true">
+        <svg viewBox="0 0 52 52" className={cn("-rotate-90", compact ? "size-8" : "size-12")} aria-hidden="true">
           <circle cx="26" cy="26" r={R} fill="none" stroke="var(--surface-2)" strokeWidth="6" />
           <circle cx="26" cy="26" r={R} fill="none" stroke={ring} strokeWidth="6" strokeLinecap="round" strokeDasharray={C} strokeDashoffset={C * (1 - frac)} style={{ transition: "stroke-dashoffset 900ms linear" }} />
         </svg>
         <span className="flex flex-col items-start leading-none">
-          <span className={cn("text-[0.7rem] font-bold uppercase tracking-wide", tone)}>{words}</span>
-          <span className={cn("font-display text-[1.9rem] font-bold tabular-nums leading-tight", tone)} aria-hidden="true">
+          {compact ? null : <span className={cn("text-[0.7rem] font-bold uppercase tracking-wide", tone)}>{words}</span>}
+          <span className={cn("font-display font-bold tabular-nums leading-tight", compact ? "text-[1.35rem]" : "text-[1.9rem]", tone)} aria-hidden="true">
             {timer.paused ? <Pause className="mr-1 inline size-6 align-[-2px]" /> : null}
             {overdue ? "0:00" : formatDuration(remaining)}
           </span>

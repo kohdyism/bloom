@@ -38,6 +38,7 @@ export type GroupRow = {
   position: number;
   stage_index: number;
   stage_status: "waiting" | "active" | "ready_check" | "complete";
+  flower: string | null;
   stage_started_at: Date | null;
   stage_deadline: Date | null;
   remaining_seconds_on_pause: number | null;

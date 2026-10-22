@@ -16,7 +16,7 @@ type SpeechRecognitionLike = {
 /**
  * Optional speech-to-text using the browser's Web Speech API. It only listens
  * between the user pressing start and stop — never continuously, never in the
- * background, and nothing is recorded by Bloom. Falls back gracefully when the
+ * background, and nothing is recorded by Canopy. Falls back gracefully when the
  * browser doesn't support it or microphone permission is refused.
  */
 export function useSpeechInput(onText: (text: string) => void) {

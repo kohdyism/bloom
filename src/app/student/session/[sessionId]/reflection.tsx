@@ -1,5 +1,7 @@
 "use client";
 
+import { FlowerPicture } from "@/components/flower";
+import { flowerInfo, type FlowerId } from "@/lib/domain/flowers";
 import { useState } from "react";
 import Link from "next/link";
 import { Check, Send } from "lucide-react";
@@ -18,30 +20,31 @@ export function Reflection({ sessionId, state }: { sessionId: string; state: Stu
   const [done, setDone] = useState(state.reflectionDone);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-  const nova = useBuddy();
+  const bloomBuddy = useBuddy();
   const required = REFLECTION_RATINGS.filter((r) => !("allowNa" in r && r.allowNa));
   const complete = required.every((r) => ratings[r.key]);
 
   if (done) {
     return (
-      <div className="mx-auto flex max-w-xl flex-col items-center gap-5 py-10 text-center">
-        <Buddy who="nova" size={110} mood="celebrate" cue={nova.cue} />
+      <div className="mx-auto w-full flex max-w-xl flex-col items-center gap-5 py-10 text-center">
+        <Buddy who="bloom" size={110} mood="celebrate" cue={bloomBuddy.cue} />
         <p className="font-display text-2xl font-semibold">Thanks for reflecting!</p>
-        <p className="text-ink-muted">Only your teacher can see your answers. You can close Bloom now.</p>
+        <p className="text-ink-muted">Only your teacher can see your answers. You can close Canopy now.</p>
+        {state.group?.flower ? <GardenNote flower={state.group.flower} /> : null}
         <Button asChild variant="secondary"><Link href="/student">Back to home</Link></Button>
       </div>
     );
   }
 
   return (
-    <form className="mx-auto flex max-w-2xl flex-col gap-6 py-4" onSubmit={async (e) => {
+    <form className="mx-auto w-full flex max-w-2xl flex-col gap-6 py-4" onSubmit={async (e) => {
       e.preventDefault();
       if (!complete) { setError("Please answer each rating question (the AI one is optional)."); return; }
       setPending(true);
       setError(null);
       try {
         await api("/api/live/student", { method: "POST", json: { action: "reflection", sessionId, ratings: { ...Object.fromEntries(REFLECTION_RATINGS.map((r) => [r.key, 0])), ...ratings }, answers } });
-        nova.fire("cheer");
+        bloomBuddy.fire("cheer");
         setDone(true);
       } catch (err) {
         setError((err as Error).message);
@@ -50,12 +53,13 @@ export function Reflection({ sessionId, state }: { sessionId: string; state: Stu
       }
     }}>
       <div className="flex items-end gap-3">
-        <Buddy who="nova" size={72} mood="happy" cue={nova.cue} listening={nova.listening} />
+        <Buddy who="bloom" size={72} mood="happy" cue={bloomBuddy.cue} listening={bloomBuddy.listening} />
         <div className="rounded-2xl rounded-bl-md border border-line bg-surface px-4 py-3 shadow-soft">
           <p className="font-display text-xl font-semibold">The lesson has ended — how did it go?</p>
           <p className="text-ink-muted">A few quick questions. Only your teacher sees your answers; they&apos;re never shown to the class.</p>
         </div>
       </div>
+      {state.group?.flower ? <GardenNote flower={state.group.flower} /> : null}
       {REFLECTION_RATINGS.map((r) => (
         <Card key={r.key} className="p-5">
           <fieldset>
@@ -63,7 +67,7 @@ export function Reflection({ sessionId, state }: { sessionId: string; state: Stu
             <div className="flex items-stretch gap-2">
               {[1, 2, 3, 4, 5].map((n) => (
                 <label key={n} className={cn("relative flex flex-1 cursor-pointer flex-col items-center justify-center rounded-xl border-2 py-3 text-lg font-bold has-[:focus-visible]:outline has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-[var(--focus)]", ratings[r.key] === n ? "border-teal bg-teal text-white" : "border-line bg-surface hover:border-line-strong")}>
-                  <input type="radio" className="sr-only" name={r.key} value={n} checked={ratings[r.key] === n} onChange={() => { setRatings({ ...ratings, [r.key]: n }); nova.fire("nod"); }} aria-label={`${n}${n === 1 ? ` — ${r.low}` : n === 5 ? ` — ${r.high}` : ""}`} />
+                  <input type="radio" className="sr-only" name={r.key} value={n} checked={ratings[r.key] === n} onChange={() => { setRatings({ ...ratings, [r.key]: n }); bloomBuddy.fire("nod"); }} aria-label={`${n}${n === 1 ? ` — ${r.low}` : n === 5 ? ` — ${r.high}` : ""}`} />
                   {n}
                 </label>
               ))}
@@ -78,11 +82,24 @@ export function Reflection({ sessionId, state }: { sessionId: string; state: Stu
       {REFLECTION_QUESTIONS.map((q) => (
         <div key={q.key} className="flex flex-col gap-1.5">
           <label htmlFor={`rq-${q.key}`} className="font-semibold">{q.question} <span className="font-normal text-ink-muted">(optional — skip if you like)</span></label>
-          <Textarea id={`rq-${q.key}`} rows={2} value={answers[q.key] ?? ""} onChange={(e) => { setAnswers({ ...answers, [q.key]: e.target.value }); nova.listen(); }} maxLength={1000} />
+          <Textarea id={`rq-${q.key}`} rows={2} value={answers[q.key] ?? ""} onChange={(e) => { setAnswers({ ...answers, [q.key]: e.target.value }); bloomBuddy.listen(); }} maxLength={1000} />
         </div>
       ))}
       {error ? <Notice tone="coral" role="alert">{error}</Notice> : null}
       <Button type="submit" size="lg" pending={pending} className="self-end">{complete ? <Check /> : <Send />}Send reflection</Button>
     </form>
+  );
+}
+
+function GardenNote({ flower }: { flower: FlowerId }) {
+  const info = flowerInfo(flower);
+  return (
+    <Link href="/student#garden" className="flex items-center gap-3 self-center rounded-3xl border-2 border-white bg-gradient-to-r from-[#fff7e8] to-[#ffeef6] py-2 pl-2 pr-5 text-left shadow-soft hover:shadow-lift">
+      <FlowerPicture id={flower} size={52} />
+      <span className="flex flex-col leading-tight">
+        <span className="text-xs font-bold uppercase tracking-wide text-purple">Your group&apos;s plant bloomed</span>
+        <span className="font-display text-xl font-bold">{info.name} — added to your garden</span>
+      </span>
+    </Link>
   );
 }

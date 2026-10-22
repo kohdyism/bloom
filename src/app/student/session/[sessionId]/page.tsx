@@ -18,7 +18,7 @@ export default async function SessionPage({ params }: { params: Promise<{ sessio
   });
   if (!initial) {
     return (
-      <div className="mx-auto flex max-w-xl flex-col gap-6 px-4 py-12">
+      <div className="mx-auto w-full flex max-w-xl flex-col gap-6 px-4 py-12">
         <MascotSays mood="thinking">We couldn&apos;t open that lesson. You may need to join it with the code on the board first.</MascotSays>
         <Button asChild className="self-start"><Link href="/student">Enter a code</Link></Button>
       </div>

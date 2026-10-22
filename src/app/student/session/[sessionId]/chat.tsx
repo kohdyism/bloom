@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CornerDownRight, HandHeart, Lightbulb, MessageCircleQuestion, Pin, PinOff, Reply, Send, ThumbsUp, X } from "lucide-react";
+import { ArrowDown, ArrowUp, CornerDownRight, HandHeart, Lightbulb, MessageCircleQuestion, Pin, PinOff, Reply, Send, ThumbsUp, X } from "lucide-react";
 import type { GroupContent } from "@/lib/modules/sessions/state";
 import { Avatar, Textarea } from "@/components/ui/primitives";
 import { Button } from "@/components/ui/button";
@@ -21,8 +21,12 @@ const REACTIONS = [
   { kind: "question", label: "I have a question", icon: MessageCircleQuestion },
 ] as const;
 
-export function Chat({ className, header, empty, after, composerClassName, onActivity }: {
+export function Chat({ className, header, empty, after, composerClassName, onActivity, inline, compact = false }: {
   className?: string; header?: React.ReactNode; empty?: React.ReactNode; after?: React.ReactNode; composerClassName?: string;
+  /** Something embedded in the conversation (the stage's task card), placed after messages up to `after`. */
+  inline?: { node: React.ReactNode; after: string | null; key: string };
+  /** Slim layout for a side column. */
+  compact?: boolean;
   /** Lets the page animate its helper: "typing" on each keystroke, "sent" after a message goes. */
   onActivity?: (e: "typing" | "sent") => void;
 }) {
@@ -39,10 +43,49 @@ export function Chat({ className, header, empty, after, composerClassName, onAct
   // Messages already here when the chat opened appear still; new ones slide in.
   const [seenAtOpen] = useState(() => new Set(group.messages.map((m) => m.id)));
 
+  // New messages: follow along when you're at the bottom; otherwise offer a way down.
+  const [unseen, setUnseen] = useState(0);
+  const lastCount = useRef(group.messages.length);
   useEffect(() => {
     const el = listRef.current;
+    const added = group.messages.length - lastCount.current;
+    lastCount.current = group.messages.length;
     if (el && atBottom.current) el.scrollTop = el.scrollHeight;
+    // Counting arrivals while scrolled up (a reaction to new server data).
+    else if (added > 0) setUnseen((n) => n + added);
   }, [group.messages.length, after]);
+  const toBottom = () => { const el = listRef.current; if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" }); setUnseen(0); };
+
+  // A new stage: bring its task card into view.
+  const inlineKey = inline?.key;
+  useEffect(() => {
+    if (!inlineKey) return;
+    const t = setTimeout(() => document.getElementById("task-card")?.scrollIntoView({ block: "start", behavior: "smooth" }), 60);
+    return () => clearTimeout(t);
+  }, [inlineKey]);
+
+  // "Back to your task" appears when the task card has scrolled out of view.
+  const [taskHidden, setTaskHidden] = useState<"above" | "below" | null>(null);
+  useEffect(() => {
+    const root = listRef.current;
+    const card = document.getElementById("task-card");
+    if (!inlineKey || !root || !card || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) setTaskHidden(null);
+      else setTaskHidden(e.boundingClientRect.top < (e.rootBounds?.top ?? 0) ? "above" : "below");
+    }, { root, threshold: 0.08 });
+    io.observe(card);
+    return () => io.disconnect();
+  }, [inlineKey]);
+  const cut = inline ? (() => {
+    const t = inline.after ? new Date(inline.after).getTime() : -Infinity;
+    let i = group.messages.findIndex((m) => new Date(m.createdAt!).getTime() > t + 1500);
+    if (i === -1) return group.messages.length;
+    // Bloom's welcome to the stage reads best just above the task it introduces.
+    const m = group.messages[i];
+    if (m.kind === "ai" && new Date(m.createdAt!).getTime() < t + 45_000) i++;
+    return i;
+  })() : group.messages.length;
 
   async function send() {
     if (!text.trim()) return;
@@ -56,29 +99,7 @@ export function Chat({ className, header, empty, after, composerClassName, onAct
     setSending(false);
   }
 
-  return (
-    <div className={cn("flex min-h-0 flex-col overflow-hidden rounded-3xl border-2 border-white bg-white/85 shadow-soft", className)}>
-      {header}
-      {pinned.length ? (
-        <div className="border-b border-line bg-amber-soft/40 px-4 py-2">
-          <p className="text-xs font-semibold text-amber">Pinned</p>
-          <ul className="text-sm">{pinned.slice(-3).map((m) => <li key={m.id} className="truncate"><strong>{m.author}:</strong> {m.body}</li>)}</ul>
-        </div>
-      ) : null}
-      <div
-        ref={listRef}
-        onScroll={(e) => { const el = e.currentTarget; atBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 60; }}
-        className="min-h-48 flex-1 overflow-y-auto p-4"
-        role="log"
-        aria-live="polite"
-        aria-relevant="additions"
-        aria-label="Group chat"
-      >
-      <ol className="flex flex-col gap-3">
-        {group.messages.length === 0 ? (empty ?? (
-          <li className="flex items-center gap-3 text-sm text-ink-muted"><Mascot size={40} mood="idle" />No messages yet. Chat is optional — talking in the room counts too.</li>
-        )) : null}
-        {group.messages.map((m) => {
+  const renderMsg = (m: Msg) => {
           if (m.kind === "system") return <li key={m.id} className="text-center text-xs text-ink-muted">{m.body}</li>;
           const mine = m.authorId === state.me.id;
           const author = member(m.authorId);
@@ -115,9 +136,46 @@ export function Chat({ className, header, empty, after, composerClassName, onAct
               </div>
             </li>
           );
-        })}
+        };
+
+  return (
+    <div className={cn("flex min-h-0 flex-col overflow-hidden rounded-3xl border-2 border-white bg-white/85 shadow-soft", className)}>
+      {header}
+      {pinned.length ? (
+        <div className="border-b border-line bg-amber-soft/40 px-4 py-2">
+          <p className="text-xs font-semibold text-amber">Pinned</p>
+          <ul className="text-sm">{pinned.slice(-3).map((m) => <li key={m.id} className="truncate"><strong>{m.author}:</strong> {m.body}</li>)}</ul>
+        </div>
+      ) : null}
+      <div
+        ref={listRef}
+        onScroll={(e) => { const el = e.currentTarget; atBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 60; if (atBottom.current && unseen) setUnseen(0); }}
+        className={cn("relative min-h-48 flex-1 overflow-y-auto", compact ? "p-3" : "p-4 sm:px-6")}
+        role="log"
+        aria-live="polite"
+        aria-relevant="additions"
+        aria-label="Group chat"
+      >
+      {taskHidden ? (
+        <button type="button" onClick={() => document.getElementById("task-card")?.scrollIntoView({ block: "start", behavior: "smooth" })}
+          className="sticky top-0 z-10 mx-auto mb-2 flex w-fit items-center gap-1.5 rounded-full bg-ink px-4 py-1.5 text-sm font-semibold text-white shadow-lift">
+          <ArrowUp className={cn("size-4", taskHidden === "below" && "rotate-180")} aria-hidden="true" />Back to your task
+        </button>
+      ) : null}
+      <ol className="flex flex-col gap-3">
+        {group.messages.length === 0 ? (empty ?? (
+          <li className="flex items-center gap-3 text-sm text-ink-muted"><Mascot size={40} mood="idle" />No messages yet. Chat is optional — talking in the room counts too.</li>
+        )) : null}
+        {group.messages.slice(0, cut).map(renderMsg)}
+        {inline ? <li key={inline.key} className="list-none">{inline.node}</li> : null}
+        {group.messages.slice(cut).map(renderMsg)}
         {after}
       </ol>
+      {unseen > 0 ? (
+        <button type="button" onClick={toBottom} className="sticky bottom-0 z-10 mx-auto mt-2 flex w-fit items-center gap-1.5 rounded-full bg-teal px-4 py-1.5 text-sm font-semibold text-white shadow-lift">
+          <ArrowDown className="size-4" aria-hidden="true" />{unseen} new message{unseen === 1 ? "" : "s"}
+        </button>
+      ) : null}
       </div>
       <form className={cn("flex flex-col gap-2 border-t border-line p-3", composerClassName)} onSubmit={(e) => { e.preventDefault(); void send(); }}>
         {replyTo ? (

@@ -5,7 +5,7 @@
  * Only ever played in response to something the student did (a tap), and
  * only when Settings → Sounds is on. Every sound also has a visual signal.
  */
-export type Sfx = "nova" | "pip" | "wiggle" | "snooze" | "wake" | "cheer" | "nod" | "plant" | "water" | "grow";
+export type Sfx = "bloom" | "pip" | "wiggle" | "snooze" | "wake" | "cheer" | "nod" | "plant" | "water" | "grow";
 
 let ctx: AudioContext | null = null;
 function audio(): AudioContext | null {
@@ -59,7 +59,7 @@ export function playSfx(name: Sfx) {
   const a = audio();
   if (!a) return;
   switch (name) {
-    case "nova": // a bright little sparkle
+    case "bloom": // a bright little sparkle
       tone(a, { f: 880, at: 0, dur: 0.16 });
       tone(a, { f: 1318, at: 0.08, dur: 0.22 });
       break;

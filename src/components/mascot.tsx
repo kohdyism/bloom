@@ -1,9 +1,9 @@
 import { cn } from "@/lib/utils";
 
 /**
- * Bloom's two helpers. Both are decorative (aria-hidden); callers always
+ * Canopy's two helpers. Both are decorative (aria-hidden); callers always
  * provide what they "say" as real, readable text.
- *  - Nova (a soft spark) is the GROUP facilitator: what Nova says, the whole group sees.
+ *  - Bloom (a soft spark) is the GROUP facilitator: what Bloom says, the whole group sees.
  *  - Pip (a calm pebble) is the PRIVATE helper: only the student who asks sees Pip's answers.
  * Pure SVG with CSS-only motion so they render anywhere; motion stops under reduced-motion.
  */
@@ -14,7 +14,7 @@ const normalise = (m: MascotMood): Mood => (m === "wave" || m === "surprised" ? 
 
 const INK = "#1d1a2e";
 
-export function Nova({ mood = "idle", size = 64, className, animate = true }: { mood?: MascotMood; size?: number; className?: string; animate?: boolean }) {
+export function Bloom({ mood = "idle", size = 64, className, animate = true }: { mood?: MascotMood; size?: number; className?: string; animate?: boolean }) {
   const m = normalise(mood);
   return (
     <svg viewBox="0 0 200 200" width={size} height={size} className={cn("shrink-0 overflow-visible", className)} aria-hidden="true" focusable="false">
@@ -22,7 +22,7 @@ export function Nova({ mood = "idle", size = 64, className, animate = true }: { 
         <path d="M100 18c10 42 24 56 66 66-42 10-56 24-66 66-10-42-24-56-66-66 42-10 56-24 66-66z" fill="#ff7f6e" stroke="#ff7f6e" strokeWidth="24" strokeLinejoin="round" />
         <path d="M100 40c8 30 18 40 46 46-28 6-38 16-46 46-8-30-18-40-46-46 28-6 38-16 46-46z" fill="#ffb067" stroke="#ffb067" strokeWidth="14" strokeLinejoin="round" opacity="0.75" />
         <path d="M100 118c6 20 14 28 34 32-20 4-28 12-34 30" fill="none" stroke="#ff5fa2" strokeWidth="10" strokeLinecap="round" opacity="0.45" />
-        <NovaFace mood={m} animate={animate} />
+        <BloomFace mood={m} animate={animate} />
       </g>
       {m === "celebrate" || m === "happy" ? (
         <g>
@@ -37,7 +37,7 @@ export function Nova({ mood = "idle", size = 64, className, animate = true }: { 
   );
 }
 
-function NovaFace({ mood, animate }: { mood: Mood; animate: boolean }) {
+function BloomFace({ mood, animate }: { mood: Mood; animate: boolean }) {
   if (mood === "talking") {
     return (
       <g>
@@ -167,19 +167,19 @@ function Zzz({ x, y, color }: { x: number; y: number; color: string }) {
   );
 }
 
-/** Default character (Nova) — kept under the old name for existing call sites. */
+/** Default character (Bloom) — kept under the old name for existing call sites. */
 export function Mascot(props: { mood?: MascotMood; size?: number; className?: string; animate?: boolean }) {
-  return <Nova {...props} />;
+  return <Bloom {...props} />;
 }
 
 /** A helper with a speech bubble. The text is real content for screen readers. */
-export function MascotSays({ children, mood = "idle", className, size = 56, who = "nova" }: { children: React.ReactNode; mood?: MascotMood; className?: string; size?: number; who?: "nova" | "pip"; label?: string }) {
-  const C = who === "pip" ? Pip : Nova;
+export function MascotSays({ children, mood = "idle", className, size = 56, who = "bloom" }: { children: React.ReactNode; mood?: MascotMood; className?: string; size?: number; who?: "bloom" | "pip"; label?: string }) {
+  const C = who === "pip" ? Pip : Bloom;
   return (
     <div className={cn("flex items-end gap-3", className)}>
       <C mood={mood} size={size} />
       <div className="relative rounded-2xl rounded-bl-md border border-line bg-surface px-4 py-3 text-[0.95rem] shadow-soft">
-        <span className="sr-only">{who === "pip" ? "Pip" : "Nova"} says: </span>
+        <span className="sr-only">{who === "pip" ? "Pip" : "Bloom"} says: </span>
         {children}
       </div>
     </div>

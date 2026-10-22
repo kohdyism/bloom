@@ -63,10 +63,14 @@ test("school improvement: vote, whiteboard, slides, present", async ({ browser }
   await shot(s[0].page, "s-synthesis");
   for (const a of s) await ready(a.page);
 
+  await expect(s[0].page.getByRole("heading", { name: "Discussion time!" })).toBeVisible();
+  await shot(s[0].page, "s-talk-time");
+  for (const a of s) await ready(a.page, "We're done talking");
+
   await expect(s[0].page.getByRole("heading", { name: "Discuss", exact: true })).toBeVisible();
   await s[1].page.getByLabel("Message your group").fill("I think the quiet room helps the most people.");
   await s[1].page.getByRole("button", { name: "Send message" }).click();
-  await s[0].page.getByRole("button", { name: "Ask Nova" }).click();
+  await s[0].page.getByRole("button", { name: "Ask Bloom" }).click();
   await s[0].page.getByRole("menuitem", { name: "Give us a discussion question" }).click();
   await expect(s[2].page.getByText("Simulated AI").first()).toBeVisible();
   await shot(s[2].page, "s-discussion");

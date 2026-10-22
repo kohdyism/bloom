@@ -71,7 +71,7 @@ function Lobby({ d }: { d: DisplayState }) {
   return (
     <div className="grid flex-1 items-center gap-10 lg:grid-cols-[auto_1fr]">
       <div className="flex flex-col items-center gap-4 rounded-3xl bg-surface p-8 shadow-lift">
-        <p className="text-2xl font-semibold text-ink-muted">Sign in to Bloom, then enter</p>
+        <p className="text-2xl font-semibold text-ink-muted">Sign in to Canopy, then enter</p>
         <p className="font-display text-8xl font-bold tracking-[0.15em] text-teal" data-testid="display-join-code">{d.joinCode}</p>
         {svg ? <div className="size-56 [&_svg]:size-full" role="img" aria-label="QR code to join" dangerouslySetInnerHTML={{ __html: svg }} /> : null}
         <p className="text-lg text-ink-muted">{origin}/join</p>

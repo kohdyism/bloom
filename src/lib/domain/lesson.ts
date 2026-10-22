@@ -1,11 +1,12 @@
 import { z } from "zod";
 
-/** The eleven configurable stage building blocks (spec §6.5). */
+/** The twelve configurable stage building blocks (spec §6.5). */
 export const STAGE_KINDS = [
   "orientation",
   "role_selection",
   "brainstorm",
   "synthesis",
+  "talk",
   "discussion",
   "voting",
   "creation",
@@ -21,6 +22,7 @@ export const STAGE_META: Record<StageKind, { label: string; blurb: string; defau
   role_selection: { label: "Role selection", blurb: "Students choose the roles they'll take on.", defaultMinutes: 3 },
   brainstorm: { label: "Individual thinking", blurb: "Students write ideas privately before sharing.", defaultMinutes: 5 },
   synthesis: { label: "Idea synthesis", blurb: "AI groups the shared ideas; students review and challenge it.", defaultMinutes: 4 },
+  talk: { label: "Talk time", blurb: "Screens down: the group talks face to face.", defaultMinutes: 4 },
   discussion: { label: "Discussion", blurb: "Talk it through, face to face or in the group space.", defaultMinutes: 8 },
   voting: { label: "Voting", blurb: "Agree on priorities with a quick, fair vote.", defaultMinutes: 3 },
   creation: { label: "Collaborative creation", blurb: "Build the shared output together.", defaultMinutes: 12 },
@@ -124,7 +126,7 @@ export function makeStage(kind: StageKind, partial: Partial<Omit<Stage, "kind" |
   const defaults: Partial<StageConfig> =
     kind === "creation" ? { artifacts: ["document"] } :
     kind === "brainstorm" ? { completion: "on_requirements", minIdeasPerStudent: 1 } :
-    kind === "submission" || kind === "presentation" ? { completion: "teacher_only" } : {};
+    kind === "presentation" ? { completion: "teacher_only" } : {};
   return stageSchema.parse({
     kind,
     title: partial.title ?? meta.label,

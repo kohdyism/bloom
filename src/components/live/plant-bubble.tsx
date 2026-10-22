@@ -6,6 +6,8 @@ import { useA11y, useReducedMotion } from "@/components/a11y-provider";
 import { playSfx, type Sfx } from "@/lib/sfx";
 import { cn } from "@/lib/utils";
 import { SpeechBubble } from "@/components/speech-bubble";
+import { FlowerHead } from "@/components/flower";
+import { flowerInfo, type FlowerId } from "@/lib/domain/flowers";
 
 /**
  * The group's plant, in a small bubble pinned to the corner. It grows only
@@ -15,7 +17,7 @@ import { SpeechBubble } from "@/components/speech-bubble";
  * makes a little sound and says something (including how it's growing).
  */
 type Tap = { say: string; anim: "plant-sway" | "plant-water" | "plant-grow"; sfx: Sfx };
-export function PlantBubble({ stagesDone, totalStages, className }: { stagesDone: number; totalStages: number; className?: string }) {
+export function PlantBubble({ stagesDone, totalStages, className, flower = null, size = "md" }: { stagesDone: number; totalStages: number; className?: string; flower?: FlowerId | null; size?: "sm" | "md" }) {
   const reduced = useReducedMotion();
   const progress = totalStages ? Math.min(1, stagesDone / totalStages) : 0;
   const { prefs } = useA11y();
@@ -40,13 +42,14 @@ export function PlantBubble({ stagesDone, totalStages, className }: { stagesDone
   const R = 33;
   const C = 2 * Math.PI * R;
   const stageName = progress >= 1 ? "in full bloom" : progress >= 0.6 ? "budding" : progress >= 0.3 ? "growing leaves" : progress > 0 ? "sprouting" : "a seed";
-  const status = progress >= 1 ? "I'm in full bloom! Amazing teamwork!" : progress >= 0.6 ? "I've got a bud! Nearly there…" : progress >= 0.3 ? "New leaves! Teamwork helps me grow." : progress > 0 ? "Look — I'm sprouting!" : "I'm a tiny seed. Finish a stage together and I'll sprout!";
+  const fname = flower ? flowerInfo(flower).name : null;
+  const status = progress >= 1 && fname ? `I bloomed into a ${fname}! It's in your garden now.` : progress >= 1 ? "I'm in full bloom! Amazing teamwork!" : progress >= 0.6 ? "I've got a bud! Nearly there…" : progress >= 0.3 ? "New leaves! Teamwork helps me grow." : progress > 0 ? "Look — I'm sprouting!" : "I'm a tiny seed. Finish a stage together and I'll sprout!";
   const lines: Tap[] = [
     { say: status, anim: "plant-sway", sfx: "plant" },
     { say: "Ahh, thanks for the water!", anim: "plant-water", sfx: "water" },
     { say: `${stagesDone} of ${totalStages} stages done!`, anim: "plant-grow", sfx: "grow" },
     { say: "Hehe, the breeze tickles!", anim: "plant-sway", sfx: "plant" },
-    { say: progress >= 1 ? "Look at my petals!" : "Grow, grow, grow…", anim: "plant-grow", sfx: "grow" },
+    { say: progress >= 1 ? (fname ? `${fname} petals — aren't they lovely?` : "Look at my petals!") : "Grow, grow, grow…", anim: "plant-grow", sfx: "grow" },
   ];
   function tap(e: React.MouseEvent) {
     // Taps talk; the details card is for hover (the bubble says the same).
@@ -62,15 +65,15 @@ export function PlantBubble({ stagesDone, totalStages, className }: { stagesDone
   return (
     <HoverInfo suppress={!!said} side="top" align="start" content={
       <div className="flex flex-col gap-1">
-        <p className="font-display text-base font-semibold">Your group&apos;s plant is {stageName}</p>
-        <p className="text-ink-muted">{stagesDone} of {totalStages} stages done. It grows each time your group finishes a stage together.</p>
+        <p className="font-display text-base font-semibold">{fname ? `Your group's plant bloomed into a ${fname}!` : <>Your group&apos;s plant is {stageName}</>}</p>
+        <p className="text-ink-muted">{stagesDone} of {totalStages} stages done. It grows each time your group finishes a stage together{fname ? "" : ", and opens into a flower for your garden at the end"}.</p>
       </div>
     }>
       <button
         ref={setBtn}
         type="button"
         onClick={tap}
-        className={cn("group relative flex size-[4.75rem] items-center justify-center rounded-full bg-white shadow-lift ring-2 ring-white transition-transform hover:-translate-y-0.5", className)}
+        className={cn("group relative flex shrink-0 items-center justify-center rounded-full bg-white shadow-lift ring-2 ring-white transition-transform hover:-translate-y-0.5", size === "sm" ? "size-14" : "size-[4.75rem]", className)}
         data-testid="plant-bubble"
         data-tour="plant"
       >
@@ -79,7 +82,7 @@ export function PlantBubble({ stagesDone, totalStages, className }: { stagesDone
           <circle cx="38" cy="38" r={R} fill="none" stroke="#2fbf71" strokeWidth="5" strokeLinecap="round" strokeDasharray={C} strokeDashoffset={C * (1 - progress)} style={{ transition: "stroke-dashoffset 800ms ease" }} />
         </svg>
         <span key={`${sway}-${grew}`} className={cn("block", !reduced && anim)}>
-          <Plant progress={progress} size={52} />
+          <Plant progress={progress} size={size === "sm" ? 38 : 52} flower={flower} />
         </span>
         {said?.anim === "plant-water" && !reduced ? <span key={`d${said.key}`} className="plant-drop pointer-events-none absolute left-1/2 top-0 h-3 w-2 rounded-full rounded-t-[60%] bg-[#4cb8ff]" aria-hidden="true" /> : null}
         {said ? <SpeechBubble anchor={btn} text={said.say} id={said.key} /> : null}
@@ -91,7 +94,7 @@ export function PlantBubble({ stagesDone, totalStages, className }: { stagesDone
 }
 
 /** A potted plant drawn for a given progress (0–1). */
-export function Plant({ progress, size = 56 }: { progress: number; size?: number }) {
+export function Plant({ progress, size = 56, flower = null }: { progress: number; size?: number; flower?: FlowerId | null }) {
   const stem = progress <= 0 ? 0 : 8 + progress * 30;
   const top = 58 - stem;
   const leaves = Math.min(6, Math.floor(progress * 7));
@@ -114,7 +117,9 @@ export function Plant({ progress, size = 56 }: { progress: number; size?: number
           })}
           {progress > 0 && leaves === 0 ? <path d={`M32 ${top}c-4-3-8-3-9 0 3 2 6 2 9 0zM32 ${top}c4-4 8-4 9-1-3 2-6 3-9 1z`} fill="#86e05f" /> : null}
           {bud ? <ellipse cx="32" cy={top - 3} rx="4.5" ry="6" fill="#ff8fc2" /> : null}
-          {bloom ? (
+          {bloom && flower ? (
+            <g transform={`translate(32 ${top - 5}) scale(0.8)`}><FlowerHead id={flower} /></g>
+          ) : bloom ? (
             <g transform={`translate(32 ${top - 4})`}>
               {[0, 60, 120, 180, 240, 300].map((r) => <ellipse key={r} cx="0" cy="-7" rx="4.5" ry="7" fill="#ff7fb0" transform={`rotate(${r})`} />)}
               <circle r="4.5" fill="#ffc83d" />

@@ -11,7 +11,7 @@ export default async function WelcomePage({ searchParams }: { searchParams: Prom
   const row = await asUser(user.id, (db) => db.maybeOne<{ survey: Survey }>("select survey from student_preferences where student_id = $1", [user.id]));
   const supports = await asUser(user.id, (db) => db.query<{ kind: string }>("select kind from student_accommodations where student_id = $1", [user.id]));
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
+    <div className="mx-auto w-full max-w-2xl px-4 py-8">
       <SurveyForm name={user.displayName.split(" ")[0]} initial={row?.survey ?? {}} editing={!!edit || user.onboarded} supports={supports.map((s) => s.kind)} />
     </div>
   );

@@ -20,20 +20,20 @@ export function SurveyForm({ name, initial, editing, supports }: { name: string;
   const [pending, start] = useTransition();
   const total = SURVEY_QUESTIONS.length;
   const q = SURVEY_QUESTIONS[step - 1];
-  const nova = useBuddy();
+  const bloomBuddy = useBuddy();
   const pip = useBuddy();
-  const go = (n: number) => { setStep(n); nova.fire("nod"); };
+  const go = (n: number) => { setStep(n); bloomBuddy.fire("nod"); };
 
   if (step === 0) {
     return (
       <div className="flex flex-col gap-6">
-        <div className="flex items-end gap-2"><Buddy who="nova" size={96} mood="happy" /><Buddy who="pip" size={80} mood="happy" /></div>
+        <div className="flex items-end gap-2"><Buddy who="bloom" size={96} mood="happy" /><Buddy who="pip" size={80} mood="happy" /></div>
         <div className="rounded-3xl rounded-tl-md border border-line bg-surface px-5 py-4 shadow-soft">
-          <p className="font-display text-2xl font-semibold">Hi {name}! We&apos;re Nova and Pip.</p>
-          <p className="mt-1">In lessons, <strong>Nova</strong> helps your group discuss — everyone sees what Nova says. <strong>Pip</strong> is your private helper — only you see what you ask Pip.</p>
+          <p className="font-display text-2xl font-semibold">Hi {name}! We&apos;re Bloom and Pip.</p>
+          <p className="mt-1">In lessons, <strong>Bloom</strong> helps your group discuss — everyone sees what Bloom says. <strong>Pip</strong> is your private helper — only you see what you ask Pip.</p>
           <p className="mt-1 text-ink-muted">Before we start, a few quick questions about how you like to work in groups. There are no right answers, you can skip any of them, and you can change them later.</p>
         </div>
-        <Notice tone="teal">Your answers help Bloom and your teacher set up groups and tasks that suit you. Other students don&apos;t see them.</Notice>
+        <Notice tone="teal">Your answers help Canopy and your teacher set up groups and tasks that suit you. Other students don&apos;t see them.</Notice>
         <Button size="lg" className="self-start" onClick={() => go(1)}>Let&apos;s go <ArrowRight /></Button>
       </div>
     );
@@ -42,7 +42,7 @@ export function SurveyForm({ name, initial, editing, supports }: { name: string;
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between gap-3">
-        <span className="flex items-end gap-1"><Buddy who="nova" size={52} mood="happy" cue={nova.cue} /><Buddy who="pip" size={44} mood="happy" cue={pip.cue} /></span>
+        <span className="flex items-end gap-1"><Buddy who="bloom" size={52} mood="happy" cue={bloomBuddy.cue} /><Buddy who="pip" size={44} mood="happy" cue={pip.cue} /></span>
         <h1 className="mr-auto font-display text-xl font-semibold">{editing ? "My working preferences" : "How you like to work"}</h1>
         <StepDots total={total} current={step - 1} label={`Question ${step} of ${total}`} />
       </div>
@@ -68,7 +68,7 @@ export function SurveyForm({ name, initial, editing, supports }: { name: string;
               <Button onClick={() => go(step + 1)}>Next <ArrowRight /></Button>
             </>
           ) : (
-            <Button pending={pending} onClick={() => { nova.fire("cheer", "All done!"); pip.fire("cheer"); start(() => saveSurveyAction(answers, "/student")); }}><Check />{editing ? "Save" : "Finish"}</Button>
+            <Button pending={pending} onClick={() => { bloomBuddy.fire("cheer", "All done!"); pip.fire("cheer"); start(() => saveSurveyAction(answers, "/student")); }}><Check />{editing ? "Save" : "Finish"}</Button>
           )}
         </div>
       </div>

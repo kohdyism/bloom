@@ -60,6 +60,9 @@ export function evaluateStage(stage: Stage, config: LessonConfig, s: StageSignal
       requirementLabel = min > 0 ? `Each person shares ${min} idea${min === 1 ? "" : "s"} (or marks ready if sharing out loud)` : "At least one idea shared";
       break;
     }
+    case "talk":
+      requirementLabel = "Talk together, then press ready";
+      break;
     case "synthesis":
       requirementsMet = s.hasSynthesis;
       requirementLabel = "Review the grouped ideas";

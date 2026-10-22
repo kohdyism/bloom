@@ -9,7 +9,7 @@ import type { SessionSnapshot } from "@/lib/domain/lesson";
 import {
   GROUP_COLORS, GROUP_NAMES, loadGroup, loadSession, makeDisplayToken, makeJoinCode, type GroupRow, type Presentation, type SessionRow,
 } from "./common";
-import { advanceGroup, notifyGroup, notifyGroupProgress, onEnterStage, facilitate, postSystem } from "./engine";
+import { advanceGroup, awardFlower, notifyGroup, notifyGroupProgress, onEnterStage, facilitate, postSystem } from "./engine";
 import { background } from "@/lib/background";
 
 async function audit(db: Db, actorId: string, sessionId: string, action: string, target = "", details: Record<string, unknown> = {}) {
@@ -235,6 +235,16 @@ export async function endSession(uid: string, sessionId: string) {
     await db.query("update activity_sessions set status = 'ended', ended_at = now(), presentation = null where id = $1", [sessionId]);
     await audit(db, uid, sessionId, "session.ended");
   });
+  // Groups that finished their work (every stage, or submitted it) bloom.
+  await asServer(async (db) => {
+    const done = await db.query<{ id: string }>(
+      `select g.id from session_groups g
+       where g.session_id = $1 and g.flower is null
+         and (g.stage_status = 'complete' or exists (select 1 from submissions s where s.group_id = g.id))`,
+      [sessionId],
+    );
+    for (const g of done) await awardFlower(db, g.id);
+  });
   await publish([
     { channel: ch.session(sessionId), event: "session.status" },
     { channel: ch.teacher(sessionId), event: "session.status" },
@@ -318,7 +328,7 @@ export async function setGroupAi(uid: string, sessionId: string, groupId: string
   const g = await asUser(uid, async (db) => {
     const g = await teacherGroup(db, uid, sessionId, groupId);
     await db.query("update session_groups set ai_enabled = $2 where id = $1", [groupId, enabled]);
-    notes.push(enabled ? "Nova's group prompts are back on." : "Your teacher is facilitating this group directly for now, so Nova's group prompts are paused. Pip, your private helper, still works.");
+    notes.push(enabled ? "Bloom's group prompts are back on." : "Your teacher is facilitating this group directly for now, so Bloom's group prompts are paused. Pip, your private helper, still works.");
     await audit(db, uid, sessionId, enabled ? "group.ai_enabled" : "group.ai_disabled", groupId);
     return g;
   });

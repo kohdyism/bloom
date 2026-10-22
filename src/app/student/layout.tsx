@@ -13,10 +13,10 @@ export default async function StudentLayout({ children }: { children: React.Reac
     <div className="flex min-h-0 flex-1 flex-col">
       <StudentNav>
       <header className="sticky top-0 z-30 border-b border-white/60 bg-white/70 backdrop-blur-md">
-        <div className="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4">
+        <div className="mx-auto w-full flex h-14 max-w-7xl items-center gap-3 px-4">
           <Link href="/student" className="flex items-center gap-2 rounded-lg">
             <Mascot size={30} animate={false} />
-            <span className="font-display text-lg font-bold">Bloom</span>
+            <span className="font-display text-lg font-bold">Canopy</span>
           </Link>
           <div className="ml-auto flex items-center gap-1">
             <span className="hidden items-center gap-2 pr-2 text-sm font-medium sm:flex"><Avatar name={user.displayName} color={user.avatarColor} size="sm" />{user.displayName}</span>

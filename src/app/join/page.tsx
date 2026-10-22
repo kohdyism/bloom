@@ -15,7 +15,7 @@ export default async function JoinPage({ searchParams }: { searchParams: Promise
   if (user.role !== "student") redirect("/teacher");
   if (!user.onboarded) redirect("/student/welcome");
   return (
-    <main id="main" className="mx-auto flex max-w-xl flex-col gap-6 px-4 py-12">
+    <main id="main" className="mx-auto w-full flex max-w-xl flex-col gap-6 px-4 py-12">
       <MascotSays mood="wave">Joining your lesson…</MascotSays>
       <Card className="p-6"><JoinForm initialCode={clean} autoSubmit={!!clean} /></Card>
     </main>

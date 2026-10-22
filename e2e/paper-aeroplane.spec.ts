@@ -63,7 +63,7 @@ test("paper aeroplane: check-ins, photo evidence, teacher interventions", async 
 
   for (const s of [a, b]) await ready(s.page);
   await expect(a.page.getByRole("heading", { name: "Build and test", exact: true })).toBeVisible();
-  await expect(a.page.getByText("Bloom doesn't listen to your group")).toBeVisible();
+  await expect(a.page.getByText("Canopy doesn't listen to your group")).toBeVisible();
 
   // Check-ins sync between devices.
   for (const label of ["Design agreed", "First plane built", "Test 1 recorded", "Test 2 recorded", "Test 3 recorded"]) {

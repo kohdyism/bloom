@@ -34,7 +34,7 @@ export default async function StudentPage({ params }: { params: Promise<{ studen
         <Card>
           <CardHeader>
             <CardTitle>Working preferences</CardTitle>
-            <p className="text-sm text-ink-muted">What {s.displayName.split(" ")[0]} told Bloom in their own survey. They can change these at any time.</p>
+            <p className="text-sm text-ink-muted">What {s.displayName.split(" ")[0]} told Canopy in their own survey. They can change these at any time.</p>
           </CardHeader>
           <CardBody>
             {!s.onboarded ? <Notice tone="amber">Hasn’t completed the survey yet — it appears the first time they sign in.</Notice> : (

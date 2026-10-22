@@ -419,9 +419,9 @@ function SettingsPanel({ draft, update, classId, setClassId, classes, isTemplate
         <CardBody className="flex flex-col gap-4">
           <Field id="modality" label="Collaboration style">
             <Select value={c.modality} onChange={(e) => setConfig({ modality: e.target.value as typeof c.modality })}>
-              <option value="mixed">Mixed — talk in the room and use Bloom</option>
-              <option value="mostly_in_person">Mostly in person — Bloom for structure and recording</option>
-              <option value="mostly_digital">Mostly digital — discussion happens in Bloom</option>
+              <option value="mixed">Mixed — talk in the room and use Canopy</option>
+              <option value="mostly_in_person">Mostly in person — Canopy for structure and recording</option>
+              <option value="mostly_digital">Mostly digital — discussion happens in Canopy</option>
             </Select>
           </Field>
           <Field id="anon" label="When ideas are shared with the group">

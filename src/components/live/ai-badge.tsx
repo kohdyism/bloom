@@ -10,11 +10,11 @@ export function AiOriginBadge({ origin, edited, className }: { origin: string | 
     origin === "ai" ? "AI-generated" :
     origin === "ai_simulated" ? "Simulated AI" :
     origin === "offline_helper" ? "Offline helper (AI unavailable)" :
-    origin === "facilitator_nudge" ? "Nova · just for you" : "AI";
+    origin === "facilitator_nudge" ? "Bloom · just for you" : "AI";
   const title =
     origin === "ai" ? "Written by Claude (AI). It can make mistakes — check it and challenge it." :
-    origin === "ai_simulated" ? "Demo mode: produced by Bloom's built-in rules, not a live AI model." :
-    origin === "offline_helper" ? "The AI service didn't respond, so Bloom's built-in helper produced this instead." : undefined;
+    origin === "ai_simulated" ? "Demo mode: produced by Canopy's built-in rules, not a live AI model." :
+    origin === "offline_helper" ? "The AI service didn't respond, so Canopy's built-in helper produced this instead." : undefined;
   return (
     <span title={title} className={cn("inline-flex items-center gap-1 rounded-full bg-purple-soft px-2 py-0.5 align-middle text-[0.7rem] font-semibold text-purple", className)}>
       <Sparkles className="size-3" aria-hidden="true" />
