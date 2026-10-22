@@ -25,7 +25,10 @@ describe("recommendGroups", () => {
     const all = r.groups.flat();
     expect(new Set(all).size).toBe(20);
     expect(all).toHaveLength(20);
-    for (const g of r.groups) expect(g.length).toBeGreaterThanOrEqual(3), expect(g.length).toBeLessThanOrEqual(4);
+    for (const g of r.groups) {
+      expect(g.length).toBeGreaterThanOrEqual(3);
+      expect(g.length).toBeLessThanOrEqual(4);
+    }
   });
 
   it("never breaks a keep-apart rule, across many random seeds and rule sets", () => {

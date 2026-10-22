@@ -65,7 +65,7 @@ test("school improvement: vote, whiteboard, slides, present", async ({ browser }
   await s[1].page.getByLabel("Message your group").fill("I think the quiet room helps the most people.");
   await s[1].page.getByRole("button", { name: "Send message" }).click();
   await s[0].page.getByRole("button", { name: /Ask Sprout as a group/ }).click();
-  await s[0].page.getByRole("button", { name: "Give us a discussion question" }).click();
+  await s[0].page.getByRole("menuitem", { name: "Give us a discussion question" }).click();
   await expect(s[2].page.getByText("Simulated AI").first()).toBeVisible();
   await shot(s[2].page, "s-discussion");
   for (const a of s) await ready(a.page);
@@ -86,13 +86,13 @@ test("school improvement: vote, whiteboard, slides, present", async ({ browser }
   const board = s[0].page.getByRole("application", { name: /Group whiteboard/ });
   await s[0].page.getByRole("button", { name: "Sticky note" }).click();
   await board.click({ position: { x: 300, y: 200 } });
-  await s[0].page.getByLabel("Edit text").fill("Quiet room in G12");
-  await s[0].page.getByLabel("Edit text").press("Escape");
+  await s[0].page.getByLabel("Edit text", { exact: true }).fill("Quiet room in G12");
+  await s[0].page.getByLabel("Edit text", { exact: true }).press("Escape");
   await expect(s[1].page.getByRole("button", { name: "Sticky note: Quiet room in G12" })).toBeVisible();
   await s[1].page.getByRole("button", { name: "Text", exact: true }).click();
   await s[1].page.getByRole("application", { name: /Group whiteboard/ }).click({ position: { x: 500, y: 350 } });
-  await s[1].page.getByLabel("Edit text").fill("Ask the council for £200");
-  await s[1].page.getByLabel("Edit text").press("Escape");
+  await s[1].page.getByLabel("Edit text", { exact: true }).fill("Ask the council for £200");
+  await s[1].page.getByLabel("Edit text", { exact: true }).press("Escape");
   await expect(s[0].page.getByRole("button", { name: "Text: Ask the council for £200" })).toBeVisible();
   await shot(s[0].page, "s-whiteboard");
 
@@ -100,8 +100,8 @@ test("school improvement: vote, whiteboard, slides, present", async ({ browser }
   await s[2].page.getByRole("tab", { name: "Slides" }).click();
   await s[2].page.getByRole("button", { name: "Title", exact: true }).click();
   await s[2].page.getByRole("button", { name: "Text: Title" }).dblclick();
-  await s[2].page.getByLabel("Edit text").fill("A quiet room for everyone");
-  await s[2].page.getByLabel("Edit text").press("Escape");
+  await s[2].page.getByLabel("Edit text", { exact: true }).fill("A quiet room for everyone");
+  await s[2].page.getByLabel("Edit text", { exact: true }).press("Escape");
   await s[0].page.getByRole("tab", { name: "Slides" }).click();
   await expect(s[0].page.getByRole("button", { name: "Text: A quiet room for everyone" })).toBeVisible();
   await shot(s[0].page, "s-slides");
@@ -115,7 +115,7 @@ test("school improvement: vote, whiteboard, slides, present", async ({ browser }
   // Present the slides; slide control can be handed to a student.
   await t.getByLabel("Present a group's submitted work").selectOption({ index: 1 });
   await t.getByRole("button", { name: "Present", exact: true }).click();
-  await expect(display.getByText("A quiet room for everyone")).toBeVisible();
+  await expect(display.getByText("A quiet room for everyone", { exact: true })).toBeVisible();
   await shot(display, "d-presentation");
   await t.getByLabel("Slide control").selectOption({ label: "Priya D" });
   await expect(s[2].page.getByText("Your teacher gave you control of the slides.")).toBeVisible();

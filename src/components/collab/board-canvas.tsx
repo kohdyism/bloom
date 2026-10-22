@@ -35,11 +35,23 @@ export function BoardCanvas({
 }) {
   const objects = useObjects(map);
   const svgRef = useRef<SVGSVGElement>(null);
+  const boxRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0.55);
+  useEffect(() => {
+    const el = boxRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setScale(el.clientWidth / width));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [width]);
   const [tool, setTool] = useState<Tool>("select");
   const [color, setColor] = useState<keyof typeof BOARD_COLORS>("yellow");
   const [selected, setSelected] = useState<string | null>(null);
   const [editingText, setEditingText] = useState<string | null>(null);
   const [draftPath, setDraftPath] = useState<{ x: number; y: number }[] | null>(null);
+  // New text objects open their editor only after the click finishes; opening
+  // on pointer-down lets the trailing click steal focus and close it.
+  const pendingEdit = useRef<string | null>(null);
   const drag = useRef<{ mode: "move" | "resize" | "create" | "arrow-end"; id: string; startX: number; startY: number; ox: number; oy: number; ow: number; oh: number } | null>(null);
   const undo = useMemo(() => new Y.UndoManager(map, { trackedOrigins: new Set([LOCAL]), captureTimeout: 400 }), [map]);
   useEffect(() => () => undo.destroy(), [undo]);
@@ -77,10 +89,10 @@ export function BoardCanvas({
     (e.target as Element).setPointerCapture?.(e.pointerId);
     if (tool === "sticky") {
       const id = add({ type: "sticky", x: p.x - 100, y: p.y - 80, w: 200, h: 160, color, text: "", fontSize: 24 });
-      setSelected(id); setEditingText(id); setTool("select");
+      setSelected(id); pendingEdit.current = id; setTool("select");
     } else if (tool === "text") {
       const id = add({ type: "text", x: p.x, y: p.y - 20, w: 320, h: 70, color: textColor(color), text: "", fontSize: 32 });
-      setSelected(id); setEditingText(id); setTool("select");
+      setSelected(id); pendingEdit.current = id; setTool("select");
     } else if (tool === "rect" || tool === "ellipse") {
       const id = add({ type: tool, x: p.x, y: p.y, w: 10, h: 10, color, text: "" });
       drag.current = { mode: "create", id, startX: p.x, startY: p.y, ox: p.x, oy: p.y, ow: 10, oh: 10 };
@@ -199,7 +211,7 @@ export function BoardCanvas({
           ) : null}
         </div>
       ) : null}
-      <div className={cn("relative overflow-hidden rounded-2xl border border-line", background === "grid" ? "bg-white bg-[radial-gradient(var(--line)_1px,transparent_1px)] bg-[length:24px_24px]" : "bg-white")}>
+      <div ref={boxRef} className={cn("relative overflow-hidden rounded-2xl border border-line", background === "grid" ? "bg-white bg-[radial-gradient(var(--line)_1px,transparent_1px)] bg-[length:24px_24px]" : "bg-white")}>
         <svg
           ref={svgRef}
           viewBox={`0 0 ${width} ${height}`}
@@ -210,6 +222,7 @@ export function BoardCanvas({
           onPointerMove={onMove}
           onPointerUp={onUp}
           onPointerCancel={onUp}
+          onClick={() => { if (pendingEdit.current) { setEditingText(pendingEdit.current); pendingEdit.current = null; } }}
         >
           <rect x="0" y="0" width={width} height={height} fill="transparent" />
           {objects.map((o) => (
@@ -239,16 +252,28 @@ export function BoardCanvas({
             </g>
           ))}
           {draftPath ? <polyline points={draftPath.map((p) => `${p.x},${p.y}`).join(" ")} fill="none" stroke={colorValue(textColor(color))} strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" /> : null}
-          {editingObj ? (
-            <foreignObject x={editingObj.x} y={editingObj.y} width={Math.max(120, editingObj.w)} height={Math.max(60, editingObj.h)}>
-              <TextEditor
-                initial={editingObj.text ?? ""}
-                fontSize={editingObj.fontSize ?? 24}
-                onCommit={(text) => { setProps(editingObj.id, { text }); setEditingText(null); }}
-              />
-            </foreignObject>
-          ) : null}
         </svg>
+        {editingObj ? (
+          // A real HTML textarea over the board (inputs inside SVG foreignObject
+          // are unreliable on iPad Safari and for assistive technology).
+          <div
+            className="absolute"
+            style={{
+              left: `${(editingObj.x / width) * 100}%`,
+              top: `${(editingObj.y / height) * 100}%`,
+              width: `${(Math.max(160, editingObj.w) / width) * 100}%`,
+              height: `${(Math.max(70, editingObj.h) / height) * 100}%`,
+              minWidth: 140,
+              minHeight: 56,
+            }}
+          >
+            <TextEditor
+              initial={editingObj.text ?? ""}
+              fontSize={Math.max(14, (editingObj.fontSize ?? 24) * scale)}
+              onCommit={(text) => { setProps(editingObj.id, { text }); setEditingText(null); }}
+            />
+          </div>
+        ) : null}
         {objects.length === 0 && !readOnly ? <p className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 text-center text-ink-faint">Pick a tool above, then tap the board to add something.</p> : null}
       </div>
     </div>

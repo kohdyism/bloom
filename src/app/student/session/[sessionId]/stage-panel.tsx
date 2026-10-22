@@ -78,22 +78,7 @@ function StageHeader() {
         <Button size="sm" variant="soft" className="bg-purple-soft text-purple" onClick={() => openAssistant({ action: "explain_simply" })}><Sparkles />Explain it differently <span className="sr-only">(private)</span></Button>
         <Button size="sm" variant="ghost" onClick={() => openAssistant({ action: "break_into_steps" })}>Break into steps</Button>
         {group.aiEnabled ? (
-          <details className="relative">
-            <summary className="inline-flex h-9 cursor-pointer list-none items-center gap-1.5 rounded-xl px-3 text-sm font-medium text-ink-muted hover:bg-surface-2"><MessagesSquare className="size-4" aria-hidden="true" />Ask Sprout as a group<ChevronDown className="size-3.5" aria-hidden="true" /></summary>
-            <div className="absolute left-0 top-10 z-20 flex w-64 flex-col gap-1 rounded-xl border border-line bg-surface p-2 shadow-lift">
-              <p className="px-2 pb-1 text-xs text-ink-muted">Sprout replies in your group chat for everyone.</p>
-              {([
-                ["explain_task", "Explain the task to us", HelpCircle],
-                ["discussion_question", "Give us a discussion question", Lightbulb],
-                ["we_disagree", "Help us with a disagreement", Swords],
-                ["we_are_stuck", "We're stuck", HelpCircle],
-              ] as const).map(([quick, label, Icon]) => (
-                <button key={quick} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-surface-2" onClick={(e) => { (e.currentTarget.closest("details") as HTMLDetailsElement).open = false; void run(() => act({ action: "ask_group_ai", quick }), "Sprout is replying in your group chat"); }}>
-                  <Icon className="size-4 text-purple" aria-hidden="true" />{label}
-                </button>
-              ))}
-            </div>
-          </details>
+          <GroupAskMenu onAsk={(quick) => void run(() => act({ action: "ask_group_ai", quick }), "Sprout is replying in your group chat")} />
         ) : <Badge>Your teacher is facilitating directly</Badge>}
       </div>
     </Card>
@@ -178,6 +163,17 @@ function Physical() {
   const { group, act } = useWorkspace();
   const run = useRun();
   const items = group.stage?.config.checkins ?? [];
+  // Optimistic ticks: the box changes immediately; the server state wins on refresh.
+  // Each entry remembers the server value it was based on; once the server's
+  // value changes (our tick landed, or a groupmate changed it) the server wins.
+  const [pending, setPending] = useState<Record<number, { value: boolean; base: boolean }>>({});
+  const serverDone = (i: number) => group.checkins.includes(i);
+  const isDone = (i: number) => (pending[i] && pending[i].base === serverDone(i) ? pending[i].value : serverDone(i));
+  const toggle = async (i: number) => {
+    setPending((p) => ({ ...p, [i]: { value: !isDone(i), base: serverDone(i) } }));
+    const ok = await run(() => act({ action: "checkin", index: i }));
+    if (!ok) setPending((p) => { const c = { ...p }; delete c[i]; return c; });
+  };
   return (
     <div className="flex flex-col gap-4">
       <Notice tone="teal">This part happens in the room. Bloom doesn&apos;t listen to your group — tick off each check-in as you reach it.</Notice>
@@ -185,10 +181,10 @@ function Physical() {
         <fieldset className="flex flex-col gap-2">
           <legend className="mb-1 font-semibold">Check-ins</legend>
           {items.map((label, i) => {
-            const done = group.checkins.includes(i);
+            const done = isDone(i);
             return (
               <label key={i} className={cn("flex cursor-pointer items-center gap-3 rounded-2xl border-2 bg-surface px-4 py-3", done ? "border-mint bg-mint-soft" : "border-line")}>
-                <input type="checkbox" className="size-5 accent-[var(--mint)]" checked={done} onChange={() => run(() => act({ action: "checkin", index: i }))} />
+                <input type="checkbox" className="size-5 accent-[var(--mint)]" checked={done} onChange={() => void toggle(i)} />
                 <span className={cn(done && "line-through decoration-mint/60")}>{label}</span>
               </label>
             );
@@ -242,6 +238,36 @@ function AllDone() {
       {latest?.feedback ? <Notice tone="teal" title="Teacher feedback" className="max-w-xl text-left">{latest.feedback}</Notice> : null}
       {state.session.presentation ? <PresentationViewer /> : latest && group.presentationRequest !== "pending" ? (
         <Button variant="secondary" onClick={() => run(() => act({ action: "request_present" }), "Request sent to your teacher")}><Trophy />Ask to present</Button>
+      ) : null}
+    </div>
+  );
+}
+
+type Quick = "explain_task" | "discussion_question" | "we_disagree" | "we_are_stuck";
+
+/** Accessible menu button: the group asks Sprout; the reply goes to the group chat. */
+function GroupAskMenu({ onAsk }: { onAsk: (q: Quick) => void }) {
+  const [open, setOpen] = useState(false);
+  const items: [Quick, string, React.ElementType][] = [
+    ["explain_task", "Explain the task to us", HelpCircle],
+    ["discussion_question", "Give us a discussion question", Lightbulb],
+    ["we_disagree", "Help us with a disagreement", Swords],
+    ["we_are_stuck", "We're stuck", HelpCircle],
+  ];
+  return (
+    <div className="relative" onKeyDown={(e) => { if (e.key === "Escape") setOpen(false); }}>
+      <Button size="sm" variant="ghost" aria-expanded={open} aria-haspopup="menu" aria-controls="group-ask-menu" onClick={() => setOpen((o) => !o)}>
+        <MessagesSquare />Ask Sprout as a group<ChevronDown className="size-3.5" />
+      </Button>
+      {open ? (
+        <div id="group-ask-menu" role="menu" aria-label="Ask Sprout as a group" className="absolute left-0 top-10 z-20 flex w-64 flex-col gap-1 rounded-xl border border-line bg-surface p-2 shadow-lift">
+          <p className="px-2 pb-1 text-xs text-ink-muted">Sprout replies in your group chat for everyone.</p>
+          {items.map(([quick, label, Icon]) => (
+            <button key={quick} role="menuitem" className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-surface-2" onClick={() => { setOpen(false); onAsk(quick); }}>
+              <Icon className="size-4 text-purple" aria-hidden="true" />{label}
+            </button>
+          ))}
+        </div>
       ) : null}
     </div>
   );

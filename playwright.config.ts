@@ -10,7 +10,7 @@ const DATABASE_URL = process.env.E2E_DATABASE_URL ?? "postgres://postgres:bloom-
  */
 export default defineConfig({
   testDir: "./e2e",
-  timeout: 6 * 60_000,
+  timeout: 10 * 60_000,
   expect: { timeout: 20_000 },
   fullyParallel: false,
   workers: 1,

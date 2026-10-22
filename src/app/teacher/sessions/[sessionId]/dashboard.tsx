@@ -44,7 +44,7 @@ export function Dashboard({ state, act, connection, refresh, focusHelp }: Props)
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge tone={s.status === "active" ? "teal" : s.status === "paused" ? "amber" : "neutral"}>{s.status === "active" ? "Live" : s.status === "paused" ? "Paused" : "Ended"}</Badge>
+            <Badge tone={s.status === "active" ? "teal" : s.status === "paused" ? "amber" : "neutral"}>{s.status === "active" ? "Lesson running" : s.status === "paused" ? "Paused" : "Ended"}</Badge>
             <ConnectionStatus state={connection} />
           </div>
           <h1 className="mt-1 font-display text-2xl font-bold sm:text-3xl">{s.title}</h1>

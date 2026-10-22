@@ -57,9 +57,17 @@ export function BoardObjectShape({ o, mediaUrl, editing }: { o: BoardObject; med
   }
 }
 
+/** Rough wrapped-text height so free text grows instead of being clipped. */
+function estimateHeight(text: string, fontSize: number, width: number, pad: number) {
+  const charsPerLine = Math.max(1, Math.floor((width - pad * 2) / (fontSize * 0.55)));
+  const lines = text.split("\n").reduce((n, line) => n + Math.max(1, Math.ceil(line.length / charsPerLine)), 0);
+  return lines * fontSize * 1.3 + pad * 2;
+}
+
 function TextBox({ o, color, pad, center }: { o: BoardObject; color: string; pad: number; center?: boolean }) {
+  const height = o.type === "text" ? Math.max(o.h, estimateHeight(o.text ?? "", o.fontSize ?? 22, o.w, pad)) : o.h;
   return (
-    <foreignObject x={o.x} y={o.y} width={Math.max(10, o.w)} height={Math.max(10, o.h)}>
+    <foreignObject x={o.x} y={o.y} width={Math.max(10, o.w)} height={Math.max(10, height)}>
       <div
         style={{
           padding: pad, color, fontSize: o.fontSize ?? 22, lineHeight: 1.25, whiteSpace: "pre-wrap", overflowWrap: "anywhere", height: "100%", overflow: "hidden",

@@ -21,7 +21,7 @@ export function ReadinessBar({ readyLabel = "I'm ready", hint }: { readyLabel?: 
     <div className={cn("sticky bottom-3 z-10 mt-6 flex flex-wrap items-center gap-3 rounded-2xl border bg-surface p-3 shadow-lift", group.stageStatus === "ready_check" ? "border-teal" : "border-line")}>
       <div className="min-w-0 flex-1 text-sm">
         <p className="font-semibold">{teacherOnly ? "Your teacher will move your group on" : group.stageStatus === "ready_check" ? "Ready to move on?" : e.requirementLabel}</p>
-        <p className="text-ink-muted" aria-live="polite">{hint ?? (teacherOnly ? "You can still mark yourself ready so your teacher knows." : e.waitingOn)}</p>
+        <p className="text-ink-muted" aria-live="polite">{hint ?? (teacherOnly ? "You can still mark yourself ready so your teacher knows." : e.needTimeCount ? `${e.readyCount} of ${e.activeCount} ready · someone asked for more time` : `${e.readyCount} of ${e.activeCount} ready`)}</p>
       </div>
       {mine ? (
         <>

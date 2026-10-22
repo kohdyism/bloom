@@ -12,8 +12,8 @@ export function Toaster({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = React.useState<Toast[]>([]);
   const push = React.useCallback((t: Omit<Toast, "id">) => {
     const id = Date.now() + Math.random();
-    setToasts((prev) => [...prev.slice(-3), { ...t, id }]);
-    setTimeout(() => setToasts((prev) => prev.filter((x) => x.id !== id)), t.tone === "coral" ? 12000 : 6000);
+    setToasts((prev) => [...prev.slice(-1), { ...t, id }]);
+    setTimeout(() => setToasts((prev) => prev.filter((x) => x.id !== id)), t.tone === "coral" ? 12000 : 4500);
   }, []);
   const tones = {
     neutral: "border-line", teal: "border-teal/40", coral: "border-coral/60 bg-coral-soft", amber: "border-amber/50 bg-amber-soft", purple: "border-purple/40",
@@ -21,7 +21,7 @@ export function Toaster({ children }: { children: React.ReactNode }) {
   return (
     <Ctx.Provider value={push}>
       {children}
-      <div className="pointer-events-none fixed bottom-4 right-4 z-[60] flex w-[min(24rem,calc(100vw-2rem))] flex-col gap-2" role="status" aria-live="polite">
+      <div className="pointer-events-none fixed right-4 top-36 z-[60] flex w-[min(24rem,calc(100vw-2rem))] flex-col gap-2" role="status" aria-live="polite">
         {toasts.map((t) => (
           <div key={t.id} className={cn("animate-pop pointer-events-auto rounded-xl border bg-surface p-3.5 shadow-lift", tones[t.tone])}>
             <div className="flex items-start gap-3">
