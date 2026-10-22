@@ -38,7 +38,7 @@ The end-to-end specs:
 - **AI.** The group facilitator, private assistant (levels 1–3, with refusal to complete assessed work), idea synthesis, lesson generation and reports. Pupil text is wrapped as untrusted content and model output is validated against a schema. Every AI message is labelled with its origin: live, simulated or offline helper.
 - **Reflections and reports.** Private reflections and a per-session teacher report.
 - **Privacy.** Row-level security is forced on every table. Each server write either runs as the user, under their RLS context, or as `service_role`, but only after an app-level check.
-- **Accessibility.** High contrast, text size, dyslexia-friendly font, reduced motion, read-aloud and a skip link. Keyboard-operable menus and the board editor.
+- **Accessibility.** High contrast, three text sizes, reduced motion, optional sounds (always paired with a visual signal), simpler instructions first, speech-to-text and read-aloud buttons, and options to hide or minimise the mascot and progress picture. A skip link, plus keyboard-operable menus and board editor. Preferences are saved per student and follow them across devices.
 
 The app has 18 routes. Most of the brief's 38 screens are states within them (for example lobby, live, paused and ended within one session route). A screen-by-screen audit against the 38-item inventory has **not** been done.
 
@@ -70,7 +70,7 @@ These are deliberate and labelled in the UI or the docs. None of them is present
 8. Load testing with a full class of about 30 students and several sessions at once.
 
 **P3**
-9. More gamification beyond the current light badges and celebrations, and teacher-configurable rubrics in reports.
+9. Richer gamification (currently a group progress picture and optional milestone celebrations), a dyslexia-friendly font option, and teacher-configurable rubrics in reports.
 10. Translation and localisation (UI strings are currently English only).
 
 ## 5. Continuing the work
