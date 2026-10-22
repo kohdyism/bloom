@@ -76,7 +76,8 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
     if (!g) return;
     if (lastStage.current !== undefined && g.stageIndex !== lastStage.current) {
       setAnnounce(g.stageStatus === "complete" ? "Your group finished every stage." : `New stage: ${g.stage?.title}`);
-      if (prefs.celebrations) toast({ title: g.stageStatus === "complete" ? "Every stage complete — well done, team!" : `Next: ${g.stage?.title}`, tone: "teal" });
+      // Only the finish gets a pop-up; the header and chat already show each new stage.
+      if (prefs.celebrations && g.stageStatus === "complete") toast({ title: "Every stage complete — well done, team!", tone: "teal" });
     }
     lastStage.current = g.stageIndex;
   }, [state.group, prefs.celebrations, toast]);
