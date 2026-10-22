@@ -21,7 +21,11 @@ const REACTIONS = [
   { kind: "question", label: "I have a question", icon: MessageCircleQuestion },
 ] as const;
 
-export function Chat({ className, header, empty, after, composerClassName }: { className?: string; header?: React.ReactNode; empty?: React.ReactNode; after?: React.ReactNode; composerClassName?: string }) {
+export function Chat({ className, header, empty, after, composerClassName, onActivity }: {
+  className?: string; header?: React.ReactNode; empty?: React.ReactNode; after?: React.ReactNode; composerClassName?: string;
+  /** Lets the page animate its helper: "typing" on each keystroke, "sent" after a message goes. */
+  onActivity?: (e: "typing" | "sent") => void;
+}) {
   const { group, state, act } = useWorkspace();
   const run = useRun();
   const [text, setText] = useState("");
@@ -32,6 +36,8 @@ export function Chat({ className, header, empty, after, composerClassName }: { c
   const byId = useMemo(() => new Map(group.messages.map((m) => [m.id, m])), [group.messages]);
   const pinned = group.messages.filter((m) => m.pinned);
   const member = (id: string | null) => group.members.find((m) => m.id === id);
+  // Messages already here when the chat opened appear still; new ones slide in.
+  const [seenAtOpen] = useState(() => new Set(group.messages.map((m) => m.id)));
 
   useEffect(() => {
     const el = listRef.current;
@@ -44,6 +50,7 @@ export function Chat({ className, header, empty, after, composerClassName }: { c
     if (await run(() => act({ action: "message", body: text, replyTo: replyTo?.id ?? null }))) {
       setText("");
       setReplyTo(null);
+      onActivity?.("sent");
       atBottom.current = true;
     }
     setSending(false);
@@ -77,8 +84,8 @@ export function Chat({ className, header, empty, after, composerClassName }: { c
           const author = member(m.authorId);
           const parent = m.replyTo ? byId.get(m.replyTo) : null;
           return (
-            <li key={m.id} className={cn("group flex gap-2.5", mine && "flex-row-reverse")}>
-              {m.kind === "ai" ? <Mascot size={36} animate={false} mood="happy" /> : <Avatar name={m.kind === "teacher" ? "Teacher" : m.author} color={m.kind === "teacher" ? "blue" : author?.avatarColor} size="sm" />}
+            <li key={m.id} className={cn("group flex gap-2.5", mine && "flex-row-reverse", !seenAtOpen.has(m.id) && "msg-in")}>
+              {m.kind === "ai" ? <span className={cn("block shrink-0", !seenAtOpen.has(m.id) && "buddy-hop")}><Mascot size={36} animate={!seenAtOpen.has(m.id)} mood="happy" /></span> : <Avatar name={m.kind === "teacher" ? "Teacher" : m.author} color={m.kind === "teacher" ? "blue" : author?.avatarColor} size="sm" />}
               <div className={cn("flex max-w-[85%] flex-col gap-1", mine && "items-end")}>
                 <p className="text-xs text-ink-muted">
                   <span className="font-semibold text-ink">{mine ? "You" : m.author}</span>
@@ -122,7 +129,7 @@ export function Chat({ className, header, empty, after, composerClassName }: { c
         <div className="flex items-end gap-2">
           <label htmlFor="chat-input" className="sr-only">Message your group</label>
           <Textarea id="chat-input" rows={1} className="min-h-11 flex-1 resize-none" value={text} maxLength={2000}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => { setText(e.target.value); onActivity?.("typing"); }}
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }}
             placeholder="Message your group…" title="Enter to send · Shift+Enter for a new line" />
           <Button type="submit" size="icon" aria-label="Send message" pending={sending} disabled={!text.trim()}><Send /></Button>

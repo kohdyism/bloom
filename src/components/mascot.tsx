@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
  *  - Pip (a calm pebble) is the PRIVATE helper: only the student who asks sees Pip's answers.
  * Pure SVG with CSS-only motion so they render anywhere; motion stops under reduced-motion.
  */
-export type Mood = "idle" | "thinking" | "happy" | "resting" | "celebrate";
+export type Mood = "idle" | "thinking" | "happy" | "resting" | "celebrate" | "talking" | "listening";
 /** Older mood names still used around the app map onto the new set. */
 export type MascotMood = Mood | "wave" | "sleepy" | "surprised";
 const normalise = (m: MascotMood): Mood => (m === "wave" || m === "surprised" ? "happy" : m === "sleepy" ? "resting" : m);
@@ -38,6 +38,26 @@ export function Nova({ mood = "idle", size = 64, className, animate = true }: { 
 }
 
 function NovaFace({ mood, animate }: { mood: Mood; animate: boolean }) {
+  if (mood === "talking") {
+    return (
+      <g>
+        <circle cx="86" cy="86" r="8.5" fill={INK} /><circle cx="114" cy="86" r="8.5" fill={INK} />
+        <circle cx="88.8" cy="83.2" r="2.8" fill="#fff" /><circle cx="116.8" cy="83.2" r="2.8" fill="#fff" />
+        <ellipse cx="100" cy="106" rx="7" ry="6" fill={INK} className={animate ? "buddy-mouth-talk" : undefined} />
+      </g>
+    );
+  }
+  if (mood === "listening") {
+    return (
+      <g>
+        <g className={animate ? "buddy-blink" : undefined}>
+          <circle cx="90" cy="90" r="8.5" fill={INK} /><circle cx="118" cy="90" r="8.5" fill={INK} />
+          <circle cx="93.5" cy="89" r="2.8" fill="#fff" /><circle cx="121.5" cy="89" r="2.8" fill="#fff" />
+        </g>
+        <path d="M94 106c5 4 12 4 17 0" stroke={INK} strokeWidth="5" strokeLinecap="round" fill="none" />
+      </g>
+    );
+  }
   if (mood === "happy" || mood === "celebrate") {
     return (
       <g stroke={INK} strokeWidth="5" strokeLinecap="round" fill="none">
@@ -88,6 +108,26 @@ export function Pip({ mood = "idle", size = 64, className, animate = true }: { m
 }
 
 function PipFace({ mood, animate }: { mood: Mood; animate: boolean }) {
+  if (mood === "talking") {
+    return (
+      <g>
+        <circle cx="80" cy="104" r="9.5" fill={INK} /><circle cx="120" cy="104" r="9.5" fill={INK} />
+        <circle cx="83" cy="101" r="3.2" fill="#fff" /><circle cx="123" cy="101" r="3.2" fill="#fff" />
+        <ellipse cx="100" cy="130" rx="9" ry="7" fill={INK} className={animate ? "buddy-mouth-talk" : undefined} />
+      </g>
+    );
+  }
+  if (mood === "listening") {
+    return (
+      <g>
+        <g className={animate ? "buddy-blink" : undefined}>
+          <circle cx="85" cy="110" r="9.5" fill={INK} /><circle cx="125" cy="110" r="9.5" fill={INK} />
+          <circle cx="88.5" cy="108" r="3.2" fill="#fff" /><circle cx="128.5" cy="108" r="3.2" fill="#fff" />
+        </g>
+        <path d="M91 130c6 5 15 5 21 0" stroke={INK} strokeWidth="5.5" strokeLinecap="round" fill="none" />
+      </g>
+    );
+  }
   if (mood === "happy" || mood === "celebrate") {
     return (
       <g stroke={INK} strokeWidth="5.5" strokeLinecap="round" fill="none">

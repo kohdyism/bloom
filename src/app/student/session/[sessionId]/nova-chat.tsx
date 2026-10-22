@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, HelpCircle, Lightbulb, MessageCircleMore, Swords } from "lucide-react";
-import { Buddy } from "@/components/buddy";
+import { Buddy, useBuddy } from "@/components/buddy";
 import { Nova } from "@/components/mascot";
 import { useRun } from "@/components/ui/toast";
 import { useWorkspace } from "./context";
@@ -44,14 +44,18 @@ export function NovaChat({ className, composerClassName }: { className?: string;
   const latest = aiMessages[aiMessages.length - 1];
   const [waiting, setWaiting] = useState(false);
   const [menu, setMenu] = useState(false);
+  const buddy = useBuddy();
+  const { fire, talkFor } = buddy;
   const lastSeen = useRef(latest?.id);
   useEffect(() => {
     if (latest?.id !== lastSeen.current) {
       lastSeen.current = latest?.id;
-      // A new message from Nova arrived from the server: stop "thinking".
+      // A new message from Nova arrived from the server: stop "thinking", and Nova "says" it.
       setWaiting(false);
+      fire("hop");
+      talkFor(2600);
     }
-  }, [latest?.id]);
+  }, [latest?.id, fire, talkFor]);
   useEffect(() => {
     if (!waiting) return;
     const t = setTimeout(() => setWaiting(false), 20_000);
@@ -60,12 +64,13 @@ export function NovaChat({ className, composerClassName }: { className?: string;
   const ask = (quick: Quick) => {
     setMenu(false);
     setWaiting(true);
+    fire("nod");
     void run(() => act({ action: "ask_group_ai", quick })).then((ok) => { if (!ok) setWaiting(false); });
   };
 
   const header = (
     <div className="flex items-center gap-3 border-b border-line bg-gradient-to-r from-[#fff1e8] via-[#ffeef5] to-white px-4 py-2.5">
-      <Buddy who="nova" size={48} mood={waiting ? "thinking" : latest ? "happy" : "idle"} />
+      <Buddy who="nova" size={48} mood={waiting ? "thinking" : latest ? "happy" : "idle"} cue={buddy.cue} talking={buddy.talking && !waiting} listening={buddy.listening && !waiting} />
       <div className="min-w-0 flex-1">
         <h2 className="font-display text-lg font-bold leading-tight">Nova · group helper</h2>
         <p className="text-sm text-ink-muted">{group.aiEnabled ? "Nova helps your group discuss · everyone sees this" : "Your teacher is facilitating directly for now"}</p>
@@ -101,10 +106,11 @@ export function NovaChat({ className, composerClassName }: { className?: string;
   );
   const after = waiting ? (
     <li className="flex items-center gap-2 text-ink-muted" role="status">
-      <Nova size={34} mood="thinking" animate={false} />
+      <span className="buddy-chatter block"><Nova size={34} mood="thinking" /></span>
       <span className="flex gap-1" aria-hidden="true"><span className="animate-pulse-dot size-2 rounded-full bg-[#ff7f6e]" /><span className="animate-pulse-dot size-2 rounded-full bg-[#ff7f6e] [animation-delay:200ms]" /><span className="animate-pulse-dot size-2 rounded-full bg-[#ff7f6e] [animation-delay:400ms]" /></span>
       Nova is thinking…
     </li>
   ) : null;
-  return <Chat className={className} header={header} empty={empty} after={after} composerClassName={composerClassName} />;
+  return <Chat className={className} header={header} empty={empty} after={after} composerClassName={composerClassName}
+    onActivity={(e) => (e === "typing" ? buddy.listen() : fire("nod"))} />;
 }

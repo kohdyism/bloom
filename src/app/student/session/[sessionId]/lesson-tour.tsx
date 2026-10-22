@@ -114,8 +114,8 @@ export function LessonTour({ onClose }: { onClose: () => void }) {
       >
         <div className="flex items-start gap-3">
           {step.who === "both" ? (
-            <span className="flex shrink-0 items-end"><Nova size={56} mood="happy" /><Pip size={46} mood="happy" /></span>
-          ) : step.who ? <Who size={56} mood={step.mood ?? "happy"} /> : null}
+            <span key={i} className="buddy-cheer flex shrink-0 items-end"><Nova size={56} mood="happy" /><Pip size={46} mood="happy" /></span>
+          ) : step.who ? <span key={i} className="buddy-hop block shrink-0"><Who size={56} mood={step.mood === "happy" ? "talking" : step.mood ?? "talking"} /></span> : null}
           <div className="min-w-0 flex-1">
             <p className="text-xs font-bold uppercase tracking-wide text-purple">Step {i + 1} of {steps.length}</p>
             <h2 id="tour-title" className="font-display text-xl font-bold leading-tight">{step.title}</h2>

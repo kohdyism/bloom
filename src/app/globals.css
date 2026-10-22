@@ -224,6 +224,40 @@ h1, h2, h3, .font-display {
 .bubble-in { animation: bubble-in 220ms cubic-bezier(.3,.7,.4,1.4) both; transform-origin: 0% 100%; }
 .timer-urgent { animation: timer-pulse 1.6s ease-in-out infinite; }
 .panel-in { animation: panel-in 200ms ease-out both; }
+@keyframes buddy-mouth {
+  0%, 100% { transform: scaleY(0.35); }
+  50% { transform: scaleY(1); }
+}
+@keyframes buddy-nod {
+  0%, 100% { transform: rotate(0deg) translateY(0); }
+  30% { transform: rotate(7deg) translateY(2px); }
+  65% { transform: rotate(-3deg) translateY(0); }
+}
+@keyframes buddy-lean {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(6deg); }
+}
+@keyframes buddy-chatter {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+@keyframes buddy-cheer {
+  0% { transform: translateY(0) rotate(0deg) scale(1); }
+  25% { transform: translateY(-22%) rotate(-8deg) scale(1.06); }
+  50% { transform: translateY(0) rotate(0deg) scale(0.96, 1.04); }
+  70% { transform: translateY(-12%) rotate(8deg) scale(1.04); }
+  100% { transform: translateY(0) rotate(0deg) scale(1); }
+}
+@keyframes msg-in {
+  0% { transform: translateY(8px) scale(0.96); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+.buddy-mouth-talk { animation: buddy-mouth 260ms ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.buddy-nod { animation: buddy-nod 650ms ease-in-out both; transform-origin: 50% 90%; }
+.buddy-cheer { animation: buddy-cheer 900ms cubic-bezier(.3,.7,.4,1) both; transform-origin: 50% 100%; }
+.buddy-listen { animation: buddy-lean 1.8s ease-in-out infinite; transform-origin: 50% 90%; }
+.buddy-chatter { animation: buddy-chatter 480ms ease-in-out infinite; }
+.msg-in { animation: msg-in 260ms cubic-bezier(.3,.7,.4,1.2) both; }
 @keyframes plant-sway {
   0%, 100% { transform: rotate(0deg); }
   25% { transform: rotate(-9deg); }

@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/primitives";
 import { SpeechButton } from "@/components/live/speech-button";
 import { useRun } from "@/components/ui/toast";
 import { useWorkspace } from "./context";
+import { Buddy, useBuddy } from "@/components/buddy";
 
 const STARTERS = ["I think … because …", "What if we…", "I noticed that…"];
 
@@ -17,6 +18,7 @@ export function Brainstorm() {
   const [text, setText] = useState("");
   const [editing, setEditing] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const buddy = useBuddy();
     const count = group.ideas.mine.filter((i) => i.status === "submitted").length;
 
   // "Edit" in the idea bank loads that idea back into this box.
@@ -33,13 +35,14 @@ export function Brainstorm() {
     if (!text.trim()) return;
     setSaving(true);
     const ok = await run(() => act({ action: "idea_save", id: editing ?? undefined, body: text, submit }), submit ? "Idea added — it stays private until thinking time ends" : "Draft saved");
-    if (ok) { setText(""); setEditing(null); }
+    if (ok) { setText(""); setEditing(null); buddy.fire(submit ? "cheer" : "nod", submit ? "Nice idea!" : "Saved!"); }
     setSaving(false);
   }
 
   return (
     <div className="flex flex-col gap-3 p-1">
       <div className="flex flex-wrap items-center gap-2">
+        <Buddy who="pip" size={52} mood="happy" cue={buddy.cue} listening={buddy.listening} name="Pip, your private helper" />
         <label htmlFor="idea-text" className="font-display text-xl font-bold">{editing ? "Edit your idea" : "Your idea"}</label>
         <span className="inline-flex items-center gap-1 rounded-full bg-teal-soft px-2.5 py-0.5 text-xs font-semibold text-teal-strong"><Lock className="size-3.5" aria-hidden="true" />Only you can see this</span>
         {group.ideas.mine.length ? (
@@ -49,7 +52,7 @@ export function Brainstorm() {
         ) : null}
         {editing ? <button type="button" className="inline-flex items-center gap-1 text-sm font-semibold text-ink-muted hover:text-ink" onClick={() => { setEditing(null); setText(""); }}><X className="size-4" aria-hidden="true" />Cancel edit</button> : null}
       </div>
-      <Textarea id="idea-text" rows={6} value={text} onChange={(e) => setText(e.target.value)} maxLength={1000} placeholder="Write your idea here… one thoughtful idea is great." aria-describedby="idea-hint" className="min-h-40 border-2 border-purple/25 bg-white text-[1.1rem] leading-relaxed focus-visible:border-purple" />
+      <Textarea id="idea-text" rows={6} value={text} onChange={(e) => { setText(e.target.value); buddy.listen(); }} maxLength={1000} placeholder="Write your idea here… one thoughtful idea is great." aria-describedby="idea-hint" className="min-h-40 border-2 border-purple/25 bg-white text-[1.1rem] leading-relaxed focus-visible:border-purple" />
       <div className="flex flex-wrap items-center gap-1.5" id="idea-hint" role="group" aria-label="Sentence starters">
         <span className="mr-1 text-sm text-ink-muted">Try starting with:</span>
         {STARTERS.slice(0, 3).map((s) => (
