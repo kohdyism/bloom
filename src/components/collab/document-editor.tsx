@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { useEditor, EditorContent, useEditorState } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Collaboration from "@tiptap/extension-collaboration";
@@ -21,7 +22,7 @@ function Tool({ on, label, pressed, children }: { on: () => void; label: string;
  * fragment, so simultaneous edits — even in the same paragraph — merge
  * character by character instead of overwriting each other.
  */
-export function DocumentEditor({ artifactId, readOnly, label = "Shared document" }: { artifactId: string; readOnly?: boolean; label?: string }) {
+export function DocumentEditor({ artifactId, readOnly, label = "Shared document", onInserter, className }: { artifactId: string; readOnly?: boolean; label?: string; onInserter?: (f: ((text: string) => void) | null) => void; className?: string }) {
   const { doc, status, loaded } = useYDoc(artifactId, { readOnly });
   const editor = useEditor(
     {
@@ -52,9 +53,29 @@ export function DocumentEditor({ artifactId, readOnly, label = "Shared document"
     }) : null,
   });
 
+  // Ideas from the idea bank go in at the cursor if the student has been
+  // writing, otherwise at the end of the document — as their own paragraph.
+  const hasFocused = useRef(false);
+  useEffect(() => {
+    if (!editor) return;
+    const onFocus = () => { hasFocused.current = true; };
+    editor.on("focus", onFocus);
+    return () => { editor.off("focus", onFocus); };
+  }, [editor]);
+  useEffect(() => {
+    if (!onInserter) return;
+    if (!editor || readOnly) { onInserter(null); return; }
+    onInserter((text: string) => {
+      const para = { type: "paragraph", content: [{ type: "text", text }] };
+      if (hasFocused.current) editor.chain().focus().insertContent([para]).run();
+      else editor.chain().insertContentAt(editor.state.doc.content.size, [para]).focus("end").run();
+    });
+    return () => onInserter(null);
+  }, [editor, readOnly, onInserter]);
+
   const empty = editor?.isEmpty ?? true;
   return (
-    <div className="flex flex-col overflow-hidden rounded-2xl border border-line bg-white">
+    <div className={cn("flex flex-col overflow-hidden rounded-2xl border border-line bg-white", className)}>
       <div className="flex flex-wrap items-center gap-0.5 border-b border-line bg-surface px-2 py-1.5" role="toolbar" aria-label="Formatting">
         {!readOnly && editor ? (
           <>
@@ -74,7 +95,7 @@ export function DocumentEditor({ artifactId, readOnly, label = "Shared document"
         ) : null}
         <span className="ml-auto pr-2"><SaveIndicator status={readOnly ? "readonly" : status} /></span>
       </div>
-      <div className="relative" data-testid="document-editor">
+      <div className="relative min-h-0 flex-1 overflow-y-auto" data-testid="document-editor">
         {loaded && empty && !readOnly ? <p className="pointer-events-none absolute left-5 top-4 text-ink-faint" aria-hidden="true">Start writing together — everyone in your group can type here at the same time.</p> : null}
         <EditorContent editor={editor} />
       </div>

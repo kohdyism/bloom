@@ -28,7 +28,9 @@ test("school improvement: vote, whiteboard, slides, present", async ({ browser }
   const s = [];
   for (const n of names) {
     const a = await signInAs(browser, n, STUDENT_PASSWORD);
-    await a.page.setViewportSize({ width: 1180, height: 820 });
+    // iPad landscape by default; STUDENT_VIEWPORT=1440x900 for a laptop-sized tour.
+    const [vw, vh] = (process.env.STUDENT_VIEWPORT ?? "1180x820").split("x").map(Number);
+    await a.page.setViewportSize({ width: vw, height: vh });
     await joinSession(a, code);
     s.push(a);
   }
@@ -61,11 +63,10 @@ test("school improvement: vote, whiteboard, slides, present", async ({ browser }
   await shot(s[0].page, "s-synthesis");
   for (const a of s) await ready(a.page);
 
-  await expect(s[0].page.getByRole("heading", { name: "Discuss" })).toBeVisible();
+  await expect(s[0].page.getByRole("heading", { name: "Discuss", exact: true })).toBeVisible();
   await s[1].page.getByLabel("Message your group").fill("I think the quiet room helps the most people.");
   await s[1].page.getByRole("button", { name: "Send message" }).click();
-  await s[0].page.getByRole("button", { name: /Ask Sprout as a group/ }).click();
-  await s[0].page.getByRole("menuitem", { name: "Give us a discussion question" }).click();
+  await s[0].page.getByRole("group", { name: "Ask Sprout as a group" }).getByRole("button", { name: "Give us a discussion question" }).click();
   await expect(s[2].page.getByText("Simulated AI").first()).toBeVisible();
   await shot(s[2].page, "s-discussion");
   for (const a of s) await ready(a.page);

@@ -5,6 +5,9 @@ import type { StudentState } from "@/lib/modules/sessions/state";
 
 export type StudentAction = Record<string, unknown> & { action: string };
 
+/** Where an idea from the idea bank can be dropped (the visible shared editor). */
+export type Inserter = { label: string; insert: (text: string) => void };
+
 export type WorkspaceCtx = {
   sessionId: string;
   state: StudentState;
@@ -13,6 +16,11 @@ export type WorkspaceCtx = {
   refresh: () => void;
   openAssistant: (prefill?: { action?: string; text?: string }) => void;
   openChat: () => void;
+  inserter: Inserter | null;
+  setInserter: (i: Inserter | null) => void;
+  /** Brainstorm: load one of my ideas back into the writing box. */
+  editRequest: { id: string; body: string; n: number } | null;
+  requestEdit: (id: string, body: string) => void;
 };
 
 export const WorkspaceContext = createContext<WorkspaceCtx | null>(null);

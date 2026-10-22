@@ -27,11 +27,15 @@ function useObjects(map: Y.Map<Y.Map<unknown>>) {
   return useSyncExternalStore(subscribe, get, get);
 }
 
+export type InsertText = (text: string) => void;
+
 export function BoardCanvas({
-  doc, map, width, height, readOnly, mediaUrl, uploadImage, label, background = "grid",
+  doc, map, width, height, readOnly, mediaUrl, uploadImage, label, background = "grid", onInserter, insertAs = "sticky",
 }: {
   doc: Y.Doc; map: Y.Map<Y.Map<unknown>>; width: number; height: number; readOnly?: boolean; mediaUrl: (id: string) => string;
   uploadImage?: (file: File) => Promise<string | null>; label: string; background?: "grid" | "white";
+  /** Receives a function that drops text onto the board (or null when read-only/unmounted). */
+  onInserter?: (insert: InsertText | null) => void; insertAs?: "sticky" | "text";
 }) {
   const objects = useObjects(map);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -78,6 +82,28 @@ export function BoardCanvas({
     tx(() => map.set(id, makeObjectMap({ ...o, id, z: maxZ() + 1 })));
     return id;
   };
+
+  // Let the workspace drop ideas onto the board: a sticky note (whiteboard) or
+  // a text box (slides), placed in the next free slot of a simple grid.
+  useEffect(() => {
+    if (!onInserter) return;
+    if (readOnly) { onInserter(null); return; }
+    onInserter((text: string) => {
+      const n = readObjects(map).filter((o) => o.type === insertAs).length;
+      if (insertAs === "sticky") {
+        const cols = Math.max(1, Math.floor((width - 80) / 240));
+        const x = 60 + (n % cols) * 240;
+        const y = 60 + (Math.floor(n / cols) * 200) % Math.max(200, height - 240);
+        const id = newId();
+        doc.transact(() => map.set(id, makeObjectMap({ type: "sticky", x, y, w: 210, h: 170, color: (["yellow", "mint", "sky", "lilac", "peach"] as const)[n % 5], text, fontSize: 22, id, z: readObjects(map).reduce((a, o) => Math.max(a, o.z), 0) + 1 })), LOCAL);
+      } else {
+        const id = newId();
+        const y = Math.min(height - 140, 260 + (n % 5) * 110);
+        doc.transact(() => map.set(id, makeObjectMap({ type: "text", x: 120, y, w: width - 240, h: 90, color: "ink", text, fontSize: 36, id, z: readObjects(map).reduce((a, o) => Math.max(a, o.z), 0) + 1 })), LOCAL);
+      }
+    });
+    return () => onInserter(null);
+  }, [onInserter, readOnly, map, doc, width, height, insertAs]);
 
   const textColor = (c: string) => (["yellow", "mint", "sky", "lilac", "peach", "white"].includes(c) ? "ink" : c);
 

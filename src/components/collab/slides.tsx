@@ -7,7 +7,7 @@ import { SLIDE_H, SLIDE_W, layoutObjects, makeObjectMap, readSlides, type SlideL
 import { BoardView } from "@/components/board/board-object";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { BoardCanvas } from "./board-canvas";
+import { BoardCanvas, type InsertText } from "./board-canvas";
 import { useYDoc, SaveIndicator } from "./use-ydoc";
 
 const LAYOUTS: { value: SlideLayout; label: string }[] = [
@@ -28,7 +28,7 @@ function useSlides(arr: Y.Array<Y.Map<unknown>>) {
 }
 
 /** Lightweight collaborative slides built on the same object engine as the whiteboard. */
-export function SlidesEditor({ artifactId, readOnly, uploadImage }: { artifactId: string; readOnly?: boolean; uploadImage?: (f: File) => Promise<string | null> }) {
+export function SlidesEditor({ artifactId, readOnly, uploadImage, onInserter }: { artifactId: string; readOnly?: boolean; uploadImage?: (f: File) => Promise<string | null>; onInserter?: (f: InsertText | null) => void }) {
   const { doc, status, loaded } = useYDoc(artifactId, { readOnly });
   const arr = doc.getArray("slides") as Y.Array<Y.Map<unknown>>;
   const slides = useSlides(arr);
@@ -108,7 +108,7 @@ export function SlidesEditor({ artifactId, readOnly, uploadImage }: { artifactId
               </li>
             ))}
           </ol>
-          {slideMap ? <BoardCanvas key={slides[idx]?.id} doc={doc} map={slideMap} width={SLIDE_W} height={SLIDE_H} readOnly={ro} mediaUrl={(id) => `/api/media/${id}`} uploadImage={uploadImage} label={`Slide ${idx + 1}`} background="white" /> : null}
+          {slideMap ? <BoardCanvas key={slides[idx]?.id} doc={doc} map={slideMap} width={SLIDE_W} height={SLIDE_H} readOnly={ro} mediaUrl={(id) => `/api/media/${id}`} uploadImage={uploadImage} label={`Slide ${idx + 1}`} background="white" onInserter={onInserter} insertAs="text" /> : null}
         </div>
       )}
       {presenting ? <FullscreenSlides slides={slides} start={idx} onClose={() => setPresenting(false)} /> : null}

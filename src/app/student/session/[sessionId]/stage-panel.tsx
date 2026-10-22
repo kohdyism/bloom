@@ -1,14 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Check, ChevronDown, HelpCircle, Lightbulb, MessagesSquare, Sparkles, Swords, Trophy, Vote } from "lucide-react";
+import { Check, Compass, MessagesSquare, Trophy, Vote } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge, Card, Notice } from "@/components/ui/primitives";
-import { StageIcon } from "@/components/stage-icon";
-import { MascotSays } from "@/components/mascot";
-import { useA11y } from "@/components/a11y-provider";
+import { Notice } from "@/components/ui/primitives";
+import { SproutBuddy } from "@/components/sprout-buddy";
 import { useRun } from "@/components/ui/toast";
-import { STAGE_META } from "@/lib/domain/lesson";
 import { cn } from "@/lib/utils";
 import { useWorkspace, roleName } from "./context";
 import { ReadinessBar } from "./readiness-bar";
@@ -20,13 +17,14 @@ import { Submission } from "./stage-submission";
 import { PresentationViewer } from "./presentation";
 import { MediaUploader } from "./media";
 
+/** The activity for the current stage (the task and Sprout sit above it in StageHero). */
 export function StagePanel() {
   const { group } = useWorkspace();
   if (group.stageStatus === "complete") return <AllDone />;
   const kind = group.stage?.kind;
   return (
-    <div className="flex flex-col gap-5">
-      <StageHeader />
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
+      {group.timer.paused ? <Notice tone="amber" title="Paused">Your teacher has paused things for a moment. Your work is saved.</Notice> : null}
       {kind === "orientation" ? <Orientation /> : null}
       {kind === "role_selection" ? <RoleSelection /> : null}
       {kind === "brainstorm" ? <Brainstorm /> : null}
@@ -38,61 +36,26 @@ export function StagePanel() {
       {kind === "submission" ? <Submission /> : null}
       {kind === "presentation" ? <PresentationStage /> : null}
       {kind === "reflection" ? <GroupReflection /> : null}
-      {group.timer.paused ? <Notice tone="amber" title="Paused">Your teacher has paused things for a moment. Your work is saved.</Notice> : null}
-      {kind !== "submission" ? <ReadinessBar readyLabel={kind === "brainstorm" ? "I'm done thinking" : "I'm ready"} /> : <ReadinessBar />}
+      <ReadinessBar readyLabel={kind === "brainstorm" ? "I'm done thinking" : "I'm ready"} />
     </div>
   );
 }
 
-/** Stage title + instructions, with a private "explain it differently" option. */
-function StageHeader() {
-  const { group, openAssistant, act } = useWorkspace();
-  const { prefs } = useA11y();
-  const run = useRun();
-  const [showFull, setShowFull] = useState(!prefs.simplifiedInstructions);
-  const stage = group.stage!;
-  const sentences = stage.instructions.split(/(?<=[.?!])\s+/).filter(Boolean);
-  const short = sentences[0] ?? "";
-  return (
-    <Card className="p-5">
-      <div className="flex items-start gap-3">
-        <StageIcon kind={stage.kind} className="size-11" />
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-teal">{STAGE_META[stage.kind].label}</p>
-          <h1 className="font-display text-2xl font-bold">{stage.title}</h1>
-        </div>
-      </div>
-      {stage.instructions ? (
-        <div className="mt-3">
-          {prefs.simplifiedInstructions && sentences.length > 1 ? (
-            <p className="rounded-xl bg-teal-soft px-3 py-2 font-medium">In short: {short}</p>
-          ) : null}
-          {showFull || sentences.length <= 1 || !prefs.simplifiedInstructions ? (
-            <p className="mt-2 whitespace-pre-line text-[1.05rem] leading-relaxed">{stage.instructions}</p>
-          ) : (
-            <Button variant="link" size="sm" onClick={() => setShowFull(true)}><ChevronDown className="size-4" />Show full instructions</Button>
-          )}
-        </div>
-      ) : null}
-      <div className="mt-4 flex flex-wrap gap-2">
-        <Button size="sm" variant="soft" className="bg-purple-soft text-purple" onClick={() => openAssistant({ action: "explain_simply" })}><Sparkles />Explain it differently <span className="sr-only">(private)</span></Button>
-        <Button size="sm" variant="ghost" onClick={() => openAssistant({ action: "break_into_steps" })}>Break into steps</Button>
-        {group.aiEnabled ? (
-          <GroupAskMenu onAsk={(quick) => void run(() => act({ action: "ask_group_ai", quick }), "Sprout is replying in your group chat")} />
-        ) : <Badge>Your teacher is facilitating directly</Badge>}
-      </div>
-    </Card>
-  );
+function Panel({ children, className }: { children: React.ReactNode; className?: string }) {
+  return <div className={cn("rounded-3xl border-2 border-white bg-white/90 p-4 shadow-soft sm:p-5", className)}>{children}</div>;
 }
 
 function Orientation() {
   const { state } = useWorkspace();
   return (
-    <MascotSays mood="wave">
-      <p>Read the task together and check everyone knows what your group will make by the end. {state.session.modality === "mostly_in_person" ? "Most of today happens in the room — Bloom keeps track of the steps." : "You can talk in the room, use the group chat, or both."}</p>
-    </MascotSays>
+    <Panel className="flex items-center gap-4">
+      <span className="inline-flex size-12 shrink-0 items-center justify-center rounded-2xl bg-blue-soft text-blue" aria-hidden="true"><Compass className="size-6" /></span>
+      <p className="text-[1.05rem]">Read the task together and check everyone knows what your group will make by the end. {state.session.modality === "mostly_in_person" ? "Most of today happens in the room — Bloom keeps track of the steps." : "You can talk in the room, use the group chat, or both."}</p>
+    </Panel>
   );
 }
+
+const ROLE_TINTS = ["border-sun bg-sun-soft", "border-teal bg-teal-soft", "border-purple bg-purple-soft", "border-coral bg-coral-soft", "border-blue bg-blue-soft", "border-mint bg-mint-soft"];
 
 function RoleSelection() {
   const { state, group, act } = useWorkspace();
@@ -104,25 +67,25 @@ function RoleSelection() {
     void run(() => act({ action: "roles", roleKeys: next }));
   };
   return (
-    <div className="flex flex-col gap-3">
-      <p className="text-ink-muted">Choose one or more roles{state.session.rolesOptional ? " — or none, if you'd rather contribute in your own way" : ""}. Talk with your group so the important jobs are covered.</p>
-      <ul className="grid gap-3 sm:grid-cols-2">
-        {state.session.roles.map((r) => {
+    <Panel className="flex flex-col gap-3">
+      <p className="text-[1.05rem]">Choose one or more roles{state.session.rolesOptional ? " — or none, if you'd rather join in your own way" : ""}. Talk with your group so the important jobs are covered.</p>
+      <ul className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">
+        {state.session.roles.map((r, i) => {
           const holders = group.members.filter((m) => m.roles.includes(r.key));
           const selected = mine.has(r.key);
           return (
             <li key={r.key}>
-              <button type="button" aria-pressed={selected} onClick={() => toggle(r.key)} className={cn("flex h-full w-full flex-col gap-1 rounded-2xl border-2 p-4 text-left transition-colors", selected ? "border-teal bg-teal-soft" : "border-line bg-surface hover:border-line-strong")}>
-                <span className="flex items-center justify-between gap-2 font-semibold">{r.name}{selected ? <Check className="size-5 text-teal" aria-hidden="true" /> : null}</span>
+              <button type="button" aria-pressed={selected} onClick={() => toggle(r.key)} className={cn("flex h-full w-full flex-col gap-1 rounded-2xl border-2 p-4 text-left transition", selected ? cn(ROLE_TINTS[i % ROLE_TINTS.length], "shadow-lift") : "border-line bg-white hover:-translate-y-0.5 hover:shadow-lift")}>
+                <span className="flex items-center justify-between gap-2 font-display text-lg font-bold">{r.name}{selected ? <span className="inline-flex size-7 items-center justify-center rounded-full bg-ink text-white"><Check className="size-4" aria-hidden="true" /></span> : null}</span>
                 <span className="text-sm text-ink-muted">{r.description}</span>
-                {holders.length ? <span className="mt-1 text-xs font-semibold text-purple">{holders.map((h) => (h.id === state.me.id ? "You" : h.name)).join(", ")}</span> : <span className="mt-1 text-xs text-ink-faint">Nobody yet</span>}
+                <span className={cn("mt-1 text-xs font-semibold", holders.length ? "text-purple" : "text-ink-faint")}>{holders.length ? holders.map((h) => (h.id === state.me.id ? "You" : h.name)).join(", ") : "Nobody yet"}</span>
               </button>
             </li>
           );
         })}
       </ul>
       {mine.size ? <p className="text-sm text-ink-muted" aria-live="polite">Your role{mine.size > 1 ? "s" : ""}: {[...mine].map((k) => roleName(state, k)).join(", ")}</p> : null}
-    </div>
+    </Panel>
   );
 }
 
@@ -131,22 +94,27 @@ function Voting() {
   const run = useRun();
   const left = group.votes.perStudent - group.votes.mine.length;
   const ideas = [...group.ideas.shared].sort((a, b) => (group.votes.tally[b.id] ?? 0) - (group.votes.tally[a.id] ?? 0));
+  const max = Math.max(1, ...ideas.map((i) => group.votes.tally[i.id] ?? 0));
   return (
-    <div className="flex flex-col gap-3">
-      <p className="font-semibold" aria-live="polite"><Vote className="mr-1 inline size-4 align-[-2px] text-blue" aria-hidden="true" />You have {left} vote{left === 1 ? "" : "s"} left. Tap again to take a vote back.</p>
+    <Panel className="flex flex-col gap-3">
+      <p className="flex flex-wrap items-center gap-2 text-[1.05rem] font-semibold" aria-live="polite">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-blue px-3 py-1 text-white"><Vote className="size-4" aria-hidden="true" />{left} vote{left === 1 ? "" : "s"} left</span>
+        <span className="font-normal text-ink-muted">Tap again to take a vote back.</span>
+      </p>
       {ideas.length === 0 ? <Notice>No shared ideas to vote on yet.</Notice> : (
-        <ul className="flex flex-col gap-2">
+        <ul className="grid gap-2 xl:grid-cols-2">
           {ideas.map((i) => {
             const voted = group.votes.mine.includes(i.id);
             const n = group.votes.tally[i.id] ?? 0;
             return (
-              <li key={i.id} className={cn("flex items-center gap-3 rounded-2xl border bg-surface p-3", voted ? "border-blue" : "border-line")}>
-                <div className="min-w-0 flex-1">
-                  <p>{i.body}</p>
+              <li key={i.id} className={cn("relative flex items-center gap-3 overflow-hidden rounded-2xl border-2 bg-white p-3", voted ? "border-blue" : "border-line")}>
+                <span className="absolute inset-y-0 left-0 bg-blue-soft transition-all" style={{ width: `${(n / max) * 100}%` }} aria-hidden="true" />
+                <div className="relative min-w-0 flex-1">
+                  <p className="font-medium">{i.body}</p>
                   <p className="text-xs text-ink-muted">{i.author}</p>
                 </div>
-                <span className="text-sm font-semibold tabular-nums text-ink-muted" aria-label={`${n} vote${n === 1 ? "" : "s"}`}>{n}</span>
-                <Button size="sm" variant={voted ? "primary" : "secondary"} aria-pressed={voted} disabled={!voted && left <= 0} onClick={() => run(() => act({ action: "vote", targetId: i.id }))}>
+                <span className="relative font-display text-xl font-bold tabular-nums text-blue" aria-label={`${n} vote${n === 1 ? "" : "s"}`}>{n}</span>
+                <Button size="sm" variant={voted ? "primary" : "secondary"} className={cn("relative", voted && "bg-blue hover:bg-blue")} aria-pressed={voted} disabled={!voted && left <= 0} onClick={() => run(() => act({ action: "vote", targetId: i.id }))}>
                   {voted ? <><Check />Voted</> : "Vote"}
                 </Button>
               </li>
@@ -154,8 +122,8 @@ function Voting() {
           })}
         </ul>
       )}
-      <p className="text-sm text-ink-muted">Votes show the group&apos;s priorities — talk about the result before moving on. Don&apos;t want to vote? Tap “I&apos;m ready” to pass.</p>
-    </div>
+      <p className="text-sm text-ink-muted">Votes show the group&apos;s priorities — talk about the result before moving on. Don&apos;t want to vote? Press “I&apos;m ready” to pass.</p>
+    </Panel>
   );
 }
 
@@ -174,23 +142,26 @@ function Physical() {
     const ok = await run(() => act({ action: "checkin", index: i }));
     if (!ok) setPending((p) => { const c = { ...p }; delete c[i]; return c; });
   };
+  const doneCount = items.filter((_, i) => isDone(i)).length;
   return (
-    <div className="flex flex-col gap-4">
-      <Notice tone="teal">This part happens in the room. Bloom doesn&apos;t listen to your group — tick off each check-in as you reach it.</Notice>
-      {items.length ? (
-        <fieldset className="flex flex-col gap-2">
-          <legend className="mb-1 font-semibold">Check-ins</legend>
-          {items.map((label, i) => {
-            const done = isDone(i);
-            return (
-              <label key={i} className={cn("flex cursor-pointer items-center gap-3 rounded-2xl border-2 bg-surface px-4 py-3", done ? "border-mint bg-mint-soft" : "border-line")}>
-                <input type="checkbox" className="size-5 accent-[var(--mint)]" checked={done} onChange={() => void toggle(i)} />
-                <span className={cn(done && "line-through decoration-mint/60")}>{label}</span>
-              </label>
-            );
-          })}
-        </fieldset>
-      ) : null}
+    <div className="flex flex-col gap-3">
+      <Panel className="flex flex-col gap-3">
+        <p className="rounded-2xl bg-teal-soft px-3 py-2 text-sm">This part happens in the room. Bloom doesn&apos;t listen to your group — tick off each check-in as you reach it.</p>
+        {items.length ? (
+          <fieldset className="flex flex-col gap-2">
+            <legend className="mb-1 flex w-full items-center justify-between font-display text-lg font-bold">Check-ins <span className="text-sm font-semibold text-mint">{doneCount} of {items.length} done</span></legend>
+            {items.map((label, i) => {
+              const done = isDone(i);
+              return (
+                <label key={i} className={cn("flex cursor-pointer items-center gap-3 rounded-2xl border-2 bg-white px-4 py-3 text-[1.05rem] transition", done ? "border-mint bg-mint-soft" : "border-line hover:border-mint/50")}>
+                  <input type="checkbox" className="size-6 accent-[var(--mint)]" checked={done} onChange={() => void toggle(i)} />
+                  <span className={cn(done && "line-through decoration-mint/60")}>{label}</span>
+                </label>
+              );
+            })}
+          </fieldset>
+        ) : null}
+      </Panel>
       {group.stage?.config.evidenceUpload ? <MediaUploader title="Photo evidence" /> : null}
     </div>
   );
@@ -201,14 +172,14 @@ function PresentationStage() {
   const run = useRun();
   if (state.session.presentation) return <PresentationViewer />;
   return (
-    <div className="flex flex-col gap-3">
-      <MascotSays mood="idle">Your teacher will choose which group presents. When a group is presenting, their work appears here.</MascotSays>
+    <Panel className="flex flex-col items-start gap-3">
+      <p className="text-[1.05rem]">Your teacher will choose which group presents. When a group is presenting, their work appears here.</p>
       {group.submissions.length ? (
         group.presentationRequest === "pending"
           ? <Notice tone="blue">Your group has asked to present. Your teacher will decide.</Notice>
-          : <Button className="self-start" variant="secondary" onClick={() => run(() => act({ action: "request_present" }), "Request sent to your teacher")}><Trophy />Ask to present our work</Button>
+          : <Button variant="secondary" onClick={() => run(() => act({ action: "request_present" }), "Request sent to your teacher")}><Trophy />Ask to present our work</Button>
       ) : null}
-    </div>
+    </Panel>
   );
 }
 
@@ -216,14 +187,14 @@ function GroupReflection() {
   const { group, openChat } = useWorkspace();
   const prompts = group.stage?.config.prompts.length ? group.stage.config.prompts : ["What helped your group work well today?", "What would you do differently next time?"];
   return (
-    <div className="flex flex-col gap-3">
-      <ul className="flex flex-col gap-2">
-        {prompts.map((p) => <li key={p} className="rounded-2xl border border-line bg-surface p-4 font-medium">{p}</li>)}
+    <Panel className="flex flex-col gap-3">
+      <ul className="grid gap-2 md:grid-cols-2">
+        {prompts.map((p, i) => <li key={p} className={cn("rounded-2xl p-4 font-display text-lg font-semibold", ["bg-sun-soft", "bg-purple-soft", "bg-teal-soft", "bg-coral-soft"][i % 4])}>{p}</li>)}
       </ul>
       <p className="text-ink-muted">Talk about these together. You can jot your thoughts in the group chat if that&apos;s easier.</p>
-      <Button variant="secondary" className="self-start" onClick={openChat}><MessagesSquare />Open group chat</Button>
+      <Button variant="secondary" className="self-start xl:hidden" onClick={openChat}><MessagesSquare />Open group chat</Button>
       {group.stage?.config.evidenceUpload ? <MediaUploader title="Add a photo" /> : null}
-    </div>
+    </Panel>
   );
 }
 
@@ -232,43 +203,14 @@ function AllDone() {
   const run = useRun();
   const latest = group.submissions[0];
   return (
-    <div className="flex flex-col items-center gap-5 py-6 text-center">
-      <MascotSays mood="celebrate" size={90}><span className="font-display text-xl font-semibold">Your group finished every stage. Nice teamwork!</span></MascotSays>
+    <Panel className="flex flex-col items-center gap-4 py-8 text-center">
+      <SproutBuddy size={130} mood="celebrate" />
+      <h1 className="font-display text-3xl font-bold">Your group finished every stage. Nice teamwork!</h1>
       {latest ? <p className="text-ink-muted">Submitted version {latest.version} — {latest.status === "reviewed" ? "reviewed by your teacher" : latest.status === "returned" ? "returned for revision" : "waiting for your teacher"}.</p> : null}
       {latest?.feedback ? <Notice tone="teal" title="Teacher feedback" className="max-w-xl text-left">{latest.feedback}</Notice> : null}
       {state.session.presentation ? <PresentationViewer /> : latest && group.presentationRequest !== "pending" ? (
         <Button variant="secondary" onClick={() => run(() => act({ action: "request_present" }), "Request sent to your teacher")}><Trophy />Ask to present</Button>
       ) : null}
-    </div>
-  );
-}
-
-type Quick = "explain_task" | "discussion_question" | "we_disagree" | "we_are_stuck";
-
-/** Accessible menu button: the group asks Sprout; the reply goes to the group chat. */
-function GroupAskMenu({ onAsk }: { onAsk: (q: Quick) => void }) {
-  const [open, setOpen] = useState(false);
-  const items: [Quick, string, React.ElementType][] = [
-    ["explain_task", "Explain the task to us", HelpCircle],
-    ["discussion_question", "Give us a discussion question", Lightbulb],
-    ["we_disagree", "Help us with a disagreement", Swords],
-    ["we_are_stuck", "We're stuck", HelpCircle],
-  ];
-  return (
-    <div className="relative" onKeyDown={(e) => { if (e.key === "Escape") setOpen(false); }}>
-      <Button size="sm" variant="ghost" aria-expanded={open} aria-haspopup="menu" aria-controls="group-ask-menu" onClick={() => setOpen((o) => !o)}>
-        <MessagesSquare />Ask Sprout as a group<ChevronDown className="size-3.5" />
-      </Button>
-      {open ? (
-        <div id="group-ask-menu" role="menu" aria-label="Ask Sprout as a group" className="absolute left-0 top-10 z-20 flex w-64 flex-col gap-1 rounded-xl border border-line bg-surface p-2 shadow-lift">
-          <p className="px-2 pb-1 text-xs text-ink-muted">Sprout replies in your group chat for everyone.</p>
-          {items.map(([quick, label, Icon]) => (
-            <button key={quick} role="menuitem" className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-surface-2" onClick={() => { setOpen(false); onAsk(quick); }}>
-              <Icon className="size-4 text-purple" aria-hidden="true" />{label}
-            </button>
-          ))}
-        </div>
-      ) : null}
-    </div>
+    </Panel>
   );
 }

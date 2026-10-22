@@ -21,7 +21,7 @@ export function Toaster({ children }: { children: React.ReactNode }) {
   return (
     <Ctx.Provider value={push}>
       {children}
-      <div className="pointer-events-none fixed right-4 top-36 z-[60] flex w-[min(24rem,calc(100vw-2rem))] flex-col gap-2" role="status" aria-live="polite">
+      <div className="pointer-events-none fixed right-4 top-24 z-[60] flex w-[min(22rem,calc(100vw-2rem))] flex-col gap-2" role="status" aria-live="polite">
         {toasts.map((t) => (
           <div key={t.id} className={cn("animate-pop pointer-events-auto rounded-xl border bg-surface p-3.5 shadow-lift", tones[t.tone])}>
             <div className="flex items-start gap-3">
