@@ -9,15 +9,15 @@ import { useMediaQuery } from "@/lib/use-media-query";
 import { useToast } from "@/components/ui/toast";
 import { useA11y } from "@/components/a11y-provider";
 import { Buddy } from "@/components/buddy";
+import { PlantBubble } from "@/components/live/plant-bubble";
 import { Avatar } from "@/components/ui/primitives";
 import { artifactBus } from "@/components/collab/artifact-bus";
 import { useNow } from "@/lib/use-now";
 import { cn } from "@/lib/utils";
 import { WorkspaceContext, type Inserter, type StudentAction, type WorkspaceCtx } from "./context";
 import { SessionHeader } from "./session-header";
-import { NovaChat } from "./nova-chat";
 import { ActivityPanel } from "./activity-panel";
-import { AssistantPanel } from "./assistant-panel";
+import { ChatTabs, type ChatTab } from "./chat-tabs";
 import { Reflection } from "./reflection";
 import { PresentationViewer } from "./presentation";
 import { Materials } from "./materials";
@@ -25,7 +25,7 @@ import { Materials } from "./materials";
 export function Workspace({ sessionId, initial }: { sessionId: string; initial: StudentState }) {
   const toast = useToast();
   const { prefs } = useA11y();
-  const [assistantOpen, setAssistantOpen] = useState(false);
+  const [chatTab, setChatTab] = useState<ChatTab>("group");
   const [assistantPrefill, setAssistantPrefill] = useState<{ action?: string; text?: string } | undefined>();
   const [assistantTick, setAssistantTick] = useState(0);
   const [mobileTab, setMobileTab] = useState<"chat" | "activity">("chat");
@@ -90,18 +90,19 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
 
   const openAssistant = useCallback((prefill?: { action?: string; text?: string }) => {
     setAssistantPrefill(prefill);
-    setAssistantOpen(true);
+    setChatTab("pip");
+    setMobileTab("chat");
   }, []);
   const requestEdit = useCallback((id: string, body: string) => setEditRequest((r) => ({ id, body, n: (r?.n ?? 0) + 1 })), []);
 
   const s = state.session;
   const g = state.group;
-  const inLesson = !!g && (s.status === "active" || s.status === "paused");
   const kind = g?.stageStatus === "complete" ? "complete" : g?.stage?.kind;
   const wide = useMediaQuery("(min-width: 1024px)");
 
   const openChat = useCallback(() => {
     setMobileTab("chat");
+    setChatTab("group");
     setTimeout(() => document.getElementById("chat-input")?.focus(), 0);
   }, []);
   const openIdeas = useCallback(() => { setMobileTab("activity"); setIdeasSignal((n) => n + 1); }, []);
@@ -124,6 +125,8 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
   } else {
     // Centre: the group chat with Nova. Side: the stage activity (wider when making something).
     const making = kind === "creation";
+    const showPlant = s.theme !== "none";
+    const doneStages = g.stageStatus === "complete" ? s.stages.length : g.stageIndex;
     body = (
       <div className="flex min-h-0 flex-1 flex-col gap-3 p-3 lg:p-4">
         {recentAnnouncement ? (
@@ -136,12 +139,13 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
         {g.stage && kind !== "complete" ? <h1 className="sr-only">{g.stage.title}</h1> : null}
         {!wide ? (
           <div role="tablist" aria-label="Chat or activity" className="flex gap-1 rounded-2xl bg-white/80 p-1 shadow-soft">
-            <button type="button" role="tab" aria-selected={mobileTab === "chat"} onClick={() => setMobileTab("chat")} className={cn("inline-flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 font-semibold", mobileTab === "chat" ? "bg-ink text-white" : "text-ink-muted")}><MessagesSquare className="size-5" aria-hidden="true" />Chat with Nova</button>
+            <button type="button" role="tab" aria-selected={mobileTab === "chat"} onClick={() => setMobileTab("chat")} className={cn("inline-flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 font-semibold", mobileTab === "chat" ? "bg-ink text-white" : "text-ink-muted")}><MessagesSquare className="size-5" aria-hidden="true" />Chats</button>
             <button type="button" role="tab" aria-selected={mobileTab === "activity"} onClick={() => setMobileTab("activity")} className={cn("inline-flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 font-semibold", mobileTab === "activity" ? "bg-ink text-white" : "text-ink-muted")}><ClipboardList className="size-5" aria-hidden="true" />Activity</button>
           </div>
         ) : null}
         <div className="flex min-h-0 flex-1 gap-4">
-          {wide || mobileTab === "chat" ? <NovaChat className="min-w-0 flex-1" /> : null}
+          {wide || mobileTab === "chat" ? <ChatTabs tab={chatTab} onTab={setChatTab} pipPrefill={assistantPrefill} pipTick={assistantTick} className="min-w-0 flex-1" composerClassName={showPlant ? "pl-[6rem]" : undefined} /> : null}
+          {showPlant ? <PlantBubble stagesDone={doneStages} totalStages={s.stages.length} className="fixed bottom-6 left-6 z-30" /> : null}
           {wide || mobileTab === "activity" ? <ActivityPanel className={wide ? (making ? "w-[58%] shrink-0" : "w-[min(34rem,44%)] shrink-0") : "min-w-0 flex-1"} /> : null}
         </div>
       </div>
@@ -156,7 +160,6 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
         {body}
       </div>
       {s.status === "paused" ? <PausedOverlay /> : null}
-      {ctxValue && inLesson ? <AssistantPanel open={assistantOpen} onOpenChange={setAssistantOpen} prefill={assistantPrefill} tick={assistantTick} /> : null}
     </WorkspaceContext.Provider>
   );
 }

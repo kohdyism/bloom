@@ -36,7 +36,7 @@ const TIPS: Record<string, string> = {
  * Everyone in the group sees Nova's messages; "Ask Nova" asks on behalf of
  * the group. (Private questions go to Pip instead.)
  */
-export function NovaChat({ className }: { className?: string }) {
+export function NovaChat({ className, composerClassName }: { className?: string; composerClassName?: string }) {
   const { group, act } = useWorkspace();
   const run = useRun();
   const kind = group.stage?.kind ?? "orientation";
@@ -64,10 +64,10 @@ export function NovaChat({ className }: { className?: string }) {
   };
 
   const header = (
-    <div className="flex items-center gap-3 border-b border-line bg-gradient-to-r from-[#fff1e8] via-[#ffeef5] to-white px-4 py-3">
-      <Buddy who="nova" size={56} mood={waiting ? "thinking" : latest ? "happy" : "idle"} />
+    <div className="flex items-center gap-3 border-b border-line bg-gradient-to-r from-[#fff1e8] via-[#ffeef5] to-white px-4 py-2.5">
+      <Buddy who="nova" size={48} mood={waiting ? "thinking" : latest ? "happy" : "idle"} />
       <div className="min-w-0 flex-1">
-        <h2 className="font-display text-xl font-bold leading-tight">Group chat with Nova</h2>
+        <h2 className="font-display text-lg font-bold leading-tight">Nova · group helper</h2>
         <p className="text-sm text-ink-muted">{group.aiEnabled ? "Nova helps your group discuss · everyone sees this" : "Your teacher is facilitating directly for now"}</p>
       </div>
       {group.aiEnabled ? (
@@ -106,5 +106,5 @@ export function NovaChat({ className }: { className?: string }) {
       Nova is thinking…
     </li>
   ) : null;
-  return <Chat className={className} header={header} empty={empty} after={after} />;
+  return <Chat className={className} header={header} empty={empty} after={after} composerClassName={composerClassName} />;
 }

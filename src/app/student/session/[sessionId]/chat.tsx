@@ -21,7 +21,7 @@ const REACTIONS = [
   { kind: "question", label: "I have a question", icon: MessageCircleQuestion },
 ] as const;
 
-export function Chat({ className, header, empty, after }: { className?: string; header?: React.ReactNode; empty?: React.ReactNode; after?: React.ReactNode }) {
+export function Chat({ className, header, empty, after, composerClassName }: { className?: string; header?: React.ReactNode; empty?: React.ReactNode; after?: React.ReactNode; composerClassName?: string }) {
   const { group, state, act } = useWorkspace();
   const run = useRun();
   const [text, setText] = useState("");
@@ -110,7 +110,7 @@ export function Chat({ className, header, empty, after }: { className?: string; 
         })}
         {after}
       </ol>
-      <form className="flex flex-col gap-2 border-t border-line p-3" onSubmit={(e) => { e.preventDefault(); void send(); }}>
+      <form className={cn("flex flex-col gap-2 border-t border-line p-3", composerClassName)} onSubmit={(e) => { e.preventDefault(); void send(); }}>
         {replyTo ? (
           <p className="flex items-center gap-2 rounded-lg bg-surface-2 px-2.5 py-1 text-xs">
             <Reply className="size-3.5" aria-hidden="true" /><span className="min-w-0 flex-1 truncate">Replying to {replyTo.author}: {replyTo.body}</span>

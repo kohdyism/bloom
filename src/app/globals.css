@@ -217,6 +217,24 @@ h1, h2, h3, .font-display {
 .bubble-in { animation: bubble-in 220ms cubic-bezier(.3,.7,.4,1.4) both; transform-origin: 0% 100%; }
 .timer-urgent { animation: timer-pulse 1.6s ease-in-out infinite; }
 .panel-in { animation: panel-in 200ms ease-out both; }
+@keyframes plant-sway {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-9deg); }
+  60% { transform: rotate(7deg); }
+  85% { transform: rotate(-3deg); }
+}
+@keyframes plant-idle {
+  0%, 100% { transform: rotate(-2deg); }
+  50% { transform: rotate(2deg); }
+}
+@keyframes plant-grow {
+  0% { transform: scale(0.8); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+.plant-sway { animation: plant-sway 900ms ease-in-out both; transform-origin: 50% 90%; }
+.plant-idle { animation: plant-idle 4s ease-in-out infinite; transform-origin: 50% 90%; }
+.plant-grow { animation: plant-grow 900ms cubic-bezier(.3,.7,.4,1.4) both; transform-origin: 50% 90%; }
 
 /* Gentle mascot idle motion (disabled by the rules above). */
 @keyframes bloom-bob {
