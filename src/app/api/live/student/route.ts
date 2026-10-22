@@ -13,7 +13,7 @@ const cluster = z.object({ id: z.string().max(20), title: z.string().max(80), su
  */
 const action = z.discriminatedUnion("action", [
   z.object({ action: z.literal("roles"), sessionId: uuid, roleKeys: z.array(z.string().max(40)).max(8) }),
-  z.object({ action: z.literal("readiness"), sessionId: uuid, state: z.enum(["ready", "need_time"]).nullable() }),
+  z.object({ action: z.literal("readiness"), sessionId: uuid, state: z.enum(["ready", "need_time"]).nullable(), stageIndex: z.number().int().min(0).optional() }),
   z.object({ action: z.literal("idea_save"), sessionId: uuid, id: uuid.optional(), body: z.string().max(1000), submit: z.boolean(), buildsOn: uuid.nullable().optional() }),
   z.object({ action: z.literal("idea_delete"), sessionId: uuid, id: uuid }),
   z.object({ action: z.literal("synthesis_edit"), sessionId: uuid, clusters: z.array(cluster).max(12), note: z.string().max(300).default("") }),
@@ -42,7 +42,7 @@ export const POST = route({ role: "student", body: action }, async ({ user, body
   const u = user.id;
   switch (b.action) {
     case "roles": return S.setRoles(u, b.sessionId, b.roleKeys);
-    case "readiness": return S.setReadiness(u, b.sessionId, b.state);
+    case "readiness": return S.setReadiness(u, b.sessionId, b.state, b.stageIndex);
     case "idea_save": return S.saveIdea(u, b.sessionId, { id: b.id, body: b.body, submit: b.submit, buildsOn: b.buildsOn ?? null });
     case "idea_delete": return S.deleteIdea(u, b.sessionId, b.id);
     case "synthesis_edit": return S.editSynthesis(u, b.sessionId, b.clusters, b.note);

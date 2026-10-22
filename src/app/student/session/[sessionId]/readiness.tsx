@@ -44,12 +44,12 @@ export function Readiness() {
             {mine === "ready" ? <Check className="size-5" aria-hidden="true" /> : <Clock3 className="size-5" aria-hidden="true" />}
             {mine === "ready" ? "You're ready" : "You asked for more time"}
           </span>
-          <Button variant="ghost" onClick={() => run(() => act({ action: "readiness", state: null }))}><Undo2 />Undo</Button>
+          <Button variant="ghost" onClick={() => run(() => act({ action: "readiness", state: null, stageIndex: group.stageIndex }))}><Undo2 />Undo</Button>
         </>
       ) : (
         <>
-          <Button variant="secondary" className="h-12 rounded-2xl" onClick={() => run(() => act({ action: "readiness", state: "need_time" }))}><Clock3 />More time</Button>
-          <Button className="h-12 rounded-2xl px-6 text-base" onClick={() => run(() => act({ action: "readiness", state: "ready" }))}><Check />{kind === "brainstorm" ? "I'm done thinking" : "I'm ready"}</Button>
+          <Button variant="secondary" className="h-12 rounded-2xl" onClick={() => run(() => act({ action: "readiness", state: "need_time", stageIndex: group.stageIndex }))}><Clock3 />More time</Button>
+          <Button className="h-12 rounded-2xl px-6 text-base" onClick={() => run(() => act({ action: "readiness", state: "ready", stageIndex: group.stageIndex }))}><Check />{kind === "brainstorm" ? "I'm done thinking" : "I'm ready"}</Button>
         </>
       )}
     </div>
