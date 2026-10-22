@@ -9,6 +9,7 @@ import { useWorkspace } from "./context";
 import { Chat } from "./chat";
 import { cn } from "@/lib/utils";
 import { useMediaQuery } from "@/lib/use-media-query";
+import { mentionsHelper } from "@/lib/domain/mentions";
 
 type Quick = "explain_task" | "discussion_question" | "we_disagree" | "we_are_stuck";
 const GROUP_ASKS: [Quick, string, React.ElementType][] = [
@@ -117,5 +118,9 @@ export function GroupChat({ className, composerClassName, activity, compact = fa
   ) : null;
   return <Chat className={className} header={header} empty={empty} after={after} composerClassName={composerClassName} compact={compact}
     inline={activity ? { node: activity, after: group.stageStartedAt, key: `task-${group.stageIndex}-${group.stageStatus === "complete" ? "done" : "on"}` } : undefined}
-    onActivity={(e) => (e === "typing" ? buddy.listen() : fire("nod"))} />;
+    onActivity={(e, t) => {
+      if (e === "typing") { buddy.listen(); return; }
+      fire("nod");
+      if (t && mentionsHelper(t) && group.aiEnabled) setWaiting(true);
+    }} />;
 }

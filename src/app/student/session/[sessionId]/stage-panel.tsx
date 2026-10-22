@@ -15,7 +15,7 @@ import { Synthesis } from "./stage-synthesis";
 import { IdeaBank } from "./idea-bank";
 import { Creation } from "./stage-creation";
 import { Submission } from "./stage-submission";
-import { PresentationViewer } from "./presentation";
+import { OwnSubmission, PresentationViewer } from "./presentation";
 import { MediaUploader } from "./media";
 
 /** The activity for the current stage (the task and Bloom sit above it). */
@@ -171,12 +171,13 @@ function PresentationStage() {
   if (state.session.presentation) return <PresentationViewer />;
   return (
     <Panel className="flex flex-col items-start gap-3">
-      <p className="text-[1.05rem]">Your teacher will choose which group presents. When a group is presenting, their work appears here.</p>
+      <p className="text-[1.05rem]">Your teacher chooses which group presents. When a group is presenting, their work appears here and on the board. Until then, here&apos;s what your group made — think about what you&apos;d say about it.</p>
       {group.submissions.length ? (
         group.presentationRequest === "pending"
           ? <Notice tone="blue">Your group has asked to present. Your teacher will decide.</Notice>
           : <Button variant="secondary" onClick={() => run(() => act({ action: "request_present" }), "Request sent to your teacher")}><Trophy />Ask to present our work</Button>
       ) : null}
+      <div className="w-full"><OwnSubmission /></div>
     </Panel>
   );
 }

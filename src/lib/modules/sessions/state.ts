@@ -314,3 +314,13 @@ export async function studentPresentation(uid: string, sessionId: string) {
   if (!s.presentation) return null;
   return asServer((db) => presentationContent(db, s, s.presentation!));
 }
+
+/** The student's own group's latest submitted snapshot (read-only), for looking back at it. */
+export async function studentOwnSubmission(uid: string, sessionId: string) {
+  const groupId = await asUser(uid, async (db) => (await studentContext(db, uid, sessionId)).group?.id ?? null);
+  if (!groupId) return null;
+  return asServer((db) => db.maybeOne<{ id: string; version: number; content: Record<string, unknown>; note: string }>(
+    "select id, version, content, note from submissions where group_id = $1 order by version desc limit 1",
+    [groupId],
+  ));
+}

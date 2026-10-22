@@ -192,7 +192,7 @@ test("complete inclusive classroom lesson", async ({ browser }) => {
   await expect(a2.page.getByRole("list", { name: "Submission status" }).getByText("Submitted")).toBeVisible();
 
   // 24–25. Teacher presents; other students (another group) view it read-only.
-  await t.getByLabel("Present a group's submitted work").selectOption({ index: 1 });
+  await t.getByLabel("Present a group's submitted work").selectOption({ index: 0 });
   await t.getByRole("button", { name: "Present", exact: true }).click();
   await expect(display.getByText(/presents/)).toBeVisible();
   await expect(display.getByText("Poe presents loneliness as lifelong.")).toBeVisible();

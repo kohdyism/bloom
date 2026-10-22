@@ -127,7 +127,7 @@ test("school improvement: vote, whiteboard, slides, present", async ({ browser }
   await shot(s[1].page, "s-submitted");
 
   // Present the slides; slide control can be handed to a student.
-  await t.getByLabel("Present a group's submitted work").selectOption({ index: 1 });
+  await t.getByLabel("Present a group's submitted work").selectOption({ index: 0 });
   await t.getByRole("button", { name: "Present", exact: true }).click();
   await expect(display.getByText("A quiet room for everyone", { exact: true })).toBeVisible();
   await shot(display, "d-presentation");

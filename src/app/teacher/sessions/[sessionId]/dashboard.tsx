@@ -243,12 +243,12 @@ function AnnounceDialog({ groups, onSend }: { groups: { id: string; name: string
   );
 }
 
-function EndDialog({ onEnd }: { onEnd: () => Promise<boolean> }) {
+export function EndDialog({ onEnd, lobby = false }: { onEnd: () => Promise<boolean>; lobby?: boolean }) {
   const [pending, setPending] = useState(false);
   return (
     <Dialog>
-      <DialogTrigger asChild><Button variant="danger"><Square />End lesson</Button></DialogTrigger>
-      <DialogContent title="End the lesson?" description="All work is saved and becomes read-only. Students will be invited to a short reflection.">
+      <DialogTrigger asChild><Button variant={lobby ? "secondary" : "danger"}><Square />End lesson</Button></DialogTrigger>
+      <DialogContent title={lobby ? "End this lesson without starting?" : "End the lesson?"} description={lobby ? "Students who joined will see that the lesson has ended. You can launch the lesson again any time." : "All work is saved and becomes read-only. Students will be invited to a short reflection."}>
         <div className="flex justify-end gap-2">
           <DialogClose asChild><Button variant="secondary">Keep going</Button></DialogClose>
           <Button variant="danger" pending={pending} onClick={async () => { setPending(true); await onEnd(); setPending(false); }}>End lesson</Button>
@@ -305,12 +305,12 @@ function PresentationPanel({ state, act, names }: { state: TeacherState; act: Pr
           <div className="flex flex-wrap items-end gap-2">
             <div className="flex flex-col gap-1">
               <label htmlFor="pres-group" className="text-sm font-semibold">Present a group&apos;s submitted work</label>
-              <Select id="pres-group" value={choice} onChange={(e) => setChoice(e.target.value)} className="w-64">
-                <option value="">Choose a group…</option>
+              <Select id="pres-group" value={choice || ready[0]?.id || ""} onChange={(e) => setChoice(e.target.value)} className="w-64">
                 {ready.map((g) => <option key={g.id} value={g.id}>{g.name} (v{g.submission!.version})</option>)}
               </Select>
             </div>
-            <Button disabled={!choice} onClick={() => run(() => act({ action: "present", groupId: choice, view: null }), "Now presenting on the display and students' devices")}><Presentation />Present</Button>
+            <Button disabled={!(choice || ready[0])} onClick={() => run(() => act({ action: "present", groupId: choice || ready[0]!.id, view: null }), "Now presenting on the display and students' devices")}><Presentation />Present</Button>
+            <p className="basis-full text-sm text-ink-muted">Shows the group&apos;s submitted work on the classroom display and on every student&apos;s screen.</p>
           </div>
         )}
       </CardBody>

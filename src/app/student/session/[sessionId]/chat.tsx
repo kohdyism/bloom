@@ -28,7 +28,7 @@ export function Chat({ className, header, empty, after, composerClassName, onAct
   /** Slim layout for a side column. */
   compact?: boolean;
   /** Lets the page animate its helper: "typing" on each keystroke, "sent" after a message goes. */
-  onActivity?: (e: "typing" | "sent") => void;
+  onActivity?: (e: "typing" | "sent", text?: string) => void;
 }) {
   const { group, state, act } = useWorkspace();
   const run = useRun();
@@ -93,7 +93,7 @@ export function Chat({ className, header, empty, after, composerClassName, onAct
     if (await run(() => act({ action: "message", body: text, replyTo: replyTo?.id ?? null }))) {
       setText("");
       setReplyTo(null);
-      onActivity?.("sent");
+      onActivity?.("sent", text);
       atBottom.current = true;
     }
     setSending(false);
@@ -189,7 +189,7 @@ export function Chat({ className, header, empty, after, composerClassName, onAct
           <Textarea id="chat-input" rows={1} className="min-h-11 flex-1 resize-none" value={text} maxLength={2000}
             onChange={(e) => { setText(e.target.value); onActivity?.("typing"); }}
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }}
-            placeholder="Message your group…" title="Enter to send · Shift+Enter for a new line" />
+            placeholder="Message your group… (type @Bloom to ask Bloom)" title="Enter to send · Shift+Enter for a new line" />
           <Button type="submit" size="icon" aria-label="Send message" pending={sending} disabled={!text.trim()}><Send /></Button>
         </div>
         <SpeechButton onText={(t) => setText((x) => (x ? `${x} ${t}` : t))} />
