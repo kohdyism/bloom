@@ -19,6 +19,10 @@ export function useRealtime(
   const [state, setState] = useState<ConnectionState>("connecting");
   const handler = useRef(onEvent);
   const resync = useRef(onResync);
+  // Survive channel changes: a replacement connection resumes from the last
+  // event we saw (server replays the gap) and triggers one refetch on open.
+  const lastId = useRef<string | null>(null);
+  const connections = useRef(0);
   useEffect(() => {
     handler.current = onEvent;
     resync.current = onResync;
@@ -33,21 +37,27 @@ export function useRealtime(
     if (opts.display) params.set("display", opts.display);
     else params.set("channels", key);
     if (opts.presence) params.set("presence", opts.presence);
+    if (lastId.current) params.set("since", lastId.current);
+    const replacement = connections.current++ > 0;
     const es = new EventSource(`/api/realtime?${params.toString()}`);
     let opened = false;
     es.onopen = () => {
       setState("open");
-      if (opened) resync.current?.();
+      // Reconnects, and replacement connections after a channel change, may
+      // have missed events: refetch the server's state once.
+      if (opened || replacement) resync.current?.();
       opened = true;
     };
     es.onerror = () => setState(navigator.onLine ? "reconnecting" : "offline");
     es.addEventListener("message", (m) => {
+      if ((m as MessageEvent).lastEventId) lastId.current = (m as MessageEvent).lastEventId;
       try {
         handler.current(JSON.parse((m as MessageEvent).data));
       } catch {
         /* ignore malformed */
       }
     });
+    es.addEventListener("ready", (m) => { if ((m as MessageEvent).lastEventId) lastId.current = (m as MessageEvent).lastEventId; });
     es.addEventListener("replayed", () => resync.current?.());
     const online = () => resync.current?.();
     window.addEventListener("online", online);
