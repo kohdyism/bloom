@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { useWorkspace, roleName } from "./context";
 import { Brainstorm } from "./stage-brainstorm";
 import { Synthesis } from "./stage-synthesis";
-import { Discussion } from "./chat";
+import { IdeaBank } from "./idea-bank";
 import { Creation } from "./stage-creation";
 import { Submission } from "./stage-submission";
 import { PresentationViewer } from "./presentation";
@@ -28,7 +28,7 @@ export function StagePanel() {
       {kind === "role_selection" ? <RoleSelection /> : null}
       {kind === "brainstorm" ? <Brainstorm /> : null}
       {kind === "synthesis" ? <Synthesis /> : null}
-      {kind === "discussion" ? <Discussion /> : null}
+      {kind === "discussion" ? <IdeaBank /> : null}
       {kind === "voting" ? <Voting /> : null}
       {kind === "creation" ? <Creation /> : null}
       {kind === "physical" ? <Physical /> : null}
@@ -40,7 +40,7 @@ export function StagePanel() {
 }
 
 function Panel({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <div className={cn("rounded-3xl border-2 border-white bg-white/90 p-4 shadow-soft sm:p-5", className)}>{children}</div>;
+  return <div className={cn("p-1", className)}>{children}</div>;
 }
 
 function Orientation() {

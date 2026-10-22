@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CornerDownRight, HandHeart, Lightbulb, MessageCircleQuestion, MessagesSquare, Pin, PinOff, Reply, Send, ThumbsUp, X } from "lucide-react";
+import { CornerDownRight, HandHeart, Lightbulb, MessageCircleQuestion, Pin, PinOff, Reply, Send, ThumbsUp, X } from "lucide-react";
 import type { GroupContent } from "@/lib/modules/sessions/state";
-import { Dialog, SheetContent } from "@/components/ui/overlay";
 import { Avatar, Textarea } from "@/components/ui/primitives";
 import { Button } from "@/components/ui/button";
 import { AiOriginBadge } from "@/components/live/ai-badge";
@@ -22,7 +21,7 @@ const REACTIONS = [
   { kind: "question", label: "I have a question", icon: MessageCircleQuestion },
 ] as const;
 
-export function Chat({ className, title }: { className?: string; title?: string }) {
+export function Chat({ className, header, empty, after }: { className?: string; header?: React.ReactNode; empty?: React.ReactNode; after?: React.ReactNode }) {
   const { group, state, act } = useWorkspace();
   const run = useRun();
   const [text, setText] = useState("");
@@ -37,7 +36,7 @@ export function Chat({ className, title }: { className?: string; title?: string 
   useEffect(() => {
     const el = listRef.current;
     if (el && atBottom.current) el.scrollTop = el.scrollHeight;
-  }, [group.messages.length]);
+  }, [group.messages.length, after]);
 
   async function send() {
     if (!text.trim()) return;
@@ -52,15 +51,7 @@ export function Chat({ className, title }: { className?: string; title?: string 
 
   return (
     <div className={cn("flex min-h-0 flex-col overflow-hidden rounded-3xl border-2 border-white bg-white/85 shadow-soft", className)}>
-      {title ? (
-        <div className="flex items-center gap-2 border-b border-line/70 bg-purple-soft/70 px-4 py-3">
-          <span className="inline-flex size-9 items-center justify-center rounded-xl bg-purple text-white" aria-hidden="true"><MessagesSquare className="size-5" /></span>
-          <div className="min-w-0 flex-1">
-            <h2 className="font-display text-lg font-bold leading-tight">{title}</h2>
-            <p className="text-xs text-ink-muted">Optional — talking in the room counts too</p>
-          </div>
-        </div>
-      ) : null}
+      {header}
       {pinned.length ? (
         <div className="border-b border-line bg-amber-soft/40 px-4 py-2">
           <p className="text-xs font-semibold text-amber">Pinned</p>
@@ -76,9 +67,9 @@ export function Chat({ className, title }: { className?: string; title?: string 
         aria-relevant="additions"
         aria-label="Group chat"
       >
-        {group.messages.length === 0 ? (
+        {group.messages.length === 0 ? (empty ?? (
           <li className="flex items-center gap-3 text-sm text-ink-muted"><Mascot size={40} mood="idle" />No messages yet. Chat is optional — talking in the room counts too.</li>
-        ) : null}
+        )) : null}
         {group.messages.map((m) => {
           if (m.kind === "system") return <li key={m.id} className="text-center text-xs text-ink-muted">{m.body}</li>;
           const mine = m.authorId === state.me.id;
@@ -94,7 +85,7 @@ export function Chat({ className, title }: { className?: string; title?: string 
                   {m.kind === "teacher" ? <span className="ml-1.5 rounded-full bg-blue-soft px-1.5 py-0.5 text-[0.7rem] font-semibold text-blue">Teacher</span> : null}
                   <span className="ml-1.5">{new Date(m.createdAt!).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</span>
                 </p>
-                <div className={cn("rounded-2xl px-3.5 py-2.5 text-[0.95rem]", m.kind === "ai" ? "border-2 border-purple/30 bg-gradient-to-br from-purple-soft to-coral-soft/60" : m.kind === "teacher" ? "bg-blue-soft" : mine ? "bg-teal-soft" : "bg-surface-2")}>
+                <div className={cn("rounded-2xl px-3.5 py-2.5 text-[0.95rem]", m.kind === "ai" ? "border-2 border-[#ffd2c4] bg-[#fff6f1]" : m.kind === "teacher" ? "bg-blue-soft" : mine ? "bg-teal-soft" : "bg-surface-2")}>
                   {parent ? <p className="mb-1 flex gap-1 border-l-2 border-line-strong pl-2 text-xs text-ink-muted"><CornerDownRight className="size-3 shrink-0" aria-hidden="true" /><span className="truncate">{parent.author}: {parent.body}</span></p> : null}
                   <p className="whitespace-pre-line">{m.body}</p>
                 </div>
@@ -117,6 +108,7 @@ export function Chat({ className, title }: { className?: string; title?: string 
             </li>
           );
         })}
+        {after}
       </ol>
       <form className="flex flex-col gap-2 border-t border-line p-3" onSubmit={(e) => { e.preventDefault(); void send(); }}>
         {replyTo ? (
@@ -136,20 +128,5 @@ export function Chat({ className, title }: { className?: string; title?: string 
         <SpeechButton onText={(t) => setText((x) => (x ? `${x} ${t}` : t))} />
       </form>
     </div>
-  );
-}
-
-/** Discussion stage: the conversation is the activity, so the chat takes the centre. */
-export function Discussion() {
-  return <Chat title="Group discussion" className="min-h-[26rem] flex-1" />;
-}
-
-export function ChatDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <SheetContent title="Group chat" description="Optional — talking in the room counts too." className="bg-[#f6f2ff]">
-        <Chat className="h-full rounded-none border-0" />
-      </SheetContent>
-    </Dialog>
   );
 }

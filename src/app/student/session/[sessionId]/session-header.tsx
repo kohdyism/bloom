@@ -1,6 +1,7 @@
 "use client";
 
-import { Hand, LifeBuoy, LogOut, Star } from "lucide-react";
+import { Hand, LifeBuoy, Lock, LogOut, Star } from "lucide-react";
+import { Pip } from "@/components/mascot";
 import type { StudentState } from "@/lib/modules/sessions/state";
 import type { ConnectionState } from "@/lib/realtime/client";
 import { HoverInfo } from "@/components/ui/hover-info";
@@ -14,8 +15,8 @@ import { HelpPanel } from "./help-panel";
 import type { StudentAction } from "./context";
 
 /** Just three things matter at a glance: what stage it is, how long is left, and my role. */
-export function SessionHeader({ state, connection, sessionId, act }: {
-  state: StudentState; connection: ConnectionState; sessionId: string; act: (b: StudentAction) => Promise<unknown>;
+export function SessionHeader({ state, connection, sessionId, act, onAskPip }: {
+  state: StudentState; connection: ConnectionState; sessionId: string; act: (b: StudentAction) => Promise<unknown>; onAskPip?: () => void;
 }) {
   const g = state.group;
   const run = useRun();
@@ -53,6 +54,11 @@ export function SessionHeader({ state, connection, sessionId, act }: {
               className={cn("inline-flex h-11 items-center gap-1.5 rounded-2xl px-3.5 font-semibold transition-colors", me?.handRaised ? "bg-sun text-ink shadow-soft" : "bg-surface-2 text-ink hover:bg-sun-soft")}
             >
               <Hand className="size-5" aria-hidden="true" />{me?.handRaised ? "Hand up" : "Raise hand"}
+            </button>
+          ) : null}
+          {g && live && onAskPip ? (
+            <button type="button" onClick={onAskPip} className="inline-flex h-11 items-center gap-1.5 rounded-2xl bg-purple-soft pl-1 pr-3.5 font-semibold text-purple-strong hover:brightness-95">
+              <Pip size={36} animate={false} mood="happy" />Ask Pip<Lock className="size-4" aria-hidden="true" /><span className="sr-only">(private)</span>
             </button>
           ) : null}
           <HelpPanel state={state} sessionId={sessionId} act={act} trigger={

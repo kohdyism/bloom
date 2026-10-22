@@ -114,8 +114,7 @@ test("complete inclusive classroom lesson", async ({ browser }) => {
   await expect(a2.page.getByText("I think the storm line is the strongest evidence.")).toBeVisible();
   await a2.page.getByRole("button", { name: "Agree", exact: true }).first().click();
   await expect(a1.page.getByRole("button", { name: "Agree (1)" })).toBeVisible();
-  // Earlier ideas live in the Ideas panel, one tap away.
-  await a2.page.getByRole("button", { name: /^Ideas/ }).click();
+  // In discussion, the group's ideas are the activity beside the chat.
   await a2.page.getByRole("button", { name: /^Build on idea/ }).first().click();
   await a2.page.getByLabel("Build on that idea").fill("Yes — and 'all I lov'd — I lov'd alone' shows it clearly.");
   await a2.page.getByRole("button", { name: "Add to idea bank" }).click();

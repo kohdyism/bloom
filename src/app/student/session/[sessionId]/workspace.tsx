@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Megaphone, PauseCircle } from "lucide-react";
+import { ClipboardList, Megaphone, MessagesSquare, PauseCircle } from "lucide-react";
 import type { StudentState } from "@/lib/modules/sessions/state";
 import { useLiveState } from "@/lib/realtime/use-live-state";
 import { api } from "@/lib/realtime/client";
@@ -15,10 +15,8 @@ import { useNow } from "@/lib/use-now";
 import { cn } from "@/lib/utils";
 import { WorkspaceContext, type Inserter, type StudentAction, type WorkspaceCtx } from "./context";
 import { SessionHeader } from "./session-header";
-import { NovaCard } from "./nova-card";
-import { StagePanel } from "./stage-panel";
-import { SidePanel, type PanelTab } from "./side-panel";
-import { BottomBar } from "./bottom-bar";
+import { NovaChat } from "./nova-chat";
+import { ActivityPanel } from "./activity-panel";
 import { AssistantPanel } from "./assistant-panel";
 import { Reflection } from "./reflection";
 import { PresentationViewer } from "./presentation";
@@ -30,7 +28,8 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [assistantPrefill, setAssistantPrefill] = useState<{ action?: string; text?: string } | undefined>();
   const [assistantTick, setAssistantTick] = useState(0);
-  const [panel, setPanel] = useState<PanelTab | null>(null);
+  const [mobileTab, setMobileTab] = useState<"chat" | "activity">("chat");
+  const [ideasSignal, setIdeasSignal] = useState(0);
   const [inserter, setInserter] = useState<Inserter | null>(null);
   const [editRequest, setEditRequest] = useState<WorkspaceCtx["editRequest"]>(null);
   const me = initial.me.id;
@@ -98,23 +97,20 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
   const g = state.group;
   const inLesson = !!g && (s.status === "active" || s.status === "paused");
   const kind = g?.stageStatus === "complete" ? "complete" : g?.stage?.kind;
-  // Ideas and chat live in one side panel. Where the ideas or the chat ARE the activity, they aren't offered twice.
-  const tabs: PanelTab[] = [...(kind !== "synthesis" && kind !== "voting" ? ["ideas" as const] : []), ...(kind !== "discussion" ? ["chat" as const] : [])];
-  const activePanel = panel && tabs.includes(panel) ? panel : null;
-  const overlay = !useMediaQuery("(min-width: 1024px)");
+  const wide = useMediaQuery("(min-width: 1024px)");
 
   const openChat = useCallback(() => {
-    if (kind === "discussion") document.getElementById("chat-input")?.focus();
-    else setPanel("chat");
-  }, [kind]);
-  const openIdeas = useCallback(() => setPanel("ideas"), []);
+    setMobileTab("chat");
+    setTimeout(() => document.getElementById("chat-input")?.focus(), 0);
+  }, []);
+  const openIdeas = useCallback(() => { setMobileTab("activity"); setIdeasSignal((n) => n + 1); }, []);
 
   const now = useNow();
   const latestAnnouncement = state.announcements[0];
   const recentAnnouncement = latestAnnouncement && now - new Date(latestAnnouncement.createdAt!).getTime() < 10 * 60_000 ? latestAnnouncement : null;
 
   const ctxValue: WorkspaceCtx | null = g
-    ? { sessionId, state, group: g, act, refresh, openAssistant, openChat, openIdeas, inserter, setInserter, editRequest, requestEdit }
+    ? { sessionId, state, group: g, act, refresh, openAssistant, openChat, openIdeas, ideasSignal, inserter, setInserter, editRequest, requestEdit }
     : null;
 
   let body: React.ReactNode;
@@ -125,60 +121,42 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
   } else if (s.status === "lobby") {
     body = <GroupReveal state={state} />;
   } else {
-    const stage = g.stage;
+    // Centre: the group chat with Nova. Side: the stage activity (wider when making something).
+    const making = kind === "creation";
     body = (
-      <>
-        <div className="flex min-h-0 flex-1 gap-4 p-4">
-          <div className="min-w-0 flex-1 overflow-y-auto rounded-[1.75rem]" id="activity">
-            <div className="mx-auto flex min-h-full max-w-4xl flex-col gap-4 pb-2">
-              {recentAnnouncement ? (
-                <div className="flex items-start gap-2 rounded-2xl border-2 border-blue/30 bg-blue-soft px-4 py-3" role="status">
-                  <Megaphone className="mt-0.5 size-5 shrink-0 text-blue" aria-hidden="true" />
-                  <p><strong>{recentAnnouncement.toGroup ? "Teacher (to your group): " : "Teacher: "}</strong>{recentAnnouncement.body}</p>
-                </div>
-              ) : null}
-              {s.presentation && kind !== "presentation" ? <PresentationViewer compact /> : null}
-              {kind !== "complete" && stage ? (
-                <>
-                  <h1 className="sr-only">{stage.title}</h1>
-                  {stage.instructions ? <TaskText text={stage.instructions} simplified={prefs.simplifiedInstructions} /> : null}
-                  <NovaCard />
-                </>
-              ) : null}
-              <StagePanel />
-            </div>
+      <div className="flex min-h-0 flex-1 flex-col gap-3 p-3 lg:p-4">
+        {recentAnnouncement ? (
+          <div className="flex items-start gap-2 rounded-2xl border-2 border-blue/30 bg-blue-soft px-4 py-3" role="status">
+            <Megaphone className="mt-0.5 size-5 shrink-0 text-blue" aria-hidden="true" />
+            <p><strong>{recentAnnouncement.toGroup ? "Teacher (to your group): " : "Teacher: "}</strong>{recentAnnouncement.body}</p>
           </div>
-          {activePanel && !overlay ? <SidePanel tab={activePanel} tabs={tabs} onTab={setPanel} onClose={() => setPanel(null)} overlay={false} /> : null}
+        ) : null}
+        {s.presentation && kind !== "presentation" ? <PresentationViewer compact /> : null}
+        {g.stage && kind !== "complete" ? <h1 className="sr-only">{g.stage.title}</h1> : null}
+        {!wide ? (
+          <div role="tablist" aria-label="Chat or activity" className="flex gap-1 rounded-2xl bg-white/80 p-1 shadow-soft">
+            <button type="button" role="tab" aria-selected={mobileTab === "chat"} onClick={() => setMobileTab("chat")} className={cn("inline-flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 font-semibold", mobileTab === "chat" ? "bg-ink text-white" : "text-ink-muted")}><MessagesSquare className="size-5" aria-hidden="true" />Chat with Nova</button>
+            <button type="button" role="tab" aria-selected={mobileTab === "activity"} onClick={() => setMobileTab("activity")} className={cn("inline-flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 font-semibold", mobileTab === "activity" ? "bg-ink text-white" : "text-ink-muted")}><ClipboardList className="size-5" aria-hidden="true" />Activity</button>
+          </div>
+        ) : null}
+        <div className="flex min-h-0 flex-1 gap-4">
+          {wide || mobileTab === "chat" ? <NovaChat className="min-w-0 flex-1" /> : null}
+          {wide || mobileTab === "activity" ? <ActivityPanel className={wide ? (making ? "w-[58%] shrink-0" : "w-[min(34rem,44%)] shrink-0") : "min-w-0 flex-1"} /> : null}
         </div>
-        <BottomBar panel={activePanel} tabs={tabs} onToggle={(t) => setPanel((p) => (p === t ? null : t))} />
-        {activePanel && overlay ? <SidePanel tab={activePanel} tabs={tabs} onTab={setPanel} onClose={() => setPanel(null)} overlay /> : null}
-      </>
+      </div>
     );
   }
 
   return (
     <WorkspaceContext.Provider value={ctxValue}>
       <div data-app-shell className="flex min-h-0 flex-1 flex-col">
-        <SessionHeader state={state} connection={connection} sessionId={sessionId} act={act} />
+        <SessionHeader state={state} connection={connection} sessionId={sessionId} act={act} onAskPip={() => openAssistant()} />
         <p className="sr-only" aria-live="polite">{announce}</p>
         {body}
       </div>
       {s.status === "paused" ? <PausedOverlay /> : null}
       {ctxValue && inLesson ? <AssistantPanel open={assistantOpen} onOpenChange={setAssistantOpen} prefill={assistantPrefill} tick={assistantTick} /> : null}
     </WorkspaceContext.Provider>
-  );
-}
-
-/** The teacher's task for this stage, in big friendly text. */
-function TaskText({ text, simplified }: { text: string; simplified: boolean }) {
-  const sentences = text.split(/(?<=[.?!])\s+/).filter(Boolean);
-  const [all, setAll] = useState(!simplified || sentences.length <= 1);
-  return (
-    <div className="px-1 pt-1">
-      <p className="text-sm font-bold uppercase tracking-wide text-purple">Your task</p>
-      <p className="mt-0.5 whitespace-pre-line font-display text-[1.6rem] font-semibold leading-snug">{all ? text : sentences[0]}</p>
-      {!all ? <button type="button" className="mt-1 font-semibold text-teal underline-offset-4 hover:underline" onClick={() => setAll(true)}>Show full instructions</button> : null}
-    </div>
   );
 }
 

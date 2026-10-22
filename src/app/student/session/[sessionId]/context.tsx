@@ -16,8 +16,10 @@ export type WorkspaceCtx = {
   refresh: () => void;
   openAssistant: (prefill?: { action?: string; text?: string }) => void;
   openChat: () => void;
-  /** Open the side panel on the ideas tab. */
+  /** Switch the activity panel to the Ideas tab. */
   openIdeas: () => void;
+  /** Increments each time openIdeas is called. */
+  ideasSignal: number;
   inserter: Inserter | null;
   setInserter: (i: Inserter | null) => void;
   /** Brainstorm: load one of my ideas back into the writing box. */

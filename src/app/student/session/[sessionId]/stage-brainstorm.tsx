@@ -38,7 +38,7 @@ export function Brainstorm() {
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-3xl border-2 border-white bg-white/90 p-4 shadow-soft sm:p-5">
+    <div className="flex flex-col gap-3 p-1">
       <div className="flex flex-wrap items-center gap-2">
         <label htmlFor="idea-text" className="font-display text-xl font-bold">{editing ? "Edit your idea" : "Your idea"}</label>
         <span className="inline-flex items-center gap-1 rounded-full bg-teal-soft px-2.5 py-0.5 text-xs font-semibold text-teal-strong"><Lock className="size-3.5" aria-hidden="true" />Only you can see this</span>

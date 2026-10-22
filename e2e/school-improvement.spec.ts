@@ -98,13 +98,13 @@ test("school improvement: vote, whiteboard, slides, present", async ({ browser }
   await expect(s[0].page.getByRole("button", { name: "Text: Ask the council for £200" })).toBeVisible();
   await shot(s[0].page, "s-whiteboard");
   // Earlier ideas are one tap away while working, ready to add to the board.
-  await s[0].page.getByRole("button", { name: /^Ideas/ }).click();
+  await s[0].page.getByRole("tab", { name: /^Ideas/ }).click();
   await expect(s[0].page.getByRole("button", { name: /^Add to whiteboard: Ramps/ })).toBeVisible();
   await s[0].page.waitForTimeout(400); // let the panel finish sliding in
   await shot(s[0].page, "s-ideas-panel");
   await s[0].page.getByRole("button", { name: /^Add to whiteboard: Ramps/ }).click();
   await expect(s[1].page.getByRole("button", { name: "Sticky note: Ramps and wider doors in the old block" })).toBeVisible();
-  await s[0].page.getByRole("button", { name: "Close panel" }).click();
+  await s[0].page.getByRole("tab", { name: "Activity", exact: true }).click();
 
   // Slides.
   await s[2].page.getByRole("tab", { name: "Slides" }).click();

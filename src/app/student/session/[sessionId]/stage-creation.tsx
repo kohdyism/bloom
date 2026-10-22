@@ -40,7 +40,7 @@ export function Creation() {
 
   if (!kinds.length) return <MediaUploader />;
   return (
-    <div className="flex min-h-[32rem] flex-1 flex-col gap-2 rounded-3xl border-2 border-white bg-white/85 p-3 shadow-soft sm:p-4">
+    <div className="flex min-h-[28rem] flex-1 flex-col gap-2">
       <Tabs value={tab} onValueChange={setTab} className="flex min-h-0 flex-1 flex-col">
         <div className="flex flex-wrap items-center gap-2">
           <TabsList aria-label="Shared workspaces" className="bg-purple-soft/70">
