@@ -17,7 +17,7 @@ whiteboards and slides that several students can edit at once.
 - [Demo accounts and guided demo](#demo-accounts-and-guided-demo)
 - [Configuration](#configuration)
 - [Tests](#tests)
-- [Deployment](#deployment-vercel--supabase)
+- [Deployment](#deployment)
 - [Documentation](#documentation)
 
 ## Quick start
@@ -81,7 +81,32 @@ E2E_SERVER_COMMAND="npx next start -p 3100" npm run test:e2e   # Playwright, sep
 - **Integration** (`tests/integration`): real migrations and RLS policies — private ideas, private assistant transcripts, help requests, cross-group isolation, spoofed AI/system messages, profile tampering, other teachers, join-code rules, the public display allow-list.
 - **End-to-end** (`e2e/`): the brief's 30-step classroom scenario with a teacher, four students in separate authenticated browser contexts and the public display, including URL/API tampering checks; the school-improvement scenario (anonymous brainstorm, voting, whiteboard, slides, presentation); the paper-aeroplane scenario (roles, check-ins, photo evidence, pause/extend, return for revision); and an axe-core WCAG 2.2 AA audit of the main screens in normal and high-contrast modes. If Playwright can't download its browser, set `PLAYWRIGHT_CHROMIUM_PATH` to an installed Chromium. Run E2E against a production build (`next start`) — the dev server plus six browsers needs a lot of memory.
 
-## Deployment (Vercel + Supabase)
+## Deployment
+
+### Recommended: one container + Postgres (e.g. Railway)
+
+This is the configuration the test suite runs (local auth, files on a disk,
+SSE realtime on a long-running server). The `Dockerfile` works on any
+container host; `railway.json` configures Railway.
+
+1. Push this repository to GitHub.
+2. In Railway: **New project → Deploy from GitHub repo**, then **+ New →
+   Database → PostgreSQL** in the same project. Railway's Postgres gives the
+   app the role privileges the migrations need; some managed Postgres
+   services (e.g. ones without `BYPASSRLS`) don't.
+3. On the Bloom service: **Settings → Volumes → add a volume** mounted at
+   `/data` (uploaded photos live there).
+4. **Variables:**
+   `DATABASE_URL=${{Postgres.DATABASE_URL}}`,
+   `SESSION_SECRET=` (48+ random characters, e.g. `openssl rand -base64 48`),
+   `BLOOM_DEMO_MODE=true`, and optionally `ANTHROPIC_API_KEY`.
+   Set `BLOOM_SEED_DEMO=false` if you don't want the fictional demo data.
+5. **Settings → Networking → Generate domain.** Each start applies pending
+   migrations and loads the demo data only if it isn't there yet.
+6. Sign in as `teacher.demo` / `bloom-demo` and change that password —
+   it's published in this README.
+
+### Alternative: Vercel + Supabase
 
 1. **Supabase:** create a project (UK/EU region). Apply the migrations in
    `supabase/migrations` in order (Supabase SQL editor or `supabase db push`).
