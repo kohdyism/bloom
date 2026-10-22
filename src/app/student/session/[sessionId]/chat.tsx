@@ -196,7 +196,7 @@ export function Chat({ className, header, empty, after, composerClassName, onAct
           <Textarea id="chat-input" rows={1} className="min-h-11 flex-1 resize-none" value={text} maxLength={2000}
             onChange={(e) => { setText(e.target.value); onActivity?.("typing"); }}
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }}
-            placeholder="Message your group… (type @Bloom to ask Bloom)" title="Enter to send · Shift+Enter for a new line" />
+            placeholder="Message your group, or @Bloom…" title="Enter to send · Shift+Enter for a new line" />
           <Button type="submit" size="icon" aria-label="Send message" pending={sending} disabled={!text.trim()}><Send /></Button>
         </div>
         <SpeechButton onText={(t) => setText((x) => (x ? `${x} ${t}` : t))} />
