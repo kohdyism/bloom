@@ -1,0 +1,44 @@
+# Deploys Bloom to Fly.io on every push to main (and on demand).
+# One-time setup: add a repository secret FLY_API_TOKEN created with
+#   fly tokens create deploy -a bloom-kohdyism
+name: Deploy to Fly.io
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: fly-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build and deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: Check the deploy token is set
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          if [ -z "$FLY_API_TOKEN" ]; then
+            echo "::error::Add a repository secret named FLY_API_TOKEN (Settings → Secrets and variables → Actions). Create it with: fly tokens create deploy -a bloom-kohdyism"
+            exit 1
+          fi
+      - name: Deploy
+        run: flyctl deploy --remote-only --wait-timeout 600
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      - name: Check the site responds
+        run: |
+          for i in $(seq 1 20); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" https://bloom-kohdyism.fly.dev/sign-in || true)
+            echo "attempt $i: HTTP $code"
+            [ "$code" = "200" ] && exit 0
+            sleep 10
+          done
+          echo "::error::The site did not respond with 200 after deploying"
+          exit 1
