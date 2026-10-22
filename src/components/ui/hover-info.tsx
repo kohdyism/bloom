@@ -9,8 +9,10 @@ import { cn } from "@/lib/utils";
  * card on hover (with a short delay); touch and keyboard users press the
  * trigger to toggle it. The trigger must be a single focusable element.
  */
-export function HoverInfo({ children, content, side = "bottom", align = "center", className, openDelay = 180 }: {
+export function HoverInfo({ children, content, side = "bottom", align = "center", className, openDelay = 180, suppress = false }: {
   children: React.ReactElement; content: React.ReactNode; side?: "top" | "right" | "bottom" | "left"; align?: "start" | "center" | "end"; className?: string; openDelay?: number;
+  /** Keep the card closed for now (e.g. while the trigger is showing something else). */
+  suppress?: boolean;
 }) {
   const [open, setOpen] = React.useState(false);
   const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -27,7 +29,7 @@ export function HoverInfo({ children, content, side = "bottom", align = "center"
   };
   React.useEffect(() => clear, []);
   return (
-    <Popover.Root open={open} onOpenChange={setOpen}>
+    <Popover.Root open={open && !suppress} onOpenChange={setOpen}>
       <Popover.Trigger asChild onPointerEnter={hoverOpen} onPointerLeave={hoverClose}>
         {children}
       </Popover.Trigger>

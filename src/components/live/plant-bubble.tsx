@@ -5,6 +5,7 @@ import { HoverInfo } from "@/components/ui/hover-info";
 import { useA11y, useReducedMotion } from "@/components/a11y-provider";
 import { playSfx, type Sfx } from "@/lib/sfx";
 import { cn } from "@/lib/utils";
+import { SpeechBubble } from "@/components/speech-bubble";
 
 /**
  * The group's plant, in a small bubble pinned to the corner. It grows only
@@ -20,6 +21,7 @@ export function PlantBubble({ stagesDone, totalStages, className }: { stagesDone
   const { prefs } = useA11y();
   const [sway, setSway] = useState(0);
   const [said, setSaid] = useState<(Tap & { key: number }) | null>(null);
+  const [btn, setBtn] = useState<HTMLButtonElement | null>(null);
   const sayT = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (sayT.current) clearTimeout(sayT.current); }, []);
   const [grew, setGrew] = useState(false);
@@ -58,13 +60,14 @@ export function PlantBubble({ stagesDone, totalStages, className }: { stagesDone
   }
   const anim = grew ? "plant-grow" : said ? said.anim : "plant-idle";
   return (
-    <HoverInfo side="top" align="start" content={
+    <HoverInfo suppress={!!said} side="top" align="start" content={
       <div className="flex flex-col gap-1">
         <p className="font-display text-base font-semibold">Your group&apos;s plant is {stageName}</p>
         <p className="text-ink-muted">{stagesDone} of {totalStages} stages done. It grows each time your group finishes a stage together.</p>
       </div>
     }>
       <button
+        ref={setBtn}
         type="button"
         onClick={tap}
         className={cn("group relative flex size-[4.75rem] items-center justify-center rounded-full bg-white shadow-lift ring-2 ring-white transition-transform hover:-translate-y-0.5", className)}
@@ -79,11 +82,7 @@ export function PlantBubble({ stagesDone, totalStages, className }: { stagesDone
           <Plant progress={progress} size={52} />
         </span>
         {said?.anim === "plant-water" && !reduced ? <span key={`d${said.key}`} className="plant-drop pointer-events-none absolute left-1/2 top-0 h-3 w-2 rounded-full rounded-t-[60%] bg-[#4cb8ff]" aria-hidden="true" /> : null}
-        {said ? (
-          <span key={`s${said.key}`} className="bubble-in pointer-events-none absolute bottom-[92%] left-[70%] z-10 w-max max-w-[14rem] rounded-2xl rounded-bl-sm border-2 border-line bg-white px-2.5 py-1 text-left font-display text-sm font-semibold text-ink shadow-lift" aria-live="polite">
-            {said.say}
-          </span>
-        ) : null}
+        {said ? <SpeechBubble anchor={btn} text={said.say} id={said.key} /> : null}
         <span className="absolute -right-1 -top-1 rounded-full bg-ink px-1.5 py-0.5 text-[0.7rem] font-bold tabular-nums text-white">{stagesDone}/{totalStages}</span>
         <span className="sr-only"> stages done — your group&apos;s plant, more details</span>
       </button>

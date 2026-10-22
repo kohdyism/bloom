@@ -5,6 +5,7 @@ import { useA11y, useReducedMotion } from "@/components/a11y-provider";
 import { playSfx, type Sfx } from "@/lib/sfx";
 import { cn } from "@/lib/utils";
 import { Nova, Pip, type Mood } from "./mascot";
+import { SpeechBubble } from "./speech-bubble";
 
 type Anim = "buddy-hop" | "buddy-wiggle" | "buddy-nod" | "buddy-cheer" | null;
 type Reaction = { anim: Anim; mood: Mood; say?: string; sfx?: Sfx; ms?: number };
@@ -60,6 +61,7 @@ export function Buddy({ who, size = 72, mood = "idle", className, name, cue, tal
   const reduced = useReducedMotion();
   const { prefs } = useA11y();
   const taps = useRef<number[]>([]);
+  const [btn, setBtn] = useState<HTMLButtonElement | null>(null);
   const [i, setI] = useState(0);
   const [active, setActive] = useState<(Reaction & { key: number }) | null>(null);
   const [resting, setResting] = useState(false);
@@ -105,17 +107,13 @@ export function Buddy({ who, size = 72, mood = "idle", className, name, cue, tal
   const loop = !reduced && !active && !resting ? (talking ? "buddy-chatter" : listening ? "buddy-listen" : null) : null;
   const label = name ?? (who === "pip" ? "Pip" : "Nova");
   return (
-    <button type="button" onClick={poke} className={cn("relative inline-flex shrink-0 items-center justify-center rounded-full outline-offset-4", className)} style={{ width: size, height: size }} aria-label={`${label}. Press to say hi.`}>
+    <button ref={setBtn} type="button" onClick={poke} className={cn("relative inline-flex shrink-0 items-center justify-center rounded-full outline-offset-4", className)} style={{ width: size, height: size }} aria-label={`${label}. Press to say hi.`}>
       <span className={cn("block", loop)}>
         <span key={active?.key ?? "still"} className={cn("block", !reduced && active?.anim)}>
           <C mood={shown} size={size} animate={!resting} />
         </span>
       </span>
-      {active?.say ? (
-        <span key={`b${active.key}`} className="bubble-in pointer-events-none absolute bottom-[88%] left-[62%] z-10 w-max max-w-[13rem] rounded-2xl rounded-bl-sm border-2 border-line bg-white px-2.5 py-1 font-display text-sm font-semibold text-ink shadow-lift" aria-live="polite">
-          {active.say}
-        </span>
-      ) : null}
+      {active?.say ? <SpeechBubble anchor={btn} text={active.say} id={active.key} /> : null}
     </button>
   );
 }
