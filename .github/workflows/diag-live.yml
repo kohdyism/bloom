@@ -1,0 +1,16 @@
+# Temporary: walks a lesson on the live demo site to find where students get stuck.
+name: Diagnose live lesson flow
+on:
+  push:
+    branches: [diag-live]
+jobs:
+  walk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: cd diag && npm init -y >/dev/null && npm i playwright@1.64.1 && npx playwright install --with-deps chromium
+      - run: cd diag && node live-repro.mjs
+        env: { BASE: "https://bloom-kohdyism.fly.dev" }
