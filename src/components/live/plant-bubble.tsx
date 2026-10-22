@@ -44,6 +44,7 @@ export function PlantBubble({ stagesDone, totalStages, className }: { stagesDone
         onClick={() => setSway((n) => n + 1)}
         className={cn("group relative flex size-[4.75rem] items-center justify-center rounded-full bg-white shadow-lift ring-2 ring-white transition-transform hover:-translate-y-0.5", className)}
         data-testid="plant-bubble"
+        data-tour="plant"
       >
         <svg viewBox="0 0 76 76" className="absolute inset-0 -rotate-90" aria-hidden="true">
           <circle cx="38" cy="38" r={R} fill="none" stroke="var(--mint-soft)" strokeWidth="5" />

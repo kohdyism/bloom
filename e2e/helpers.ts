@@ -6,8 +6,10 @@ export const STUDENT_PASSWORD = "bloom-student";
 export type Actor = { name: string; context: BrowserContext; page: Page };
 
 /** Each actor gets a genuinely separate browser context (own cookies/session). */
-export async function signInAs(browser: Browser, username: string, password: string): Promise<Actor> {
+export async function signInAs(browser: Browser, username: string, password: string, opts: { tour?: boolean } = {}): Promise<Actor> {
   const context = await browser.newContext();
+  // The first-lesson tour is tested on its own; other tests start with it already seen.
+  if (!opts.tour) await context.addInitScript(() => { try { window.localStorage.setItem("bloom.lessonTour.v1", "done"); } catch { /* no storage */ } });
   const page = await context.newPage();
   await page.goto("/sign-in");
   await page.getByLabel("Username").fill(username);

@@ -1,6 +1,6 @@
 "use client";
 
-import { Hand, LifeBuoy, Lock, LogOut, Star } from "lucide-react";
+import { CircleHelp, Hand, LifeBuoy, Lock, LogOut, Star } from "lucide-react";
 import { Pip } from "@/components/mascot";
 import type { StudentState } from "@/lib/modules/sessions/state";
 import type { ConnectionState } from "@/lib/realtime/client";
@@ -15,8 +15,8 @@ import { HelpPanel } from "./help-panel";
 import type { StudentAction } from "./context";
 
 /** Just three things matter at a glance: what stage it is, how long is left, and my role. */
-export function SessionHeader({ state, connection, sessionId, act, onAskPip }: {
-  state: StudentState; connection: ConnectionState; sessionId: string; act: (b: StudentAction) => Promise<unknown>; onAskPip?: () => void;
+export function SessionHeader({ state, connection, sessionId, act, onAskPip, onTour }: {
+  state: StudentState; connection: ConnectionState; sessionId: string; act: (b: StudentAction) => Promise<unknown>; onAskPip?: () => void; onTour?: () => void;
 }) {
   const g = state.group;
   const run = useRun();
@@ -25,9 +25,9 @@ export function SessionHeader({ state, connection, sessionId, act, onAskPip }: {
   const inStage = g && live && g.stageStatus !== "complete" && g.stage;
   return (
     <header className="relative z-20 border-b-2 border-white/80 bg-white/80 backdrop-blur-md">
-      <div className="flex items-center gap-3 px-4 py-2.5">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2.5 sm:px-4">
         {/* Where we are */}
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 basis-40">
           {inStage ? (
             <>
               <p className="truncate text-sm font-semibold text-ink-muted">Group {g.name} · Stage {g.stageIndex + 1} of {state.session.stages.length}</p>
@@ -44,8 +44,14 @@ export function SessionHeader({ state, connection, sessionId, act, onAskPip }: {
         </div>
 
         {/* Help, settings — and my role in the corner */}
-        <div className="flex flex-1 shrink-0 items-center justify-end gap-2 whitespace-nowrap">
+        <div className="flex flex-1 shrink-0 items-center justify-end gap-2 whitespace-nowrap max-sm:basis-full max-sm:justify-between">
           {connection !== "open" ? <ConnectionStatus state={connection} /> : null}
+          {g && live && onAskPip ? (
+            <button type="button" onClick={onAskPip} className="inline-flex h-11 items-center gap-1.5 rounded-2xl bg-purple-soft pl-1 pr-3.5 font-semibold text-purple-strong hover:brightness-95">
+              <Pip size={36} animate={false} mood="happy" /><span className="max-lg:sr-only">Ask Pip</span><Lock className="size-4" aria-hidden="true" /><span className="sr-only">(private)</span>
+            </button>
+          ) : null}
+          <span className="flex items-center gap-2" data-tour="help">
           {g && live ? (
             <button
               type="button"
@@ -56,16 +62,15 @@ export function SessionHeader({ state, connection, sessionId, act, onAskPip }: {
               <Hand className="size-5" aria-hidden="true" /><span className="max-xl:sr-only">{me?.handRaised ? "Hand up" : "Raise hand"}</span>
             </button>
           ) : null}
-          {g && live && onAskPip ? (
-            <button type="button" onClick={onAskPip} className="inline-flex h-11 items-center gap-1.5 rounded-2xl bg-purple-soft pl-1 pr-3.5 font-semibold text-purple-strong hover:brightness-95">
-              <Pip size={36} animate={false} mood="happy" /><span className="max-lg:sr-only">Ask Pip</span><Lock className="size-4" aria-hidden="true" /><span className="sr-only">(private)</span>
-            </button>
-          ) : null}
           <HelpPanel state={state} sessionId={sessionId} act={act} trigger={
             <button type="button" className="inline-flex h-11 items-center gap-1.5 rounded-2xl bg-coral px-3.5 font-semibold text-white shadow-soft hover:brightness-95">
-              <LifeBuoy className="size-5" aria-hidden="true" />Need help
+              <LifeBuoy className="size-5" aria-hidden="true" /><span className="sm:hidden">Help</span><span className="max-sm:hidden">Need help</span>
             </button>
           } />
+          </span>
+          {g && live && onTour ? (
+            <button type="button" onClick={onTour} className="inline-flex size-10 items-center justify-center rounded-xl text-ink-muted hover:bg-surface-2" aria-label="How this screen works (tour)"><CircleHelp className="size-5" aria-hidden="true" /></button>
+          ) : null}
           <AccessibilitySettingsButton showStudentOptions compact />
           <form action={signOutAction}>
             <button type="submit" className="inline-flex size-10 items-center justify-center rounded-xl text-ink-muted hover:bg-surface-2" aria-label="Sign out"><LogOut className="size-4" aria-hidden="true" /></button>
@@ -94,7 +99,7 @@ function MyRole({ state }: { state: StudentState }) {
         </div>
       ) : <p>{choosing ? "Pick a role for this lesson — or none, if you'd rather join in your own way." : "You don't have a role — join in however suits you."}</p>}
     >
-      <button type="button" className={cn("flex items-center gap-2 rounded-2xl py-1.5 pl-2.5 pr-4 text-left", roles.length ? "bg-sun text-ink shadow-soft" : "bg-surface-2 text-ink-muted")} data-testid="my-role">
+      <button type="button" className={cn("flex items-center gap-2 rounded-2xl py-1.5 pl-2.5 pr-4 text-left", roles.length ? "bg-sun text-ink shadow-soft" : "bg-surface-2 text-ink-muted")} data-testid="my-role" data-tour="my-role">
         <Star className={cn("size-6", roles.length && "fill-white")} aria-hidden="true" />
         <span className="flex flex-col leading-tight">
           <span className="text-[0.7rem] font-bold uppercase tracking-wide">Your role</span>

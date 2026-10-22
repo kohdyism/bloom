@@ -18,6 +18,7 @@ import { WorkspaceContext, type Inserter, type StudentAction, type WorkspaceCtx 
 import { SessionHeader } from "./session-header";
 import { ActivityPanel } from "./activity-panel";
 import { ChatTabs, type ChatTab } from "./chat-tabs";
+import { LessonTour, tourSeen } from "./lesson-tour";
 import { Reflection } from "./reflection";
 import { PresentationViewer } from "./presentation";
 import { Materials } from "./materials";
@@ -26,6 +27,7 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
   const toast = useToast();
   const { prefs } = useA11y();
   const [chatTab, setChatTab] = useState<ChatTab>("group");
+  const [tourOpen, setTourOpen] = useState(false);
   const [assistantPrefill, setAssistantPrefill] = useState<{ action?: string; text?: string } | undefined>();
   const [assistantTick, setAssistantTick] = useState(0);
   const [mobileTab, setMobileTab] = useState<"chat" | "activity">("chat");
@@ -98,6 +100,13 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
   const s = state.session;
   const g = state.group;
   const kind = g?.stageStatus === "complete" ? "complete" : g?.stage?.kind;
+  const lessonRunning = !!g && s.status === "active";
+  // First time in a running lesson on this device: show the tour once.
+  useEffect(() => {
+    // Reads browser storage, which only exists after mounting.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (lessonRunning && !tourSeen()) setTourOpen(true);
+  }, [lessonRunning]);
   const wide = useMediaQuery("(min-width: 1024px)");
 
   const openChat = useCallback(() => {
@@ -155,11 +164,12 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
   return (
     <WorkspaceContext.Provider value={ctxValue}>
       <div data-app-shell className="flex min-h-0 flex-1 flex-col">
-        <SessionHeader state={state} connection={connection} sessionId={sessionId} act={act} onAskPip={() => openAssistant()} />
+        <SessionHeader state={state} connection={connection} sessionId={sessionId} act={act} onAskPip={() => openAssistant()} onTour={() => setTourOpen(true)} />
         <p className="sr-only" aria-live="polite">{announce}</p>
         {body}
       </div>
       {s.status === "paused" ? <PausedOverlay /> : null}
+      {tourOpen && lessonRunning && s.status !== "paused" ? <LessonTour onClose={() => setTourOpen(false)} /> : null}
     </WorkspaceContext.Provider>
   );
 }

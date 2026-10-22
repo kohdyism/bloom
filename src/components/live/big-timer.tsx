@@ -45,6 +45,7 @@ export function BigTimer({ timer, totalSeconds, className }: { timer: Timer; tot
           className,
         )}
         data-testid="stage-timer"
+        data-tour="timer"
       >
         <svg viewBox="0 0 52 52" className="size-12 -rotate-90" aria-hidden="true">
           <circle cx="26" cy="26" r={R} fill="none" stroke="var(--surface-2)" strokeWidth="6" />

@@ -27,12 +27,12 @@ export function ChatTabs({ tab, onTab, pipPrefill, pipTick, className, composerC
   return (
     <section aria-label="Chats" className={cn("flex min-h-0 flex-col overflow-hidden rounded-[1.75rem] border-2 border-white bg-white/90 shadow-soft", className)}>
       <div role="tablist" aria-label="Chats" className="flex gap-1 border-b border-line bg-surface-2/70 p-1.5">
-        <button type="button" role="tab" id="tab-group" aria-controls="panel-group" aria-selected={tab === "group"} onClick={() => onTab("group")}
+        <button type="button" role="tab" id="tab-group" data-tour="group-chat" aria-controls="panel-group" aria-selected={tab === "group"} onClick={() => onTab("group")}
           className={cn("relative inline-flex flex-1 items-center justify-center gap-2 rounded-2xl py-2 font-semibold transition", tab === "group" ? "bg-white text-ink shadow-soft" : "text-ink-muted hover:text-ink")}>
           <Nova size={28} animate={false} mood="happy" />Group chat
           {unread ? <span className="absolute right-3 top-2 size-2.5 rounded-full bg-coral" aria-label="New messages" /> : null}
         </button>
-        <button type="button" role="tab" id="tab-pip" aria-controls="panel-pip" aria-selected={tab === "pip"} onClick={() => onTab("pip")}
+        <button type="button" role="tab" id="tab-pip" data-tour="pip-chat" aria-controls="panel-pip" aria-selected={tab === "pip"} onClick={() => onTab("pip")}
           className={cn("inline-flex flex-1 items-center justify-center gap-2 rounded-2xl py-2 font-semibold transition", tab === "pip" ? "bg-white text-ink shadow-soft" : "text-ink-muted hover:text-ink")}>
           <Pip size={28} animate={false} mood="happy" />Just me · Pip<Lock className="size-4" aria-hidden="true" /><span className="sr-only">(private)</span>
         </button>

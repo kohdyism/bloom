@@ -8,6 +8,9 @@ import { joinSession, signInAs, STUDENT_PASSWORD, TEACHER } from "./helpers";
  * they don't replace testing with disabled users and assistive technology.
  */
 const found: string[] = [];
+const shot = async (page: Page, name: string) => {
+  if (process.env.SCREENSHOT_DIR) await page.screenshot({ path: `${process.env.SCREENSHOT_DIR}/${name}.png` });
+};
 async function audit(page: Page, label: string) {
   const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
   const serious = results.violations.filter((v) => v.impact === "serious" || v.impact === "critical");
@@ -49,15 +52,48 @@ test("main screens have no serious automated accessibility violations", async ({
   await first.page.getByRole("button", { name: /Let's go/ }).click();
   await audit(first.page, "first-time survey (question)");
 
-  const s = await signInAs(browser, "ben.o", STUDENT_PASSWORD);
+  const s = await signInAs(browser, "ben.o", STUDENT_PASSWORD, { tour: true });
   await audit(s.page, "student home");
   await joinSession(s, code);
   await audit(s.page, "student waiting room");
   await t.getByRole("button", { name: "Suggest groups" }).click();
   await t.getByRole("button", { name: "Approve groups" }).click();
   await t.getByRole("button", { name: "Start lesson" }).click();
+  // First lesson on this device: a short guided tour, then the workspace.
+  const tour = s.page.getByRole("dialog", { name: "Welcome to your lesson!" });
+  await expect(tour).toBeVisible();
+  await audit(s.page, "lesson tour");
+  await shot(s.page, "tour-1-welcome");
+  for (let n = 0; n < 12; n++) {
+    if (n === 1) await shot(s.page, "tour-2-group-chat");
+    if (n === 2) await shot(s.page, "tour-3-pip");
+    const done = s.page.getByRole("button", { name: "Let's go!" });
+    if (await done.isVisible()) { await done.click(); break; }
+    await s.page.getByRole("button", { name: "Next" }).click();
+  }
+  await expect(s.page.getByRole("dialog", { name: /tour|lesson/i })).toHaveCount(0);
   await expect(s.page.getByRole("heading", { name: "Think", exact: true })).toBeVisible();
+  // It doesn't come back on reload, but can be replayed from the header.
+  await s.page.reload();
+  await expect(s.page.getByRole("heading", { name: "Think", exact: true })).toBeVisible();
+  await expect(s.page.getByRole("dialog", { name: "Welcome to your lesson!" })).toHaveCount(0);
+  await s.page.getByRole("button", { name: "How this screen works (tour)" }).click();
+  await expect(s.page.getByRole("dialog", { name: "Welcome to your lesson!" })).toBeVisible();
+  await s.page.keyboard.press("Escape");
+  await expect(s.page.getByRole("dialog", { name: "Welcome to your lesson!" })).toHaveCount(0);
   await audit(s.page, "student workspace (brainstorm)");
+  // Tablet (portrait) and phone layouts.
+  for (const [w, h, name] of [[820, 1180, "tablet"], [390, 844, "phone"]] as const) {
+    await s.page.setViewportSize({ width: w, height: h });
+    await expect(s.page.getByRole("tab", { name: "Chats" })).toBeVisible();
+    await shot(s.page, `${name}-chats`);
+    await s.page.getByRole("tab", { name: "Activity", exact: true }).click();
+    await expect(s.page.getByLabel("Your idea")).toBeVisible();
+    await shot(s.page, `${name}-activity`);
+    await audit(s.page, `student workspace (${name})`);
+    await s.page.getByRole("tab", { name: "Chats" }).click();
+  }
+  await s.page.setViewportSize({ width: 1280, height: 720 });
   await audit(t, "teacher live dashboard");
 
   // High-contrast and large-text modes.

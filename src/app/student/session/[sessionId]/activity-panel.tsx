@@ -34,7 +34,7 @@ export function ActivityPanel({ className }: { className?: string }) {
   const ideaCount = kind === "brainstorm" ? group.ideas.mine.length : group.ideas.shared.length;
 
   return (
-    <section aria-label="Activity" className={cn("flex min-h-0 flex-col overflow-hidden rounded-[1.75rem] border-2 border-white bg-white/90 shadow-soft", className)}>
+    <section aria-label="Activity" data-tour="activity" className={cn("flex min-h-0 flex-col overflow-hidden rounded-[1.75rem] border-2 border-white bg-white/90 shadow-soft", className)}>
       {stage && kind !== "complete" ? (
         <div className="border-b border-line px-4 pb-3 pt-3.5">
           <div className="flex items-center gap-2">
@@ -43,7 +43,7 @@ export function ActivityPanel({ className }: { className?: string }) {
             {ideasTab ? (
               <div role="tablist" aria-label="Activity or ideas" className="ml-auto flex gap-1 rounded-xl bg-surface-2 p-1">
                 <button type="button" role="tab" aria-selected={!showIdeas} onClick={() => setTab("activity")} className={cn("rounded-lg px-3 py-1 text-sm font-semibold", !showIdeas ? "bg-white shadow-soft" : "text-ink-muted hover:text-ink")}>Activity</button>
-                <button type="button" role="tab" aria-selected={showIdeas} onClick={() => setTab("ideas")} className={cn("inline-flex items-center gap-1.5 rounded-lg px-3 py-1 text-sm font-semibold", showIdeas ? "bg-white shadow-soft" : "text-ink-muted hover:text-ink")}>
+                <button type="button" role="tab" data-tour="ideas-tab" aria-selected={showIdeas} onClick={() => setTab("ideas")} className={cn("inline-flex items-center gap-1.5 rounded-lg px-3 py-1 text-sm font-semibold", showIdeas ? "bg-white shadow-soft" : "text-ink-muted hover:text-ink")}>
                   <Lightbulb className="size-4" aria-hidden="true" />Ideas<span className="rounded-full bg-sun px-1.5 text-xs">{ideaCount}</span>
                 </button>
               </div>
@@ -58,7 +58,7 @@ export function ActivityPanel({ className }: { className?: string }) {
         <div className={cn("flex min-h-0 flex-1 flex-col", showIdeas && "hidden")}><StagePanel /></div>
       </div>
       {kind !== "complete" ? (
-        <div className="border-t border-line bg-white px-4 py-3"><Readiness /></div>
+        <div className="border-t border-line bg-white px-4 py-3" data-tour="ready"><Readiness /></div>
       ) : null}
     </section>
   );

@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { MascotSays } from "@/components/mascot";
+import { Nova, Pip } from "@/components/mascot";
 import { StepDots, Notice } from "@/components/ui/primitives";
 import { ACCOMMODATIONS, SURVEY_QUESTIONS, type Survey } from "@/lib/domain/students";
 import { cn } from "@/lib/utils";
@@ -24,10 +24,12 @@ export function SurveyForm({ name, initial, editing, supports }: { name: string;
   if (step === 0) {
     return (
       <div className="flex flex-col gap-6">
-        <MascotSays mood="happy" size={84} who="pip">
-          <p className="font-display text-2xl font-semibold">Hi {name}, I&apos;m Pip.</p>
+        <div className="flex items-end gap-1" aria-hidden="true"><Nova size={96} mood="happy" /><Pip size={80} mood="happy" /></div>
+        <div className="rounded-3xl rounded-tl-md border border-line bg-surface px-5 py-4 shadow-soft">
+          <p className="font-display text-2xl font-semibold">Hi {name}! We&apos;re Nova and Pip.</p>
+          <p className="mt-1">In lessons, <strong>Nova</strong> helps your group discuss — everyone sees what Nova says. <strong>Pip</strong> is your private helper — only you see what you ask Pip.</p>
           <p className="mt-1 text-ink-muted">Before we start, a few quick questions about how you like to work in groups. There are no right answers, you can skip any of them, and you can change them later.</p>
-        </MascotSays>
+        </div>
         <Notice tone="teal">Your answers help Bloom and your teacher set up groups and tasks that suit you. Other students don&apos;t see them.</Notice>
         <Button size="lg" className="self-start" onClick={() => setStep(1)}>Let&apos;s go <ArrowRight /></Button>
       </div>
