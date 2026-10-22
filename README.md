@@ -106,6 +106,23 @@ container host; `railway.json` configures Railway.
 6. Sign in as `teacher.demo` / `bloom-demo` and change that password —
    it's published in this README.
 
+### Fly.io (London)
+
+`fly.toml` is included. With [flyctl](https://fly.io/docs/flyctl/install/) installed and signed in:
+
+```bash
+fly apps create bloom-kohdyism                     # or edit `app` in fly.toml
+fly postgres create --name bloom-kohdyism-db       # Development / single node, region lhr, do NOT scale to zero
+fly postgres attach bloom-kohdyism-db -a bloom-kohdyism   # sets DATABASE_URL
+fly volumes create bloom_data --region lhr --size 1 -a bloom-kohdyism
+fly secrets set SESSION_SECRET="$(openssl rand -base64 48)" -a bloom-kohdyism
+fly deploy
+```
+
+This uses Fly's unmanaged Postgres (the attached user is a superuser, which
+the migrations need). Fly doesn't support unmanaged Postgres — take your own
+backups (`fly postgres` docs) before using it for anything beyond a demo.
+
 ### Alternative: Vercel + Supabase
 
 1. **Supabase:** create a project (UK/EU region). Apply the migrations in
