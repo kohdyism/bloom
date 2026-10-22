@@ -94,12 +94,13 @@ function MyRole({ state }: { state: StudentState }) {
         </div>
       ) : <p>{choosing ? "Pick a role for this lesson — or none, if you'd rather join in your own way." : "You don't have a role — join in however suits you."}</p>}
     >
-      <button type="button" className={cn("flex items-center gap-2 rounded-2xl py-1.5 pl-2.5 pr-4 text-left", roles.length ? "bg-sun text-ink shadow-soft" : "bg-surface-2 text-ink-muted")} data-testid="my-role" aria-label={`Your role: ${label}. More about it.`}>
+      <button type="button" className={cn("flex items-center gap-2 rounded-2xl py-1.5 pl-2.5 pr-4 text-left", roles.length ? "bg-sun text-ink shadow-soft" : "bg-surface-2 text-ink-muted")} data-testid="my-role">
         <Star className={cn("size-6", roles.length && "fill-white")} aria-hidden="true" />
         <span className="flex flex-col leading-tight">
           <span className="text-[0.7rem] font-bold uppercase tracking-wide">Your role</span>
           <span className="max-w-40 truncate font-display text-lg font-bold">{label}</span>
         </span>
+        <span className="sr-only">— more about it</span>
       </button>
     </HoverInfo>
   );

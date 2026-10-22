@@ -28,9 +28,9 @@ export function initials(name: string) {
 
 export const AVATAR_COLORS: Record<string, { bg: string; fg: string }> = {
   teal: { bg: "var(--teal-soft)", fg: "var(--teal-strong)" },
-  blue: { bg: "var(--blue-soft)", fg: "var(--blue)" },
-  purple: { bg: "var(--purple-soft)", fg: "var(--purple)" },
-  mint: { bg: "var(--mint-soft)", fg: "var(--mint)" },
-  coral: { bg: "var(--coral-soft)", fg: "var(--coral)" },
+  blue: { bg: "var(--blue-soft)", fg: "var(--blue-strong)" },
+  purple: { bg: "var(--purple-soft)", fg: "var(--purple-strong)" },
+  mint: { bg: "var(--mint-soft)", fg: "var(--mint-strong)" },
+  coral: { bg: "var(--coral-soft)", fg: "var(--coral-strong)" },
   amber: { bg: "var(--amber-soft)", fg: "var(--amber)" },
 };

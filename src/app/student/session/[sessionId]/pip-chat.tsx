@@ -38,7 +38,7 @@ export function PipChat({ active, prefill, tick, className, composerClassName }:
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const listRef = useRef<HTMLOListElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const handledPrefill = useRef<typeof prefill>(undefined);
 
   async function load() {
@@ -90,7 +90,8 @@ export function PipChat({ active, prefill, tick, className, composerClassName }:
   return (
     <div className={cn("flex min-h-0 flex-col", className)}>
       <p className="mx-4 mt-3 flex items-start gap-2 rounded-2xl bg-purple-soft px-3 py-2 text-sm"><Lock className="mt-0.5 size-4 shrink-0 text-purple-strong" aria-hidden="true" /><span>Only you can see this. Your teacher sees how many times you asked for each kind of help — not what you wrote. Pip gives hints, not answers.</span></p>
-      <ol ref={listRef} className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 py-3" aria-label="Conversation with Pip" role="log" aria-live="polite">
+      <div ref={listRef} className="min-h-0 flex-1 overflow-y-auto px-4 py-3" aria-label="Conversation with Pip" role="log" aria-live="polite">
+      <ol className="flex flex-col gap-3">
         {messages.length === 0 && !busy ? (
           <li className="flex flex-col items-center gap-3 py-6 text-center text-ink-muted"><Buddy who="pip" size={110} mood="happy" /><span className="max-w-xs">Hi, I&apos;m Pip. Ask me anything about the task — nothing is too small.</span></li>
         ) : null}
@@ -108,6 +109,7 @@ export function PipChat({ active, prefill, tick, className, composerClassName }:
         ))}
         {busy ? <li className="flex items-center gap-2 text-sm text-ink-muted" role="status"><Pip size={30} mood="thinking" animate={false} />Pip is thinking…</li> : null}
       </ol>
+      </div>
       {error ? <Notice tone="coral" className="mx-4" role="alert">{error} Your lesson work isn&apos;t affected.</Notice> : null}
       <div className={cn("flex flex-col gap-2 border-t border-line p-3", composerClassName)}>
         <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Quick help">

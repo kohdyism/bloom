@@ -27,7 +27,7 @@ export function Chat({ className, header, empty, after, composerClassName }: { c
   const [text, setText] = useState("");
   const [replyTo, setReplyTo] = useState<Msg | null>(null);
   const [sending, setSending] = useState(false);
-  const listRef = useRef<HTMLOListElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const atBottom = useRef(true);
   const byId = useMemo(() => new Map(group.messages.map((m) => [m.id, m])), [group.messages]);
   const pinned = group.messages.filter((m) => m.pinned);
@@ -58,15 +58,16 @@ export function Chat({ className, header, empty, after, composerClassName }: { c
           <ul className="text-sm">{pinned.slice(-3).map((m) => <li key={m.id} className="truncate"><strong>{m.author}:</strong> {m.body}</li>)}</ul>
         </div>
       ) : null}
-      <ol
+      <div
         ref={listRef}
         onScroll={(e) => { const el = e.currentTarget; atBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 60; }}
-        className="flex min-h-48 flex-1 flex-col gap-3 overflow-y-auto p-4"
+        className="min-h-48 flex-1 overflow-y-auto p-4"
         role="log"
         aria-live="polite"
         aria-relevant="additions"
         aria-label="Group chat"
       >
+      <ol className="flex flex-col gap-3">
         {group.messages.length === 0 ? (empty ?? (
           <li className="flex items-center gap-3 text-sm text-ink-muted"><Mascot size={40} mood="idle" />No messages yet. Chat is optional — talking in the room counts too.</li>
         )) : null}
@@ -110,6 +111,7 @@ export function Chat({ className, header, empty, after, composerClassName }: { c
         })}
         {after}
       </ol>
+      </div>
       <form className={cn("flex flex-col gap-2 border-t border-line p-3", composerClassName)} onSubmit={(e) => { e.preventDefault(); void send(); }}>
         {replyTo ? (
           <p className="flex items-center gap-2 rounded-lg bg-surface-2 px-2.5 py-1 text-xs">

@@ -42,7 +42,6 @@ export function PlantBubble({ stagesDone, totalStages, className }: { stagesDone
       <button
         type="button"
         onClick={() => setSway((n) => n + 1)}
-        aria-label={`Your group's plant: ${stagesDone} of ${totalStages} stages done. More details.`}
         className={cn("group relative flex size-[4.75rem] items-center justify-center rounded-full bg-white shadow-lift ring-2 ring-white transition-transform hover:-translate-y-0.5", className)}
         data-testid="plant-bubble"
       >
@@ -53,7 +52,8 @@ export function PlantBubble({ stagesDone, totalStages, className }: { stagesDone
         <span key={`${sway}-${grew}`} className={cn("block", !reduced && (grew ? "plant-grow" : sway ? "plant-sway" : "plant-idle"))}>
           <Plant progress={progress} size={52} />
         </span>
-        <span className="absolute -right-1 -top-1 rounded-full bg-ink px-1.5 py-0.5 text-[0.7rem] font-bold tabular-nums text-white" aria-hidden="true">{stagesDone}/{totalStages}</span>
+        <span className="absolute -right-1 -top-1 rounded-full bg-ink px-1.5 py-0.5 text-[0.7rem] font-bold tabular-nums text-white">{stagesDone}/{totalStages}</span>
+        <span className="sr-only"> stages done — your group&apos;s plant, more details</span>
       </button>
     </HoverInfo>
   );

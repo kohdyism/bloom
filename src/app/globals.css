@@ -43,6 +43,10 @@
   --amber-soft: #fff0bf;
   --sun: #ffd43b;
   --sun-soft: #fff6d1;
+  /* Darker text shades for small text on the soft tints (avatars, chips). */
+  --blue-strong: #155a9c;
+  --mint-strong: #1b6129;
+  --coral-strong: #a11d4c;
 
   --focus: #4f22d6;
   --radius: 16px;
@@ -74,6 +78,9 @@
   --blue: #0b3aa8;
   --purple: #3a1a9e;
   --purple-strong: #2a1078;
+  --blue-strong: #0b2f87;
+  --mint-strong: #0a4a2e;
+  --coral-strong: #6e1230;
   --mint: #0c5c39;
   --coral: #8a1a3f;
   --amber: #5c3700;
