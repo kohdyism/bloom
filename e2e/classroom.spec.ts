@@ -120,7 +120,7 @@ test("complete inclusive classroom lesson", async ({ browser }) => {
   await expect(a1.page.getByText("shows it clearly").first()).toBeVisible();
 
   // 15. Private AI assistance (student-only).
-  await a1.page.getByRole("button", { name: /Ask Sprout/ }).click();
+  await a1.page.getByRole("button", { name: "Ask Sprout (private)" }).click();
   await a1.page.getByRole("button", { name: "Explain simply" }).click();
   await expect(a1.page.getByRole("log", { name: "Conversation with Sprout" }).getByText("Simulated AI")).toBeVisible();
   await a1.page.keyboard.press("Escape");
@@ -225,7 +225,8 @@ test("complete inclusive classroom lesson", async ({ browser }) => {
   for (const s of [a1, a2]) {
     await expect(s.page.getByText("The lesson has ended — how did it go?")).toBeVisible();
     for (const q of ["comfort", "opportunity", "listened", "clarity", "overall"]) {
-      await s.page.locator(`input[name="${q}"][value="4"]`).check({ force: true });
+      await s.page.locator(`label:has(input[name="${q}"][value="4"])`).click();
+      await expect(s.page.locator(`input[name="${q}"][value="4"]`)).toBeChecked();
     }
     await s.page.getByLabel(/What helped you participate today/).fill(s === a1 ? "Having thinking time first and clear roles." : "Writing my idea before talking.");
     await s.page.getByRole("button", { name: "Send reflection" }).click();

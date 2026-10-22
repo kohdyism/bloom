@@ -56,7 +56,7 @@ export function Reflection({ sessionId, state }: { sessionId: string; state: Stu
             <legend className="mb-3 font-semibold">{r.question}{"allowNa" in r && r.allowNa ? <span className="font-normal text-ink-muted"> (optional)</span> : null}</legend>
             <div className="flex items-stretch gap-2">
               {[1, 2, 3, 4, 5].map((n) => (
-                <label key={n} className={cn("flex flex-1 cursor-pointer flex-col items-center justify-center rounded-xl border-2 py-3 text-lg font-bold has-[:focus-visible]:outline has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-[var(--focus)]", ratings[r.key] === n ? "border-teal bg-teal text-white" : "border-line bg-surface hover:border-line-strong")}>
+                <label key={n} className={cn("relative flex flex-1 cursor-pointer flex-col items-center justify-center rounded-xl border-2 py-3 text-lg font-bold has-[:focus-visible]:outline has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-[var(--focus)]", ratings[r.key] === n ? "border-teal bg-teal text-white" : "border-line bg-surface hover:border-line-strong")}>
                   <input type="radio" className="sr-only" name={r.key} value={n} checked={ratings[r.key] === n} onChange={() => setRatings({ ...ratings, [r.key]: n })} aria-label={`${n}${n === 1 ? ` — ${r.low}` : n === 5 ? ` — ${r.high}` : ""}`} />
                   {n}
                 </label>

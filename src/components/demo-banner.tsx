@@ -8,7 +8,7 @@ export function DemoBanner({ aiMode }: { aiMode: "live" | "simulated" }) {
         <FlaskConical className="size-3.5" aria-hidden="true" />
         Demo mode — every student, class and support need is fictional.
       </span>
-      <span className="rounded-full bg-white/20 px-2 py-0.5" data-testid="ai-mode">
+      <span className="rounded-full bg-black/25 px-2 py-0.5" data-testid="ai-mode">
         {aiMode === "live" ? "AI: live (Claude API)" : "AI: simulated — no external AI calls"}
       </span>
     </div>

@@ -7,20 +7,21 @@ import { joinSession, signInAs, STUDENT_PASSWORD, TEACHER } from "./helpers";
  * and high-contrast modes. Automated checks catch only part of accessibility;
  * they don't replace testing with disabled users and assistive technology.
  */
+const found: string[] = [];
 async function audit(page: Page, label: string) {
   const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
   const serious = results.violations.filter((v) => v.impact === "serious" || v.impact === "critical");
-  const summary = serious.map((v) => `${label}: ${v.id} (${v.impact}) — ${v.nodes.slice(0, 3).map((n) => n.target.join(" ")).join(" | ")}`);
-  expect(summary, summary.join("\n")).toEqual([]);
+  found.push(...serious.map((v) => `${label}: ${v.id} (${v.impact}) — ${v.nodes.slice(0, 3).map((n) => n.target.join(" ")).join(" | ")}`));
 }
 
 test("main screens have no serious automated accessibility violations", async ({ browser }) => {
-  const anon = await browser.newPage();
+  const anonCtx = await browser.newContext();
+  const anon = await anonCtx.newPage();
   await anon.goto("/sign-in");
   await audit(anon, "sign-in");
   await anon.goto("/demo");
   await audit(anon, "demo guide");
-  await anon.close();
+  await anonCtx.close();
 
   const teacher = await signInAs(browser, TEACHER.username, TEACHER.password);
   const t = teacher.page;
@@ -77,9 +78,11 @@ test("main screens have no serious automated accessibility violations", async ({
   await expect(p2.locator("html")).toHaveAttribute("data-contrast", "high");
   await expect(p2.locator("html")).toHaveAttribute("data-text", "xl");
 
-  const display = await browser.newPage();
+  const displayCtx = await browser.newContext();
+  const display = await displayCtx.newPage();
   await display.goto(displayHref!);
   await audit(display, "classroom display");
 
-  for (const c of [teacher.context, first.context, s.context, other]) await c.close();
+  for (const c of [teacher.context, first.context, s.context, other, displayCtx]) await c.close();
+  expect(found, found.join("\n")).toEqual([]);
 });
