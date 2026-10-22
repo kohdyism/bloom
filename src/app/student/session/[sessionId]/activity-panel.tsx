@@ -65,7 +65,8 @@ export function ActivityPanel({ className }: { className?: string }) {
 }
 
 function TaskText({ text, simplified }: { text: string; simplified: boolean }) {
-  const sentences = text.split(/(?<=[.?!])\s+/).filter(Boolean);
+  // (No regex lookbehind: older iPads can't run it.)
+  const sentences = (text.match(/[^.?!]+[.?!]*/g) ?? [text]).map((x) => x.trim()).filter(Boolean);
   const [all, setAll] = useState(!simplified || sentences.length <= 1);
   return (
     <div className="mt-1.5">

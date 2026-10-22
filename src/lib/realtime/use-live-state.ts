@@ -64,13 +64,6 @@ export function useLiveState<T>(opts: {
     if (opts.url) void load();
   }, [opts.url, load]);
 
-  // Safety net: refresh periodically in case a hint was missed entirely.
-  useEffect(() => {
-    if (!opts.url) return;
-    const id = setInterval(() => void load(), 30_000);
-    return () => clearInterval(id);
-  }, [opts.url, load]);
-
   const connection = useRealtime(
     { channels: opts.channels, display: opts.display, presence: opts.presence, enabled: !!opts.url },
     (e) => {
@@ -79,6 +72,23 @@ export function useLiveState<T>(opts: {
     },
     refresh,
   );
+
+  // Safety net: realtime is only a hint, and some networks (school proxies,
+  // sleeping tablets) delay or drop it. Re-check the server's state every few
+  // seconds while live updates aren't flowing, every 15 s otherwise, and as
+  // soon as the student comes back to the window.
+  useEffect(() => {
+    if (!opts.url) return;
+    const id = setInterval(() => void load(), connection === "open" ? 15_000 : 4_000);
+    return () => clearInterval(id);
+  }, [opts.url, load, connection]);
+  useEffect(() => {
+    if (!opts.url) return;
+    const back = () => { if (document.visibilityState === "visible") void load(); };
+    window.addEventListener("focus", back);
+    document.addEventListener("visibilitychange", back);
+    return () => { window.removeEventListener("focus", back); document.removeEventListener("visibilitychange", back); };
+  }, [opts.url, load]);
 
   return { data, error, connection, refresh, loading };
 }

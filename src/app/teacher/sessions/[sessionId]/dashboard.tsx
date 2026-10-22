@@ -114,7 +114,7 @@ export function Dashboard({ state, act, connection, refresh, focusHelp }: Props)
                     <div className="h-full rounded-full bg-teal transition-all" style={{ width: `${g.progress * 100}%` }} />
                   </div>
                   <div className="flex flex-wrap gap-1.5">
-                    {g.stageStatus === "ready_check" ? <Badge tone="blue"><Check aria-hidden="true" />Ready check</Badge> : null}
+                    {waitingForYou(g, stage) ? <Badge tone="coral"><CircleAlert aria-hidden="true" />{waitingForYou(g, stage)}</Badge> : g.stageStatus === "ready_check" ? <Badge tone="blue"><Check aria-hidden="true" />Ready check</Badge> : null}
                     {help ? <Badge tone="amber"><HandHelping aria-hidden="true" />{help} help</Badge> : null}
                     {needTime ? <Badge tone="amber"><Clock3 aria-hidden="true" />More time asked</Badge> : null}
                     {g.timer.overdue && g.stageStatus !== "complete" ? <Badge tone="coral"><CircleAlert aria-hidden="true" />Over time</Badge> : null}
@@ -128,7 +128,7 @@ export function Dashboard({ state, act, connection, refresh, focusHelp }: Props)
                     {s.status !== "ended" && g.stageStatus !== "complete" ? (
                       <>
                         <Button size="sm" variant="ghost" onClick={() => run(() => act({ action: "group_extend", groupId: g.id, seconds: 120 }), `${g.name}: +2 minutes`)}>+2 min</Button>
-                        <Button size="sm" variant="ghost" onClick={() => run(() => act({ action: "group_advance", groupId: g.id }), `${g.name} moved on`)}>Next stage</Button>
+                        <Button size="sm" variant={waitingForYou(g, stage) ? "primary" : "ghost"} onClick={() => run(() => act({ action: "group_advance", groupId: g.id }), `${g.name} moved on`)}>Next stage</Button>
                       </>
                     ) : null}
                   </div>
@@ -359,4 +359,16 @@ function StudentsPanel({ state, act, groupName }: { state: TeacherState; act: Pr
       </CardBody>
     </Card>
   );
+}
+
+/**
+ * Everyone here has pressed "I'm ready" but the group can't move on by itself:
+ * either this stage is moved on by the teacher, or its requirement isn't met.
+ */
+function waitingForYou(g: { stageStatus: string; evaluation?: { activeCount: number; readyCount: number; canAutoAdvance: boolean; requirementsMet: boolean; requirementLabel: string } | null }, stage: { completion: string } | undefined) {
+  const e = g.evaluation;
+  if (!e || g.stageStatus === "complete" || e.activeCount === 0 || e.readyCount < e.activeCount || e.canAutoAdvance) return null;
+  if (stage?.completion === "teacher_only") return "All ready — waiting for you";
+  if (!e.requirementsMet) return `All ready · still needs: ${e.requirementLabel.toLowerCase()}`;
+  return null;
 }

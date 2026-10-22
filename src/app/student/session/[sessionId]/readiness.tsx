@@ -6,6 +6,18 @@ import { useRun } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 import { useWorkspace } from "./context";
 
+type Evaluation = NonNullable<ReturnType<typeof useWorkspace>["group"]["evaluation"]>;
+
+/** What the group is waiting for, in plain words (never who). */
+function waitingText(e: Evaluation, teacherOnly: boolean, mine: string | null | undefined) {
+  if (teacherOnly) return "Your teacher moves you on";
+  if (!e.requirementsMet) return mine === "ready" ? `Still needed first: ${e.requirementLabel.toLowerCase()}` : e.requirementLabel;
+  if (e.needTimeCount) return "Someone asked for more time";
+  const left = e.activeCount - e.readyCount;
+  if (mine === "ready" && left > 0) return `Waiting for ${left} more ${left === 1 ? "person" : "people"} to press “I'm ready”`;
+  return e.requirementLabel;
+}
+
 /** "I'm ready": shows how many are ready — never who (spec §13). */
 export function Readiness() {
   const { group, act } = useWorkspace();
@@ -17,14 +29,14 @@ export function Readiness() {
   const mine = group.myReadiness;
   return (
     <div className="flex flex-wrap items-center justify-end gap-3">
-      <div className="hidden text-right sm:block">
+      <div className="mr-auto min-w-0 text-left sm:mr-0 sm:text-right">
         <p className="flex items-center justify-end gap-1.5 font-semibold" aria-live="polite">
           <span className="flex gap-1" aria-hidden="true">
             {Array.from({ length: e.activeCount }, (_, i) => <span key={i} className={cn("size-3 rounded-full border-2", i < e.readyCount ? "border-mint bg-mint" : "border-line-strong bg-white")} />)}
           </span>
           {e.readyCount} of {e.activeCount} ready
         </p>
-        <p className="max-w-64 truncate text-xs text-ink-muted" title={teacherOnly ? "Your teacher will move your group on" : e.requirementLabel}>{teacherOnly ? "Your teacher moves you on" : e.needTimeCount ? "Someone asked for more time" : e.requirementLabel}</p>
+        <p className={cn("max-w-72 text-xs", mine === "ready" && !e.requirementsMet ? "font-semibold text-amber" : "text-ink-muted")}>{waitingText(e, teacherOnly, mine)}</p>
       </div>
       {mine ? (
         <>

@@ -81,7 +81,7 @@ export async function evaluateGroup(db: Db, session: SessionRow, group: GroupRow
  * Re-evaluate a group after any signal changed: enter the ready check when
  * requirements are met, and advance when the readiness rule is satisfied.
  */
-export async function syncGroup(groupId: string): Promise<void> {
+export async function syncGroup(groupId: string, opts: { quiet?: boolean } = {}): Promise<void> {
   const outcome = await asServer(async (db) => {
     const group = await db.maybeOne<GroupRow>("select * from session_groups where id = $1 for update", [groupId]);
     if (!group) return null;
@@ -114,7 +114,7 @@ export async function syncGroup(groupId: string): Promise<void> {
     }
     return;
   }
-  await notifyGroup(outcome.group, "group.signals");
+  if (!opts.quiet) await notifyGroup(outcome.group, "group.signals");
 }
 
 /**
@@ -362,6 +362,9 @@ export async function tickSession(sessionId: string) {
     const tasks: (() => Promise<void>)[] = [];
     const intensity = session.snapshot.config.facilitationIntensity;
     for (const g of groups) {
+      // Someone may have left since the last signal: re-check whether the
+      // group can now move on (absent members never hold a group up).
+      tasks.push(() => syncGroup(g.id, { quiet: true }));
       const stage = session.snapshot.stages[g.stage_index];
       if (!stage || !g.stage_started_at || !g.stage_deadline) continue;
       const total = (g.stage_deadline.getTime() - g.stage_started_at.getTime()) / 1000;
@@ -384,6 +387,15 @@ export async function tickSession(sessionId: string) {
     return tasks;
   });
   for (const t of work) await t();
+}
+
+/** After a student leaves: their group may now be able to move on. */
+export async function syncStudentGroup(sessionId: string, studentId: string) {
+  const row = await asServer((db) => db.maybeOne<{ group_id: string }>(
+    "select gm.group_id from group_members gm join session_groups g on g.id = gm.group_id where g.session_id = $1 and gm.student_id = $2",
+    [sessionId, studentId],
+  ));
+  if (row) await syncGroup(row.group_id);
 }
 
 /**

@@ -1,7 +1,7 @@
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { asServer } from "@/lib/db";
 import { canSubscribe, ch, latestEventId, publish, ready, replay, subscribe, type RealtimeEvent } from "@/lib/realtime/server";
-import { tickSession } from "@/lib/modules/sessions/engine";
+import { syncStudentGroup, tickSession } from "@/lib/modules/sessions/engine";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -82,8 +82,12 @@ export async function GET(req: Request) {
 
       const touchPresence = async (event: "presence.online" | "presence.offline" | null) => {
         if (!presence) return;
+        // Leaving (tab closed, page changed) counts as away straight away, so a
+        // student who has gone never holds their group up. A reload, or another
+        // open tab, marks them present again within one heartbeat.
+        const seen = event === "presence.offline" ? "now() - interval '1 hour'" : "now()";
         await asServer((db) =>
-          db.query("update session_participants set last_seen_at = now() where session_id = $1 and student_id = $2", [presence!.sessionId, presence!.userId]),
+          db.query(`update session_participants set last_seen_at = ${seen} where session_id = $1 and student_id = $2`, [presence!.sessionId, presence!.userId]),
         ).catch(() => {});
         if (event) await publish([{ channel: ch.teacher(presence.sessionId), event, payload: { studentId: presence.userId } }]).catch(() => {});
       };
@@ -101,7 +105,7 @@ export async function GET(req: Request) {
         closed = true;
         clearInterval(heartbeat);
         unsubscribe();
-        void touchPresence("presence.offline");
+        void touchPresence("presence.offline").then(() => { if (presence) return syncStudentGroup(presence.sessionId, presence.userId).catch(() => {}); });
         try { controller.close(); } catch { /* already closed */ }
       };
       req.signal.addEventListener("abort", () => cleanup());

@@ -28,6 +28,17 @@ jobs:
             echo "::error::Add a repository secret named FLY_API_TOKEN (Settings → Secrets and variables → Actions). Create it with: fly tokens create deploy -a bloom-kohdyism"
             exit 1
           fi
+      - name: Pass the Claude API key to the app (only if the repository has one)
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -n "$ANTHROPIC_API_KEY" ]; then
+            flyctl secrets set ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY" --stage
+            echo "Live AI: key staged for this deploy."
+          else
+            echo "No ANTHROPIC_API_KEY repository secret: AI stays simulated unless the key is set on Fly directly."
+          fi
       - name: Deploy
         run: flyctl deploy --remote-only --wait-timeout 600
         env:
