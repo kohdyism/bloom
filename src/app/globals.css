@@ -1,26 +1,181 @@
 @import "tailwindcss";
+@import "@fontsource-variable/bricolage-grotesque";
+@import "@fontsource-variable/atkinson-hyperlegible-next";
 
+/* ---------------------------------------------------------------------------
+   Bloom design tokens
+   Light neutral "paper" base with soft teal / blue / purple / mint accents.
+   All text colours meet WCAG AA on their intended surfaces; the high-contrast
+   mode below pushes them to AAA-level contrast.
+--------------------------------------------------------------------------- */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --paper: #f6f6f2;
+  --surface: #ffffff;
+  --surface-2: #eff1ec;
+  --line: #dfe2db;
+  --line-strong: #c6cbc2;
+  --ink: #1b2430;
+  --ink-muted: #545e6b;
+  --ink-faint: #737c88;
+
+  --teal: #0e6f67;
+  --teal-strong: #0a5751;
+  --teal-soft: #d8efeb;
+  --blue: #2b58c4;
+  --blue-soft: #e2e9fa;
+  --purple: #6346b8;
+  --purple-soft: #ebe5f8;
+  --mint: #1f8a5c;
+  --mint-soft: #dcf3e7;
+  --coral: #b9420f;
+  --coral-soft: #fbe6dc;
+  --amber: #8a5300;
+  --amber-soft: #fbf0cf;
+
+  --focus: #2b58c4;
+  --radius: 14px;
+  --shadow-sm: 0 1px 2px rgb(27 36 48 / 0.06), 0 1px 1px rgb(27 36 48 / 0.04);
+  --shadow-md: 0 6px 20px -6px rgb(27 36 48 / 0.14), 0 2px 6px rgb(27 36 48 / 0.05);
 }
+
+/* High contrast: near-black ink, strong borders, saturated accents. */
+:root[data-contrast="high"] {
+  --paper: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f2f2f2;
+  --line: #3b3b3b;
+  --line-strong: #000000;
+  --ink: #000000;
+  --ink-muted: #1f1f1f;
+  --ink-faint: #333333;
+  --teal: #005049;
+  --teal-strong: #003a35;
+  --teal-soft: #ccebe6;
+  --blue: #0b3aa8;
+  --purple: #43218f;
+  --mint: #0c5c39;
+  --coral: #8a2a00;
+  --amber: #5c3700;
+  --focus: #000000;
+}
+
+/* Text size preference (rem-based scale follows the root). */
+:root[data-text="lg"] { font-size: 112.5%; }
+:root[data-text="xl"] { font-size: 125%; }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+  --color-teal: var(--teal);
+  --color-teal-strong: var(--teal-strong);
+  --color-teal-soft: var(--teal-soft);
+  --color-blue: var(--blue);
+  --color-blue-soft: var(--blue-soft);
+  --color-purple: var(--purple);
+  --color-purple-soft: var(--purple-soft);
+  --color-mint: var(--mint);
+  --color-mint-soft: var(--mint-soft);
+  --color-coral: var(--coral);
+  --color-coral-soft: var(--coral-soft);
+  --color-amber: var(--amber);
+  --color-amber-soft: var(--amber-soft);
+  --font-sans: "Atkinson Hyperlegible Next Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Bricolage Grotesque Variable", "Atkinson Hyperlegible Next Variable", ui-sans-serif, system-ui, sans-serif;
+  --radius-xl: var(--radius);
+  --shadow-soft: var(--shadow-sm);
+  --shadow-lift: var(--shadow-md);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background: var(--paper);
+  color: var(--ink);
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  line-height: 1.55;
+  min-height: 100dvh;
+}
+
+h1, h2, h3, .font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.015em;
+  font-optical-sizing: auto;
+}
+
+/* Clear, consistent focus indicator on every interactive element. */
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+::selection { background: var(--teal-soft); }
+
+/* Reduced motion: honour both the OS setting and Bloom's own toggle. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+:root[data-motion="reduce"] *, :root[data-motion="reduce"] *::before, :root[data-motion="reduce"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Gentle mascot idle motion (disabled by the rules above). */
+@keyframes bloom-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+@keyframes bloom-tail {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(6deg); }
+}
+@keyframes bloom-pop {
+  0% { transform: scale(0.96); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes bloom-pulse-dot {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
+}
+.animate-bob { animation: bloom-bob 3.2s ease-in-out infinite; }
+.animate-tail { animation: bloom-tail 2.6s ease-in-out infinite; transform-origin: 20% 80%; }
+.animate-pop { animation: bloom-pop 220ms ease-out both; }
+.animate-pulse-dot { animation: bloom-pulse-dot 1.4s ease-in-out infinite; }
+
+/* Tiptap editor */
+.bloom-prose { outline: none; min-height: 14rem; }
+.bloom-prose p { margin: 0 0 0.75em; }
+.bloom-prose h2 { font-size: 1.35rem; font-weight: 650; margin: 1em 0 0.4em; }
+.bloom-prose h3 { font-size: 1.15rem; font-weight: 650; margin: 0.9em 0 0.35em; }
+.bloom-prose ul, .bloom-prose ol { padding-left: 1.4em; margin: 0 0 0.75em; }
+.bloom-prose ul { list-style: disc; }
+.bloom-prose ol { list-style: decimal; }
+.bloom-prose blockquote { border-left: 3px solid var(--teal); padding-left: 0.9em; color: var(--ink-muted); margin: 0 0 0.75em; }
+.bloom-prose p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--ink-faint);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+.bloom-prose .collaboration-cursor__caret, .bloom-prose .collaboration-carets__caret { position: relative; border-left: 2px solid; margin: 0 -1px; }
+
+/* Visually hidden but available to screen readers. */
+.sr-only-focusable:not(:focus):not(:focus-within) {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
