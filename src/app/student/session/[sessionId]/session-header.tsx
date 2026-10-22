@@ -25,9 +25,9 @@ export function SessionHeader({ state, connection, sessionId, act, onAskPip }: {
   const inStage = g && live && g.stageStatus !== "complete" && g.stage;
   return (
     <header className="relative z-20 border-b-2 border-white/80 bg-white/80 backdrop-blur-md">
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-2.5">
+      <div className="flex items-center gap-3 px-4 py-2.5">
         {/* Where we are */}
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           {inStage ? (
             <>
               <p className="truncate text-sm font-semibold text-ink-muted">Group {g.name} · Stage {g.stageIndex + 1} of {state.session.stages.length}</p>
@@ -39,12 +39,12 @@ export function SessionHeader({ state, connection, sessionId, act, onAskPip }: {
         </div>
 
         {/* How long is left */}
-        <div className="flex justify-center">
+        <div className="flex shrink-0 justify-center">
           {inStage ? <BigTimer timer={g.timer} totalSeconds={g.stage!.durationSeconds} /> : null}
         </div>
 
         {/* Help, settings — and my role in the corner */}
-        <div className="flex items-center justify-end gap-2">
+        <div className="flex flex-1 shrink-0 items-center justify-end gap-2 whitespace-nowrap">
           {connection !== "open" ? <ConnectionStatus state={connection} /> : null}
           {g && live ? (
             <button
@@ -53,12 +53,12 @@ export function SessionHeader({ state, connection, sessionId, act, onAskPip }: {
               onClick={() => run(() => act({ action: "hand" }))}
               className={cn("inline-flex h-11 items-center gap-1.5 rounded-2xl px-3.5 font-semibold transition-colors", me?.handRaised ? "bg-sun text-ink shadow-soft" : "bg-surface-2 text-ink hover:bg-sun-soft")}
             >
-              <Hand className="size-5" aria-hidden="true" />{me?.handRaised ? "Hand up" : "Raise hand"}
+              <Hand className="size-5" aria-hidden="true" /><span className="max-xl:sr-only">{me?.handRaised ? "Hand up" : "Raise hand"}</span>
             </button>
           ) : null}
           {g && live && onAskPip ? (
             <button type="button" onClick={onAskPip} className="inline-flex h-11 items-center gap-1.5 rounded-2xl bg-purple-soft pl-1 pr-3.5 font-semibold text-purple-strong hover:brightness-95">
-              <Pip size={36} animate={false} mood="happy" />Ask Pip<Lock className="size-4" aria-hidden="true" /><span className="sr-only">(private)</span>
+              <Pip size={36} animate={false} mood="happy" /><span className="max-lg:sr-only">Ask Pip</span><Lock className="size-4" aria-hidden="true" /><span className="sr-only">(private)</span>
             </button>
           ) : null}
           <HelpPanel state={state} sessionId={sessionId} act={act} trigger={

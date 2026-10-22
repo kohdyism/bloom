@@ -53,7 +53,9 @@ export function ActivityPanel({ className }: { className?: string }) {
         </div>
       ) : null}
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-3">
-        {showIdeas ? <IdeaBank /> : <StagePanel />}
+        {/* The activity stays mounted (hidden) while Ideas is open, so "Add" can reach the editor. */}
+        {showIdeas ? <IdeaBank /> : null}
+        <div className={cn("flex min-h-0 flex-1 flex-col", showIdeas && "hidden")}><StagePanel /></div>
       </div>
       {kind !== "complete" ? (
         <div className="border-t border-line bg-white px-4 py-3"><Readiness /></div>
