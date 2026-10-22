@@ -16,6 +16,7 @@ import { useRun } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 import { useNow } from "@/lib/use-now";
 import type { TeacherAction } from "./live-session";
+import { EndDialog } from "./dashboard";
 
 type Recommendation = {
   feasible: boolean; groups: string[][]; warnings: { kind: string; message: string }[]; reasons: string[][];
@@ -40,6 +41,7 @@ export function Lobby({ state, act, connection }: { state: TeacherState; act: (b
         </div>
         <div className="flex flex-wrap gap-2">
           <Button asChild variant="secondary"><a href={`/display/${s.displayToken}`} target="_blank" rel="noreferrer"><Monitor />Open classroom display<ExternalLink className="size-3.5" /></a></Button>
+          <EndDialog lobby onEnd={() => run(() => act({ action: "end" }), "Lesson ended")} />
           <Button
             size="lg"
             disabled={!s.groupsApproved}

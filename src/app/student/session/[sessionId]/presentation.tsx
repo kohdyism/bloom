@@ -56,3 +56,43 @@ export function PresentationViewer({ compact }: { compact?: boolean }) {
     </Card>
   );
 }
+
+type Own = { id: string; version: number; content: SubmissionContent; note: string } | null;
+
+/**
+ * Before (or between) presentations: the group's own submitted work, so
+ * they can look at what they made and get ready to talk about it.
+ */
+export function OwnSubmission() {
+  const { group, sessionId } = useWorkspace();
+  const latest = group.submissions[0];
+  const [own, setOwn] = useState<Own>(null);
+  const [view, setView] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    let cancelled = false;
+    if (!latest) return;
+    api<{ submission: Own }>(`/api/live/student/${sessionId}/submission`).then((r) => { if (!cancelled) setOwn(r.submission); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [latest?.id, latest, sessionId]);
+  if (!latest) return <p className="text-ink-muted">Your group hasn&apos;t submitted anything yet.</p>;
+  if (!own) return null;
+  const kinds = own.content.kinds ?? [];
+  return (
+    <Card className="p-4" aria-labelledby="own-sub-title">
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <h2 id="own-sub-title" className="font-display text-lg font-semibold">What your group submitted</h2>
+        <span className="text-sm text-ink-muted">Version {own.version}</span>
+        {kinds.length > 1 ? (
+          <div role="tablist" aria-label="Which part" className="ml-auto flex gap-1 rounded-xl bg-surface-2 p-1">
+            {kinds.map((k) => (
+              <button key={k} type="button" role="tab" aria-selected={(view ?? kinds[0]) === k} onClick={() => setView(k)} className={(view ?? kinds[0]) === k ? "rounded-lg bg-white px-3 py-1 text-sm font-semibold shadow-soft" : "rounded-lg px-3 py-1 text-sm font-semibold text-ink-muted"}>
+                {k === "document" ? "Document" : k === "whiteboard" ? "Whiteboard" : k === "slides" ? "Slides" : k === "media" ? "Photos" : k}
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
+      <SubmissionView content={own.content} view={view} mediaUrl={(id) => `/api/media/${id}`} note={own.note} />
+    </Card>
+  );
+}

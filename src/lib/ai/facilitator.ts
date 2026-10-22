@@ -153,6 +153,10 @@ export function simulateFacilitator(trigger: FacilitatorTrigger, ctx: Facilitato
       if (trigger.quick === "we_are_stuck") {
         return `Let's take a smaller step. Look back at the instructions and pick just the first part. ${goal} What's one thing you already know that could help?`;
       }
+      if (trigger.question) {
+        const q = truncate(trigger.question.replace(/(^|\s)@?nova\b[,:]?\s*/i, " ").trim(), 90);
+        return `You asked: “${q}”. Here's a way to think about it: look back at the task (“${truncate(ctx.stage.instructions || ctx.stage.title, 80)}”) and ask what it needs you to show. What does everyone else think?`;
+      }
       return `Good question. Here's a way to think about it: look back at the task (“${truncate(ctx.stage.instructions || ctx.stage.title, 80)}”) and ask what it needs you to show. What do you all think?`;
     }
   }

@@ -3,6 +3,7 @@ import { asServer, asUser, NotFoundError, type Db } from "@/lib/db";
 import { publish, ch } from "@/lib/realtime/server";
 import { ApiError, badRequest, conflict, forbidden } from "@/lib/api";
 import { rateLimit } from "@/lib/security/rate-limit";
+import { mentionsHelper } from "@/lib/domain/mentions";
 import { background } from "@/lib/background";
 import { loadGroup, loadSession, type GroupRow, type SessionRow } from "./common";
 import { checkParticipationBalance, facilitate, notifyGroup, runSynthesis, syncGroup } from "./engine";
@@ -222,7 +223,13 @@ export async function postMessage(uid: string, sessionId: string, body: string, 
   });
   await notifyGroup(group, "message.new");
   background(() => checkParticipationBalance(group.id));
+  // Talking to the group helper by name ("@Nova …", "Nova, …") gets a reply in the chat.
+  if (mentionsHelper(text) && group.ai_enabled) {
+    const allowed = await rateLimit(`ask-group:${uid}`, 8, 300).then(() => true, () => false);
+    if (allowed) background(() => facilitate(group.id, { kind: "ask", quick: "question", question: text.slice(0, 500) }, null));
+  }
 }
+
 
 export async function toggleReaction(uid: string, sessionId: string, messageId: string, kind: "applaud" | "agree" | "build" | "question") {
   const group = await asUser(uid, async (db) => {

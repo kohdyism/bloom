@@ -7,6 +7,7 @@ import { Nova } from "@/components/mascot";
 import { useRun } from "@/components/ui/toast";
 import { useWorkspace } from "./context";
 import { Chat } from "./chat";
+import { mentionsHelper } from "@/lib/domain/mentions";
 
 type Quick = "explain_task" | "discussion_question" | "we_disagree" | "we_are_stuck";
 const GROUP_ASKS: [Quick, string, React.ElementType][] = [
@@ -112,5 +113,9 @@ export function NovaChat({ className, composerClassName }: { className?: string;
     </li>
   ) : null;
   return <Chat className={className} header={header} empty={empty} after={after} composerClassName={composerClassName}
-    onActivity={(e) => (e === "typing" ? buddy.listen() : fire("nod"))} />;
+    onActivity={(e, t) => {
+      if (e === "typing") { buddy.listen(); return; }
+      fire("nod");
+      if (t && mentionsHelper(t) && group.aiEnabled) setWaiting(true);
+    }} />;
 }
