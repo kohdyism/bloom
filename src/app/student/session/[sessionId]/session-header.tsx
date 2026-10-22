@@ -44,7 +44,7 @@ export function SessionHeader({ state, connection, sessionId, act, onAskPip, onT
         </div>
 
         {/* Help, settings — and my role in the corner */}
-        <div className="flex flex-1 shrink-0 items-center justify-end gap-2 whitespace-nowrap max-sm:basis-full max-sm:justify-between">
+        <div className="flex flex-1 shrink-0 items-center justify-end gap-2 whitespace-nowrap max-sm:basis-full max-sm:flex-wrap max-sm:justify-start">
           {connection !== "open" ? <ConnectionStatus state={connection} /> : null}
           {g && live && onAskPip ? (
             <button type="button" onClick={onAskPip} className="inline-flex h-11 items-center gap-1.5 rounded-2xl bg-purple-soft pl-1 pr-3.5 font-semibold text-purple-strong hover:brightness-95">
