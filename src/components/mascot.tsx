@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 /**
  * Canopy's two helpers. Both are decorative (aria-hidden); callers always
  * provide what they "say" as real, readable text.
- *  - Bloom (a soft spark) is the GROUP facilitator: what Bloom says, the whole group sees.
+ *  - Bloom (a smiling flower) is the GROUP facilitator: what Bloom says, the whole group sees.
  *  - Pip (a calm pebble) is the PRIVATE helper: only the student who asks sees Pip's answers.
  * Pure SVG with CSS-only motion so they render anywhere; motion stops under reduced-motion.
  */
@@ -19,9 +19,21 @@ export function Bloom({ mood = "idle", size = 64, className, animate = true }: {
   return (
     <svg viewBox="0 0 200 200" width={size} height={size} className={cn("shrink-0 overflow-visible", className)} aria-hidden="true" focusable="false">
       <g className={animate ? "buddy-float" : undefined}>
-        <path d="M100 18c10 42 24 56 66 66-42 10-56 24-66 66-10-42-24-56-66-66 42-10 56-24 66-66z" fill="#ff7f6e" stroke="#ff7f6e" strokeWidth="24" strokeLinejoin="round" />
-        <path d="M100 40c8 30 18 40 46 46-28 6-38 16-46 46-8-30-18-40-46-46 28-6 38-16 46-46z" fill="#ffb067" stroke="#ffb067" strokeWidth="14" strokeLinejoin="round" opacity="0.75" />
-        <path d="M100 118c6 20 14 28 34 32-20 4-28 12-34 30" fill="none" stroke="#ff5fa2" strokeWidth="10" strokeLinecap="round" opacity="0.45" />
+        {/* stem and leaves */}
+        <path d="M100 140c-2 22 2 38 0 56" stroke="#2f9e44" strokeWidth="9" strokeLinecap="round" fill="none" />
+        <path d="M100 182c-17 2-31-5-38-19 17-3 31 5 38 19z" fill="#86e05f" />
+        <path d="M100 190c15-1 28-8 33-21-15-2-28 7-33 21z" fill="#3fca6e" />
+        {/* petals */}
+        <g className={animate ? "bloom-petals" : undefined}>
+          {[0, 45, 90, 135, 180, 225, 270, 315].map((d, i) => (
+            <ellipse key={d} cx="100" cy="52" rx="21" ry="26" fill={i % 2 ? "#ff8fc2" : "#ff7f6e"} transform={`rotate(${d} 100 92)`} />
+          ))}
+        </g>
+        {/* face */}
+        <circle cx="100" cy="92" r="41" fill="#ffd166" />
+        <circle cx="100" cy="92" r="41" fill="none" stroke="#ffb020" strokeWidth="3" opacity="0.6" />
+        <ellipse cx="74" cy="104" rx="7.5" ry="4.5" fill="#ff8fa6" opacity="0.6" />
+        <ellipse cx="126" cy="104" rx="7.5" ry="4.5" fill="#ff8fa6" opacity="0.6" />
         <BloomFace mood={m} animate={animate} />
       </g>
       {m === "celebrate" || m === "happy" ? (
@@ -31,8 +43,8 @@ export function Bloom({ mood = "idle", size = 64, className, animate = true }: {
           {m === "celebrate" ? <path d="M176 120l3 7 7 3-7 3-3 7-3-7-7-3 7-3z" fill="#7c5cff" /> : null}
         </g>
       ) : null}
-      {m === "resting" ? <Zzz x={150} y={40} color="#ff5fa2" /> : null}
-      {m === "thinking" ? <g fill="#ffb067"><circle cx="160" cy="44" r="6" /><circle cx="176" cy="24" r="9" /></g> : null}
+      {m === "resting" ? <Zzz x={158} y={36} color="#ff5fa2" /> : null}
+      {m === "thinking" ? <g fill="#ffb067"><circle cx="168" cy="40" r="6" /><circle cx="184" cy="20" r="9" /></g> : null}
     </svg>
   );
 }

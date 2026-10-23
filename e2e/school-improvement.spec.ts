@@ -53,7 +53,8 @@ test("school improvement: vote, whiteboard, slides, present", async ({ browser }
     await a.page.getByRole("button", { name: "Add idea" }).click();
   }
   await shot(s[0].page, "s-brainstorm");
-  for (const a of s) await ready(a.page, "I'm done thinking");
+  // Thinking time moves on when most of the group is done (and nobody asked for more time).
+  for (const a of s.slice(0, 2)) await ready(a.page, "I'm done thinking");
 
   await expect(s[0].page.getByRole("heading", { name: "Cluster ideas", exact: true })).toBeVisible();
   await expect(s[0].page.getByText("Ramps and wider doors in the old block")).toBeVisible();

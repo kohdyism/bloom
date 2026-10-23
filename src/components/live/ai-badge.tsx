@@ -9,8 +9,8 @@ export function AiOriginBadge({ origin, edited, className }: { origin: string | 
   const label =
     origin === "ai" ? "AI-generated" :
     origin === "ai_simulated" ? "Simulated AI" :
-    origin === "offline_helper" ? "Offline helper (AI unavailable)" :
-    origin === "facilitator_nudge" ? "Bloom · just for you" : "AI";
+    origin === "offline_helper" ? "Backup reply (AI didn't respond)" :
+    origin === "facilitator_nudge" ? "Pip · just for you" : "AI";
   const title =
     origin === "ai" ? "Written by Claude (AI). It can make mistakes — check it and challenge it." :
     origin === "ai_simulated" ? "Demo mode: produced by Canopy's built-in rules, not a live AI model." :
