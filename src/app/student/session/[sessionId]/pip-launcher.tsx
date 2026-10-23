@@ -28,7 +28,7 @@ export function PipLauncher({ open, onOpenChange, prefill, tick, compact = false
           data-tour="pip"
           className={cn("group relative flex shrink-0 items-center gap-1.5 rounded-full bg-purple-soft py-1 pl-1 font-semibold text-purple-strong shadow-soft ring-2 ring-white transition hover:-translate-y-0.5 hover:brightness-95", compact ? "pr-1" : "pr-3.5", open && "ring-purple")}
         >
-          <span key={unread ? `u${tick}` : "still"} className={cn("block", unread && "buddy-hop")}><Pip size={compact ? 44 : 50} mood={open ? "listening" : unread ? "happy" : "idle"} /></span>
+          <span key={unread ? `u${tick}` : "still"} className={cn("block", unread && "buddy-hop")}><Pip size={compact ? 40 : 42} mood={open ? "listening" : unread ? "happy" : "idle"} /></span>
           {compact ? <span className="sr-only">Ask Pip (private)</span> : <span className="flex flex-col items-start leading-tight"><span>Ask Pip<span className="sr-only"> (private)</span></span><span className="flex items-center gap-1 text-[0.7rem] font-bold uppercase tracking-wide text-purple" aria-hidden="true"><Lock className="size-3" />Just you</span></span>}
           {unread ? <span className="absolute right-0.5 top-0.5 size-3 rounded-full border-2 border-white bg-coral" aria-label="Pip has something for you" /> : null}
         </button>

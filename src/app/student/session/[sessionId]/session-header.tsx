@@ -31,7 +31,7 @@ export function SessionHeader({ state, connection, sessionId, act, onTour }: {
     const roleNames = mine.map((k) => state.session.roles.find((r) => r.key === k)?.name).filter(Boolean);
     return (
       <header className="relative z-20 border-b-2 border-white/80 bg-white/85 backdrop-blur-md">
-        <div className="flex items-center gap-2 px-2.5 py-1.5">
+        <div className="flex items-center gap-2 px-2.5 py-1">
           <div className="min-w-0 flex-1">
             {inStage ? (
               <>
@@ -78,13 +78,13 @@ export function SessionHeader({ state, connection, sessionId, act, onTour }: {
   }
   return (
     <header className="relative z-20 border-b-2 border-white/80 bg-white/80 backdrop-blur-md">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-3 py-2 sm:px-4 sm:py-2.5">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-1.5 sm:px-4 sm:py-1.5">
         {/* Where we are */}
         <div className="min-w-0 flex-1 basis-40">
           {inStage ? (
             <>
               <p className="truncate text-xs font-semibold text-ink-muted sm:text-sm">Group {g.name} · Stage {g.stageIndex + 1} of {state.session.stages.length}</p>
-              <p className="truncate font-display text-xl font-bold leading-tight sm:text-2xl">{g.stage!.title}</p>
+              <p className="truncate font-display text-lg font-bold leading-tight sm:text-xl">{g.stage!.title}</p>
             </>
           ) : (
             <p className="truncate font-display text-xl font-bold">{g && live && g.stageStatus === "complete" ? "All done!" : state.session.title}</p>
@@ -105,13 +105,13 @@ export function SessionHeader({ state, connection, sessionId, act, onTour }: {
               type="button"
               aria-pressed={!!me?.handRaised}
               onClick={() => run(() => act({ action: "hand" }))}
-              className={cn("inline-flex h-10 items-center gap-1.5 rounded-2xl px-3 font-semibold transition-colors sm:h-11 sm:px-3.5", me?.handRaised ? "bg-sun text-ink shadow-soft" : "bg-surface-2 text-ink hover:bg-sun-soft")}
+              className={cn("inline-flex h-10 items-center gap-1.5 rounded-2xl px-3 font-semibold transition-colors sm:px-3.5", me?.handRaised ? "bg-sun text-ink shadow-soft" : "bg-surface-2 text-ink hover:bg-sun-soft")}
             >
               <Hand className="size-5" aria-hidden="true" /><span className="max-xl:sr-only">{me?.handRaised ? "Hand up" : "Raise hand"}</span>
             </button>
           ) : null}
           <HelpPanel state={state} sessionId={sessionId} act={act} trigger={
-            <button type="button" className="inline-flex h-10 items-center gap-1.5 rounded-2xl bg-coral px-3 font-semibold text-white shadow-soft hover:brightness-95 sm:h-11 sm:px-3.5">
+            <button type="button" className="inline-flex h-10 items-center gap-1.5 rounded-2xl bg-coral px-3 font-semibold text-white shadow-soft hover:brightness-95 sm:px-3.5">
               <LifeBuoy className="size-5" aria-hidden="true" /><span className="sm:hidden">Help</span><span className="max-sm:hidden">Need help</span>
             </button>
           } />
@@ -147,11 +147,11 @@ function MyRole({ state }: { state: StudentState }) {
         </div>
       ) : <p>{choosing ? "Pick a role for this lesson — or none, if you'd rather join in your own way." : "You don't have a role — join in however suits you."}</p>}
     >
-      <button type="button" className={cn("flex items-center gap-1.5 rounded-2xl py-1 pl-2 pr-3 text-left sm:gap-2 sm:py-1.5 sm:pl-2.5 sm:pr-4", roles.length ? "bg-sun text-ink shadow-soft" : "bg-surface-2 text-ink-muted")} data-testid="my-role" data-tour="my-role">
+      <button type="button" className={cn("flex items-center gap-1.5 rounded-2xl py-1 pl-2 pr-3 text-left sm:gap-2 sm:pl-2.5 sm:pr-4", roles.length ? "bg-sun text-ink shadow-soft" : "bg-surface-2 text-ink-muted")} data-testid="my-role" data-tour="my-role">
         <Star className={cn("size-5 sm:size-6", roles.length && "fill-white")} aria-hidden="true" />
         <span className="flex flex-col leading-tight">
           <span className="text-[0.7rem] font-bold uppercase tracking-wide max-sm:sr-only">Your role</span>
-          <span className="max-w-28 truncate font-display text-base font-bold sm:max-w-40 sm:text-lg">{label}</span>
+          <span className="max-w-28 truncate font-display text-base font-bold sm:max-w-40">{label}</span>
         </span>
         <span className="sr-only">— more about it</span>
       </button>

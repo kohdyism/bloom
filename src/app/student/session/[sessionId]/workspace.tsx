@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, Lightbulb, Megaphone, MessagesSquare, PauseCircle } from "lucide-react";
+import { Lightbulb, Megaphone, MessagesSquare, PauseCircle } from "lucide-react";
 import type { StudentState } from "@/lib/modules/sessions/state";
 import { useLiveState } from "@/lib/realtime/use-live-state";
 import { api } from "@/lib/realtime/client";
@@ -14,15 +14,15 @@ import { Avatar } from "@/components/ui/primitives";
 import { artifactBus } from "@/components/collab/artifact-bus";
 import { useNow } from "@/lib/use-now";
 import { cn } from "@/lib/utils";
-import { WorkspaceContext, useWorkspace as useWorkspaceSafe, type Inserter, type StudentAction, type WorkspaceCtx } from "./context";
+import { WorkspaceContext, type Inserter, type StudentAction, type WorkspaceCtx } from "./context";
 import { SessionHeader } from "./session-header";
 import { ActivityPanel, hasIdeasTab } from "./activity-panel";
 import { GroupChat } from "./group-chat";
 import { BloomCoach } from "./bloom-coach";
-import { IdeaBank } from "./idea-bank";
 import { Readiness } from "./readiness";
 import { PipLauncher } from "./pip-launcher";
 import { ChatLauncher } from "./chat-launcher";
+import { IdeasLauncher } from "./ideas-launcher";
 import { TalkTime } from "./talk-time";
 import { BloomReveal } from "./bloom-reveal";
 import { LessonTour, tourSeen } from "./lesson-tour";
@@ -123,11 +123,13 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
     setChatOpen(true);
     setTimeout(() => document.getElementById("chat-input")?.focus(), 0);
   }, []);
-  // On wide screens the group's ideas fold into a button beside the work.
+  // While making the output, the group's ideas open in a big floating window from the dock.
   const [ideasOpen, setIdeasOpen] = useState(false);
   const openIdeas = useCallback(() => {
     setMobileTab("activity");
     setIdeasOpen(true);
+    setPipOpen(false);
+    setChatOpen(false);
     setIdeasSignal((n) => n + 1);
     // On bigger screens the ideas are already beside the work: bring them into view.
     document.querySelector<HTMLElement>('section[data-tour="ideas-tab"]')?.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -159,6 +161,7 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
     const showPlant = s.theme !== "none";
     const doneStages = g.stageStatus === "complete" ? s.stages.length : g.stageIndex;
     const ideasBeside = hasIdeasTab(kind);
+    const ideasLauncher = <IdeasLauncher open={ideasOpen} onOpenChange={(o) => { setIdeasOpen(o); if (o) { setPipOpen(false); setChatOpen(false); } }} compact={false} />;
     let main: React.ReactNode;
     if (talk) {
       main = <TalkTime />;
@@ -171,8 +174,8 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
           <ActivityPanel compact={canvas} ideasBeside className="min-w-0 flex-1" />
           {working ? (
             <div className="flex min-h-0 w-[19rem] shrink-0 flex-col gap-3 xl:w-[23rem]">
-              <BloomCoach className={discussion || (ideasBeside && ideasOpen) ? "max-h-[40%] shrink-0" : "min-h-0 shrink"} />
-              {discussion ? <GroupChat compact className="min-h-0 flex-1" /> : ideasBeside ? <IdeasPanel open={ideasOpen} onOpenChange={setIdeasOpen} /> : null}
+              <BloomCoach className={discussion ? "max-h-[40%] shrink-0" : "min-h-0 shrink"} />
+              {discussion ? <GroupChat compact className="min-h-0 flex-1" /> : null}
             </div>
           ) : null}
         </div>
@@ -184,14 +187,14 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
             <button type="button" role="tab" aria-selected={mobileTab === "activity"} onClick={() => setMobileTab("activity")} className={cn("inline-flex flex-1 items-center justify-center gap-2 rounded-xl py-1.5 font-semibold", mobileTab === "activity" ? "bg-ink text-white" : "text-ink-muted")}><Lightbulb className="size-5" aria-hidden="true" />Task &amp; ideas</button>
             <button type="button" role="tab" aria-selected={mobileTab === "chat"} onClick={() => setMobileTab("chat")} className={cn("inline-flex flex-1 items-center justify-center gap-2 rounded-xl py-1.5 font-semibold", mobileTab === "chat" ? "bg-ink text-white" : "text-ink-muted")}><MessagesSquare className="size-5" aria-hidden="true" />Group chat</button>
           </div>
-          <ActivityPanel top={<BloomCoach variant="bar" />} className={cn("min-w-0 flex-1", mobileTab !== "activity" && "hidden")} />
+          <ActivityPanel ideasBeside headerAction={ideasBeside && small ? ideasLauncher : null} top={<BloomCoach variant="bar" />} className={cn("min-w-0 flex-1", mobileTab !== "activity" && "hidden")} />
           {mobileTab === "chat" ? <GroupChat compact top={<BloomCoach variant="bar" />} className="min-w-0 flex-1" /> : null}
         </div>
       );
     } else {
       main = (
         <div className="flex min-h-0 flex-1 p-2 sm:p-3">
-          <ActivityPanel compact={canvas} top={<BloomCoach variant="bar" />} className="w-full min-w-0" />
+          <ActivityPanel ideasBeside headerAction={ideasBeside && small ? ideasLauncher : null} compact={canvas} top={<BloomCoach variant="bar" />} className="w-full min-w-0" />
         </div>
       );
     }
@@ -206,12 +209,13 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
         {s.presentation && kind !== "presentation" ? <div className="mx-2 mt-2 sm:mx-3"><PresentationViewer compact /></div> : null}
         {g.stage && kind !== "complete" ? <h1 className={cn("sr-only", talk && "hidden")}>{g.stage.title}</h1> : null}
         {main}
-        <div className="flex items-center gap-2 border-t-2 border-white/80 bg-white/85 px-2 py-2 backdrop-blur-md sm:gap-3 sm:px-4" data-dock>
-          {showPlant ? <PlantBubble stagesDone={doneStages} totalStages={s.stages.length} flower={g.flower} size={small ? "sm" : "md"} /> : null}
-          {!discussion && !talk ? <ChatLauncher open={chatOpen} onOpenChange={(o) => { setChatOpen(o); if (o) setPipOpen(false); }} compact={small} /> : null}
+        <div className="flex items-center gap-2 border-t-2 border-white/80 bg-white/85 px-2 py-1.5 backdrop-blur-md sm:gap-3 sm:px-4" data-dock>
+          {showPlant ? <PlantBubble stagesDone={doneStages} totalStages={s.stages.length} flower={g.flower} size="sm" /> : null}
+          {!discussion && !talk ? <ChatLauncher open={chatOpen} onOpenChange={(o) => { setChatOpen(o); if (o) { setPipOpen(false); setIdeasOpen(false); } }} compact={small} /> : null}
+          {ideasBeside && !small ? ideasLauncher : null}
           <Readiness className="min-w-0 flex-1" />
           {kind === "complete" ? <div className="flex-1" /> : null}
-          <PipLauncher open={pipOpen} onOpenChange={(o) => { setPipOpen(o); if (o) setChatOpen(false); }} prefill={assistantPrefill} tick={assistantTick} compact={small} />
+          <PipLauncher open={pipOpen} onOpenChange={(o) => { setPipOpen(o); if (o) { setChatOpen(false); setIdeasOpen(false); } }} prefill={assistantPrefill} tick={assistantTick} compact={small} />
         </div>
       </div>
     );
@@ -299,23 +303,3 @@ function PausedOverlay() {
 }
 
 /** The group's ideas beside the activity (bigger screens), for easy reference. */
-/** The group's ideas beside the work: a button until you want them, then a list with "Add". */
-function IdeasPanel({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
-  const { group } = useWorkspaceSafe();
-  const count = group?.ideas.shared.length ?? 0;
-  const toggle = (
-    <button type="button" aria-expanded={open} aria-controls="group-ideas-list" onClick={() => onOpenChange(!open)}
-      className={cn("flex w-full items-center gap-2 px-4 py-3 text-left font-display text-base font-bold hover:bg-sun-soft/60", open && "border-b border-line")}>
-      <Lightbulb className="size-5 shrink-0 text-amber" aria-hidden="true" />
-      <span className="flex-1">Our group&apos;s ideas</span>
-      <span className="rounded-full bg-sun px-2 text-sm">{count}</span>
-      <ChevronDown className={cn("size-5 shrink-0 text-ink-muted transition-transform", open && "rotate-180")} aria-hidden="true" />
-    </button>
-  );
-  return (
-    <section aria-label="Our group's ideas" data-tour="ideas-tab" className={cn("flex flex-col overflow-hidden rounded-[1.75rem] border-2 border-white bg-white/95 shadow-soft", open ? "min-h-0 flex-1" : "shrink-0")}>
-      <h2 className="m-0">{toggle}</h2>
-      {open ? <div id="group-ideas-list" className="flex min-h-0 flex-1 flex-col"><IdeaBank /></div> : null}
-    </section>
-  );
-}

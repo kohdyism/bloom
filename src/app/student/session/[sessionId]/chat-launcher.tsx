@@ -23,7 +23,7 @@ export function ChatLauncher({ open, onOpenChange, compact = false }: { open: bo
     <RDialog.Root open={open} onOpenChange={onOpenChange} modal={false}>
       <RDialog.Trigger asChild>
         <button type="button" data-tour="chat-button"
-          className={cn("relative inline-flex h-11 shrink-0 items-center gap-1.5 rounded-2xl bg-teal-soft px-3 font-semibold text-teal-strong shadow-soft ring-2 ring-white hover:brightness-95", open && "ring-teal")}>
+          className={cn("relative inline-flex h-10 shrink-0 items-center gap-1.5 rounded-2xl bg-teal-soft px-3 font-semibold text-teal-strong shadow-soft ring-2 ring-white hover:brightness-95", open && "ring-teal")}>
           <MessagesSquare className="size-5" aria-hidden="true" />
           <span className={compact ? "sr-only" : undefined}>Group chat</span>
           {unread ? <span className="absolute -right-1.5 -top-1.5 min-w-5 rounded-full border-2 border-white bg-coral px-1 text-center text-xs font-bold text-white">{unread}<span className="sr-only"> new</span></span> : null}

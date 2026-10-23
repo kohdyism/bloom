@@ -14,7 +14,7 @@ import { IdeaBank } from "./idea-bank";
  * it, or in a slim bar on top on phones). The group's earlier ideas are
  * one tab away; "I'm ready" lives in the dock at the bottom.
  */
-export function ActivityPanel({ className, compact = false, top, ideasBeside = false }: { className?: string; compact?: boolean; top?: React.ReactNode; ideasBeside?: boolean }) {
+export function ActivityPanel({ className, compact = false, top, ideasBeside = false, headerAction }: { className?: string; compact?: boolean; top?: React.ReactNode; ideasBeside?: boolean; headerAction?: React.ReactNode }) {
   const { group, state, ideasSignal } = useWorkspace();
   const { prefs } = useA11y();
   const stage = group.stage;
@@ -45,7 +45,7 @@ export function ActivityPanel({ className, compact = false, top, ideasBeside = f
         <div className={cn("border-b border-line px-3 sm:px-4", compact ? "py-2" : "pb-3 pt-2.5")}>
           <div className="flex flex-wrap items-center gap-2">
             <span className={cn("inline-flex size-7 items-center justify-center rounded-lg", STAGE_ICONS[stage.kind].tone)} aria-hidden="true"><Icon className="size-4" /></span>
-            <p className="text-xs font-bold uppercase tracking-wide text-purple sm:text-sm">Your task · stage {group.stageIndex + 1} of {state.session.stages.length}</p>
+            <p className="text-xs font-bold uppercase tracking-wide text-purple sm:text-sm">Your task<span className="max-sm:hidden"> · stage {group.stageIndex + 1} of {state.session.stages.length}</span></p>
             {ideasTab ? (
               <div role="tablist" aria-label="Activity or ideas" className="ml-auto flex gap-1 rounded-xl bg-surface-2 p-0.5 sm:p-1">
                 <button type="button" role="tab" aria-selected={!showIdeas} onClick={() => setTab("activity")} className={cn("rounded-lg px-3 py-1 text-sm font-semibold", !showIdeas ? "bg-white shadow-soft" : "text-ink-muted hover:text-ink")}>Activity</button>
@@ -54,6 +54,7 @@ export function ActivityPanel({ className, compact = false, top, ideasBeside = f
                 </button>
               </div>
             ) : null}
+            {headerAction ? <div className="ml-auto">{headerAction}</div> : null}
           </div>
           {stage.instructions ? <TaskText text={stage.instructions} simplified={prefs.simplifiedInstructions} /> : null}
         </div>

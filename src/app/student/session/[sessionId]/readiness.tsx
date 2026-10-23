@@ -44,7 +44,7 @@ export function Readiness({ className }: { className?: string }) {
       </div>
       {mine ? (
         <span className="flex shrink-0 items-center gap-1 max-sm:justify-end">
-          <span className={cn("inline-flex h-11 items-center gap-1.5 rounded-2xl px-3 font-semibold sm:px-4", mine === "ready" ? "bg-mint-soft text-mint" : "bg-amber-soft text-amber")}>
+          <span className={cn("inline-flex h-10 items-center gap-1.5 rounded-2xl px-3 font-semibold sm:px-4", mine === "ready" ? "bg-mint-soft text-mint" : "bg-amber-soft text-amber")}>
             {mine === "ready" ? <Check className="size-5" aria-hidden="true" /> : <Clock3 className="size-5" aria-hidden="true" />}
             <span className="max-sm:hidden">{mine === "ready" ? "You're ready" : "You asked for more time"}</span>
             <span className="sm:hidden">{mine === "ready" ? "Ready" : "More time"}</span>
@@ -53,8 +53,8 @@ export function Readiness({ className }: { className?: string }) {
         </span>
       ) : (
         <span className="flex shrink-0 items-center gap-1.5 max-sm:justify-end">
-          <Button variant="secondary" className="h-11 rounded-2xl px-3" onClick={() => run(() => act({ action: "readiness", state: "need_time", stageIndex: group.stageIndex }))} aria-label="More time"><Clock3 /><span className="max-sm:hidden">More time</span></Button>
-          <Button className="h-11 rounded-2xl px-3 text-base sm:px-6" aria-label={readyLabel} onClick={() => run(() => act({ action: "readiness", state: "ready", stageIndex: group.stageIndex }))}><Check /><span className="max-sm:hidden">{readyLabel}</span><span className="sm:hidden">{shortLabel}</span></Button>
+          <Button variant="secondary" className="h-10 rounded-2xl px-3" onClick={() => run(() => act({ action: "readiness", state: "need_time", stageIndex: group.stageIndex }))} aria-label="More time"><Clock3 /><span className="max-sm:hidden">More time</span></Button>
+          <Button className="h-10 rounded-2xl px-3 text-base sm:px-6" aria-label={readyLabel} onClick={() => run(() => act({ action: "readiness", state: "ready", stageIndex: group.stageIndex }))}><Check /><span className="max-sm:hidden">{readyLabel}</span><span className="sm:hidden">{shortLabel}</span></Button>
         </span>
       )}
     </div>
