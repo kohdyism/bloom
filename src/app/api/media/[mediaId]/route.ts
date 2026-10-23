@@ -9,7 +9,8 @@ export const dynamic = "force-dynamic";
  * Serve an uploaded image after an access check:
  *  - group members and the session teacher (via RLS), or
  *  - anyone in the session while that image is part of the submission being
- *    presented (or the classroom display, via its token).
+ *    presented — as a photo, or placed on a slide or the whiteboard — (or the
+ *    classroom display, via its token).
  */
 export async function GET(req: Request, ctx: { params: Promise<{ mediaId: string }> }) {
   const parsed = uuid.safeParse((await ctx.params).mediaId);
@@ -30,7 +31,11 @@ export async function GET(req: Request, ctx: { params: Promise<{ mediaId: string
          from media_uploads m
          join activity_sessions s on s.presentation ->> 'groupId' = m.group_id::text
          join submissions sub on sub.id::text = s.presentation ->> 'submissionId'
-         where m.id = $1 and sub.content -> 'media' @> jsonb_build_array(jsonb_build_object('id', $1::text))`,
+         where m.id = $1 and (
+           sub.content -> 'media' @> jsonb_build_array(jsonb_build_object('id', $1::text))
+           -- pictures placed on a slide or the whiteboard
+           or jsonb_path_exists(sub.content, '$.** ? (@.mediaId == $id)', jsonb_build_object('id', $1::text))
+         )`,
         [mediaId],
       );
       if (!row) return null;

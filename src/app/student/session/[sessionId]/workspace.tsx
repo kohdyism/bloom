@@ -23,6 +23,8 @@ import { Readiness } from "./readiness";
 import { PipLauncher } from "./pip-launcher";
 import { ChatLauncher } from "./chat-launcher";
 import { IdeasLauncher } from "./ideas-launcher";
+import { MaterialsLauncher } from "./materials-launcher";
+import { chatOpenIn } from "@/lib/domain/lesson";
 import { TalkTime } from "./talk-time";
 import { BloomReveal } from "./bloom-reveal";
 import { LessonTour, tourSeen } from "./lesson-tour";
@@ -125,9 +127,11 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
   }, []);
   // While making the output, the group's ideas open in a big floating window from the dock.
   const [ideasOpen, setIdeasOpen] = useState(false);
+  const [materialsOpen, setMaterialsOpen] = useState(false);
   const openIdeas = useCallback(() => {
     setMobileTab("activity");
     setIdeasOpen(true);
+    setMaterialsOpen(false);
     setPipOpen(false);
     setChatOpen(false);
     setIdeasSignal((n) => n + 1);
@@ -157,11 +161,16 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
     // canvases get the room; Talk time clears the screen.
     const canvas = kind === "creation";
     const talk = kind === "talk";
-    const discussion = kind === "discussion";
+    // The teacher chooses which stages have a group chat.
+    const chatHere = kind !== "complete" && chatOpenIn(g.stage);
+    const discussion = kind === "discussion" && chatHere;
     const showPlant = s.theme !== "none";
     const doneStages = g.stageStatus === "complete" ? s.stages.length : g.stageIndex;
     const ideasBeside = hasIdeasTab(kind);
-    const ideasLauncher = <IdeasLauncher open={ideasOpen} onOpenChange={(o) => { setIdeasOpen(o); if (o) { setPipOpen(false); setChatOpen(false); } }} compact={false} />;
+    const ideasLauncher = <IdeasLauncher open={ideasOpen} onOpenChange={(o) => { setIdeasOpen(o); if (o) { setPipOpen(false); setChatOpen(false); setMaterialsOpen(false); } }} compact={false} />;
+    // Reference materials (e.g. the poem) are one tap away on every stage.
+    const materialsLauncher = <MaterialsLauncher materials={s.materials} open={materialsOpen} onOpenChange={(o) => { setMaterialsOpen(o); if (o) { setIdeasOpen(false); setPipOpen(false); setChatOpen(false); } }} />;
+    const taskActions = (ideasBeside && small) || s.materials.length ? <span className="flex items-center gap-1.5">{s.materials.length ? materialsLauncher : null}{ideasBeside && small ? ideasLauncher : null}</span> : null;
     let main: React.ReactNode;
     if (talk) {
       main = <TalkTime />;
@@ -171,7 +180,7 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
       const working = kind !== "complete";
       main = (
         <div className="flex min-h-0 flex-1 gap-3 p-3">
-          <ActivityPanel compact={canvas} ideasBeside className="min-w-0 flex-1" />
+          <ActivityPanel compact={canvas} ideasBeside headerAction={s.materials.length ? materialsLauncher : null} className="min-w-0 flex-1" />
           {working ? (
             <div className="flex min-h-0 w-[19rem] shrink-0 flex-col gap-3 xl:w-[23rem]">
               <BloomCoach className={discussion ? "max-h-[40%] shrink-0" : "min-h-0 shrink"} />
@@ -187,14 +196,14 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
             <button type="button" role="tab" aria-selected={mobileTab === "activity"} onClick={() => setMobileTab("activity")} className={cn("inline-flex flex-1 items-center justify-center gap-2 rounded-xl py-1.5 font-semibold", mobileTab === "activity" ? "bg-ink text-white" : "text-ink-muted")}><Lightbulb className="size-5" aria-hidden="true" />Task &amp; ideas</button>
             <button type="button" role="tab" aria-selected={mobileTab === "chat"} onClick={() => setMobileTab("chat")} className={cn("inline-flex flex-1 items-center justify-center gap-2 rounded-xl py-1.5 font-semibold", mobileTab === "chat" ? "bg-ink text-white" : "text-ink-muted")}><MessagesSquare className="size-5" aria-hidden="true" />Group chat</button>
           </div>
-          <ActivityPanel ideasBeside headerAction={ideasBeside && small ? ideasLauncher : null} top={<BloomCoach variant="bar" />} className={cn("min-w-0 flex-1", mobileTab !== "activity" && "hidden")} />
+          <ActivityPanel ideasBeside headerAction={taskActions} top={<BloomCoach variant="bar" />} className={cn("min-w-0 flex-1", mobileTab !== "activity" && "hidden")} />
           {mobileTab === "chat" ? <GroupChat compact top={<BloomCoach variant="bar" />} className="min-w-0 flex-1" /> : null}
         </div>
       );
     } else {
       main = (
         <div className="flex min-h-0 flex-1 p-2 sm:p-3">
-          <ActivityPanel ideasBeside headerAction={ideasBeside && small ? ideasLauncher : null} compact={canvas} top={<BloomCoach variant="bar" />} className="w-full min-w-0" />
+          <ActivityPanel ideasBeside headerAction={taskActions} compact={canvas} top={<BloomCoach variant="bar" />} className="w-full min-w-0" />
         </div>
       );
     }
@@ -211,11 +220,11 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
         {main}
         <div className="flex items-center gap-2 border-t-2 border-white/80 bg-white/85 px-2 py-1.5 backdrop-blur-md sm:gap-3 sm:px-4" data-dock>
           {showPlant ? <PlantBubble stagesDone={doneStages} totalStages={s.stages.length} flower={g.flower} size="sm" /> : null}
-          {!discussion && !talk ? <ChatLauncher open={chatOpen} onOpenChange={(o) => { setChatOpen(o); if (o) { setPipOpen(false); setIdeasOpen(false); } }} compact={small} /> : null}
+          {!discussion && !talk && chatHere ? <ChatLauncher open={chatOpen} onOpenChange={(o) => { setChatOpen(o); if (o) { setPipOpen(false); setIdeasOpen(false); setMaterialsOpen(false); } }} compact={small} /> : null}
           {ideasBeside && !small ? ideasLauncher : null}
           <Readiness className="min-w-0 flex-1" />
           {kind === "complete" ? <div className="flex-1" /> : null}
-          <PipLauncher open={pipOpen} onOpenChange={(o) => { setPipOpen(o); if (o) { setChatOpen(false); setIdeasOpen(false); } }} prefill={assistantPrefill} tick={assistantTick} compact={small} />
+          <PipLauncher open={pipOpen} onOpenChange={(o) => { setPipOpen(o); if (o) { setChatOpen(false); setIdeasOpen(false); setMaterialsOpen(false); } }} prefill={assistantPrefill} tick={assistantTick} compact={small} />
         </div>
       </div>
     );

@@ -88,6 +88,11 @@ test("complete inclusive classroom lesson", async ({ browser }) => {
 
   // 12. Private individual ideas.
   await expect(a1.page.getByRole("heading", { name: "Think", exact: true })).toBeVisible();
+  // The poem is one tap away on every stage, in a big reading window.
+  await a1.page.getByRole("button", { name: "Poem: Alone" }).click();
+  await expect(a1.page.getByRole("dialog", { name: "Poem: Alone" }).getByText(/From childhood.s hour/)).toBeVisible();
+  if (process.env.SCREENSHOT_DIR) await a1.page.screenshot({ path: `${process.env.SCREENSHOT_DIR}/s-materials.png` });
+  await a1.page.getByRole("button", { name: "Close materials" }).click();
   await a1.page.getByLabel("Your idea").fill("The speaker feels lonely because he sees the world differently from others.");
   await a1.page.getByRole("button", { name: "Add idea" }).click();
   // Saved ideas are listed under the idea box, marked private.

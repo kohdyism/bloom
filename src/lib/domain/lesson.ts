@@ -52,6 +52,8 @@ export const stageConfigSchema = z.object({
   evidenceUpload: z.boolean().default(false),
   /** Reflection: group-level prompts. */
   prompts: z.array(z.string().min(1).max(200)).max(6).default([]),
+  /** Whether the group chat is available during this stage (teacher's choice). */
+  groupChat: z.boolean().default(true),
 });
 export type StageConfig = z.infer<typeof stageConfigSchema>;
 
@@ -103,6 +105,8 @@ export const lessonConfigSchema = z.object({
   allowResubmission: z.boolean().default(true),
   gamificationTheme: z.enum(GAMIFICATION_THEMES).default("garden"),
   timerWarningSeconds: z.number().int().min(0).max(600).default(60),
+  /** Supervised chat: Bloom checks each group-chat message first and holds back off-task or unkind ones. */
+  chatSupervision: z.enum(["off", "ai"]).default("off"),
 });
 export type LessonConfig = z.infer<typeof lessonConfigSchema>;
 
@@ -149,3 +153,9 @@ export const sessionSnapshotSchema = z.object({
   materials: z.array(z.object({ id: z.string(), title: z.string(), kind: z.string(), body: z.string() })),
 });
 export type SessionSnapshot = z.infer<typeof sessionSnapshotSchema>;
+
+/** Is the group chat open during this stage? Never in talk time (screens down) or reflection; otherwise the teacher's choice (older lessons keep it on). */
+export function chatOpenIn(stage: { kind: StageKind; config: { groupChat?: boolean } } | null | undefined): boolean {
+  if (!stage || stage.kind === "talk" || stage.kind === "reflection") return false;
+  return stage.config.groupChat !== false;
+}

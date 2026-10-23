@@ -147,6 +147,7 @@ export async function studentState(uid: string, sessionId: string) {
         modality: s.snapshot.config.modality,
         anonymity: s.snapshot.config.ideaAnonymity,
         allowResubmission: s.snapshot.config.allowResubmission,
+        chatSupervised: s.snapshot.config.chatSupervision === "ai",
         presentation: s.presentation,
       },
       announcements: announcements.map((a) => ({ id: a.id, body: a.body, toGroup: !!a.group_id, createdAt: iso(a.created_at) })),

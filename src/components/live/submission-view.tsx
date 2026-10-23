@@ -20,9 +20,11 @@ export type SubmissionContent = {
  * the server's escaping serializer (never by a client), so it's safe to render.
  */
 export function SubmissionView({
-  content, view, slide, onSlide, mediaUrl, large, note, controls = true,
+  content, view, slide, onSlide, mediaUrl, large, note, controls = true, bare = false,
 }: {
   content: SubmissionContent; view?: string; slide?: number; onSlide?: (n: number) => void; mediaUrl: (id: string) => string; large?: boolean; note?: string; controls?: boolean;
+  /** Just the slide or board, without the counter and text outline (for small previews). */
+  bare?: boolean;
 }) {
   const kinds = content.kinds ?? [];
   const [local, setLocal] = useState(0);
@@ -34,6 +36,7 @@ export function SubmissionView({
   if (v === "slides" && content.slides) {
     const slides = content.slides.slides;
     const s = slides[Math.min(current, slides.length - 1)];
+    if (bare) return s ? <BoardView objects={s.objects} viewBox={`0 0 ${SLIDE_W} ${SLIDE_H}`} mediaUrl={mediaUrl} className="block h-auto w-full" title={`Slide ${current + 1} of ${slides.length}`} /> : null;
     return (
       <div className="flex flex-col gap-3">
         <div className={cn("overflow-hidden rounded-xl border border-line bg-white shadow-soft", large && "rounded-2xl")}>

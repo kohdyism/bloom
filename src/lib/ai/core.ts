@@ -69,6 +69,8 @@ export async function runStructured<S extends z.ZodTypeAny>(opts: {
   maxTokens?: number;
   simulate: () => z.infer<S>;
   verify?: (data: z.infer<S>) => boolean;
+  /** Shorter limit for calls a student is waiting on (e.g. checking a chat message). */
+  timeoutMs?: number;
 }): Promise<AiResult<z.infer<S>>> {
   if (config.aiMode !== "live") return { data: opts.simulate(), origin: "ai_simulated" };
   try {
@@ -81,7 +83,7 @@ export async function runStructured<S extends z.ZodTypeAny>(opts: {
         messages: [{ role: "user", content: opts.prompt }],
         output_config: { format: zodOutputFormat(opts.schema) },
       })),
-      config.aiTimeoutMs,
+      opts.timeoutMs ?? config.aiTimeoutMs,
     );
     const parsed = opts.schema.safeParse(res.parsed_output);
     if (!parsed.success) throw new Error("AI output failed schema validation");

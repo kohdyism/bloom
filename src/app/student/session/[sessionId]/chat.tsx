@@ -39,6 +39,8 @@ export function Chat({ className, header, empty, after, composerClassName, onAct
   const [text, setText] = useState("");
   const [replyTo, setReplyTo] = useState<Msg | null>(null);
   const [sending, setSending] = useState(false);
+  const [held, setHeld] = useState<string | null>(null);
+  const supervised = !!state.session.chatSupervised;
   const listRef = useRef<HTMLDivElement>(null);
   const atBottom = useRef(true);
   const byId = useMemo(() => new Map(msgs.map((m) => [m.id, m])), [msgs]);
@@ -94,11 +96,19 @@ export function Chat({ className, header, empty, after, composerClassName, onAct
   async function send() {
     if (!text.trim()) return;
     setSending(true);
-    if (await run(() => act({ action: "message", body: text, replyTo: replyTo?.id ?? null }))) {
-      setText("");
-      setReplyTo(null);
-      onActivity?.("sent", text);
-      atBottom.current = true;
+    setHeld(null);
+    let result: unknown = null;
+    if (await run(async () => { result = await act({ action: "message", body: text, replyTo: replyTo?.id ?? null }); })) {
+      const h = (result as { held?: { note: string } } | null)?.held;
+      if (h) {
+        // Supervised chat: Bloom kept this one back. Only the writer sees why; the text stays to edit.
+        setHeld(h.note);
+      } else {
+        setText("");
+        setReplyTo(null);
+        onActivity?.("sent", text);
+        atBottom.current = true;
+      }
     }
     setSending(false);
   }
@@ -189,6 +199,13 @@ export function Chat({ className, header, empty, after, composerClassName, onAct
       ) : null}
       </div>
       <form className={cn("flex flex-col gap-2 border-t border-line p-3", composerClassName)} onSubmit={(e) => { e.preventDefault(); void send(); }}>
+        {held ? (
+          <p className="flex items-start gap-2 rounded-xl border border-[#ffd2c4] bg-[#fff6f1] px-3 py-2 text-sm" role="status">
+            <span className="shrink-0 font-semibold text-[#c4420a]">Not sent.</span>
+            <span className="min-w-0 flex-1">{held} <span className="text-ink-muted">Edit it and try again.</span></span>
+            <button type="button" aria-label="Dismiss" onClick={() => setHeld(null)}><X className="size-4" /></button>
+          </p>
+        ) : supervised ? <p className="text-xs text-ink-muted">Bloom checks messages before they&apos;re shared, to keep the chat on task.</p> : null}
         {replyTo ? (
           <p className="flex items-center gap-2 rounded-lg bg-surface-2 px-2.5 py-1 text-xs">
             <Reply className="size-3.5" aria-hidden="true" /><span className="min-w-0 flex-1 truncate">Replying to {replyTo.author}: {replyTo.body}</span>

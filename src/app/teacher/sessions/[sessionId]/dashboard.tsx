@@ -18,6 +18,7 @@ import { helpLabel, ASSIST_LABELS } from "@/lib/domain/help";
 import { cn } from "@/lib/utils";
 import { VIEW_LABELS } from "@/components/live/submission-view";
 import { GroupDrawer } from "./group-drawer";
+import { PresentControls } from "./present-controls";
 import type { TeacherAction } from "./live-session";
 
 type Props = { state: TeacherState; act: (b: TeacherAction) => Promise<void>; connection: ConnectionState; refresh: () => void; focusHelp: number };
@@ -286,11 +287,10 @@ function PresentationPanel({ state, act, names }: { state: TeacherState; act: Pr
           </ul>
         ) : null}
         {p ? (
+          <div className="flex flex-col gap-3">
+          <PresentControls sessionId={s.id} p={p} onSlide={(n) => void run(() => act({ action: "present_update", slide: n }))} />
           <div className="flex flex-wrap items-center gap-2">
-            <Button size="sm" variant="secondary" onClick={() => run(() => act({ action: "present_update", slide: Math.max(0, p.slide - 1) }))} disabled={p.slide === 0}>Previous</Button>
-            <span className="text-sm font-semibold">Slide / page {p.slide + 1}</span>
-            <Button size="sm" variant="secondary" onClick={() => run(() => act({ action: "present_update", slide: p.slide + 1 }))}>Next</Button>
-            <label htmlFor="pres-view" className="ml-2 text-sm">View</label>
+            <label htmlFor="pres-view" className="text-sm">View</label>
             <Select id="pres-view" className="h-9 w-auto" value={p.view} onChange={(e) => run(() => act({ action: "present_update", view: e.target.value }))}>
               {(["slides", "document", "whiteboard", "media"] as const).map((v) => <option key={v} value={v}>{VIEW_LABELS[v]}</option>)}
             </Select>
@@ -300,6 +300,7 @@ function PresentationPanel({ state, act, names }: { state: TeacherState; act: Pr
               {presenting?.members.map((id) => <option key={id} value={id}>{names.get(id)}</option>)}
             </Select>
             <Button size="sm" variant="danger" className="ml-auto" onClick={() => run(() => act({ action: "present_stop" }), "Back to class overview")}><Square />Stop presenting</Button>
+          </div>
           </div>
         ) : (
           <div className="flex flex-wrap items-end gap-2">

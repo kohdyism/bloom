@@ -52,6 +52,8 @@ test("school improvement: vote, whiteboard, slides, present", async ({ browser }
     await a.page.getByLabel("Your idea").fill(ideas[i]);
     await a.page.getByRole("button", { name: "Add idea" }).click();
   }
+  // The teacher turned the group chat off for thinking time.
+  await expect(s[0].page.getByRole("button", { name: /Group chat/ })).toHaveCount(0);
   await shot(s[0].page, "s-brainstorm");
   // Thinking time moves on when most of the group is done (and nobody asked for more time).
   for (const a of s.slice(0, 2)) await ready(a.page, "I'm done thinking");
@@ -71,6 +73,15 @@ test("school improvement: vote, whiteboard, slides, present", async ({ browser }
   await expect(s[0].page.getByRole("heading", { name: "Discuss", exact: true })).toBeVisible();
   await s[1].page.getByLabel("Message your group").fill("I think the quiet room helps the most people.");
   await s[1].page.getByRole("button", { name: "Send message" }).click();
+  // Supervised chat: Bloom holds back off-task messages and tells only the writer why.
+  await expect(s[2].page.getByText("Bloom checks messages before they're shared")).toBeVisible();
+  await s[2].page.getByLabel("Message your group").fill("anyone on fortnite tonight");
+  await s[2].page.getByRole("button", { name: "Send message" }).click();
+  await expect(s[2].page.getByText("Not sent.")).toBeVisible();
+  await expect(s[2].page.getByLabel("Message your group")).toHaveValue("anyone on fortnite tonight");
+  await expect(s[1].page.getByText("I think the quiet room helps the most people.")).toBeVisible();
+  await expect(s[1].page.getByText("anyone on fortnite tonight")).toHaveCount(0);
+  await s[2].page.getByLabel("Message your group").fill("");
   // Tap Bloom at the top of the task for help; the answer appears in Bloom's bubble for everyone.
   await s[0].page.getByRole("button", { name: /^Bloom, your group helper/ }).click();
   await s[0].page.getByRole("button", { name: "Give us a question to discuss" }).click();
@@ -153,6 +164,11 @@ test("school improvement: vote, whiteboard, slides, present", async ({ browser }
   await display.keyboard.press("ArrowLeft");
   await expect(display.getByText("1 / 2")).toBeVisible();
   await s[1].page.getByRole("button", { name: "Next slide" }).click();
+  await expect(display.getByText("2 / 2")).toBeVisible();
+  // The teacher can move the slides from the dashboard too.
+  await t.getByRole("button", { name: "Previous slide" }).click();
+  await expect(display.getByText("1 / 2")).toBeVisible();
+  await t.getByRole("button", { name: "Next slide" }).click();
   await expect(display.getByText("2 / 2")).toBeVisible();
   await shot(display, "d-presentation");
   await t.getByLabel("Slide control").selectOption({ label: "Priya D" });

@@ -1,4 +1,6 @@
 import "server-only";
+import { reviewChatMessage, quickCheck } from "@/lib/ai/chat-guard";
+import { chatOpenIn } from "@/lib/domain/lesson";
 import { asServer, asUser, NotFoundError, type Db } from "@/lib/db";
 import { publish, ch } from "@/lib/realtime/server";
 import { ApiError, badRequest, conflict, forbidden } from "@/lib/api";
@@ -207,22 +209,44 @@ export async function requestResynthesis(uid: string, sessionId: string) {
 // ---------------------------------------------------------------------------
 // Discussion
 // ---------------------------------------------------------------------------
-export async function postMessage(uid: string, sessionId: string, body: string, replyTo: string | null) {
+export async function postMessage(uid: string, sessionId: string, body: string, replyTo: string | null): Promise<{ ok: true } | { held: { verdict: "off_task" | "unkind"; note: string } }> {
   const text = body.trim();
   if (!text) throw badRequest("Write a message first.");
   if (text.length > 2000) throw badRequest("Messages can be up to 2000 characters.");
   await rateLimit(`msg:${uid}`, 30, 60);
-  const group = await asUser(uid, async (db) => {
+  const { group, supervise } = await asUser(uid, async (db) => {
     const ctx = await studentContext(db, uid, sessionId);
     const group = requireGroup(ctx);
     if (ctx.session.status === "ended") throw conflict("This lesson has ended.");
+    const stage = ctx.session.snapshot.stages[group.stage_index];
+    // The teacher chooses which stages have a group chat.
+    if (group.stage_status !== "complete" && !chatOpenIn(stage)) throw conflict("The group chat is off for this part of the lesson.");
     if (replyTo) {
       const ok = await db.maybeOne("select 1 from group_messages where id = $1 and group_id = $2", [replyTo, group.id]);
       if (!ok) throw badRequest("That message isn't in your group.");
     }
-    await db.query("insert into group_messages(group_id, author_id, kind, body, reply_to) values ($1,$2,'student',$3,$4)", [group.id, uid, text, replyTo]);
-    return group;
+    const supervise = ctx.session.snapshot.config.chatSupervision === "ai"
+      ? {
+          lesson: ctx.session.snapshot.title,
+          stage: stage?.title ?? "",
+          instructions: stage?.instructions ?? "",
+          recent: (await db.query<{ body: string }>("select body from group_messages where group_id = $1 and kind = 'student' order by created_at desc limit 6", [group.id])).map((m) => m.body).reverse(),
+        }
+      : null;
+    return { group, supervise };
   });
+  // Supervised chat: Bloom checks the message before anyone else sees it.
+  if (supervise) {
+    const check = group.ai_enabled ? await reviewChatMessage({ ...supervise, text }) : quickCheck(text);
+    if (check.verdict !== "ok") {
+      await asServer((db) => db.query(
+        "insert into audit_events(actor_id, session_id, action, target, details) values ($1,$2,'chat.held',$3,$4)",
+        [uid, sessionId, group.id, JSON.stringify({ verdict: check.verdict })],
+      )).catch(() => {});
+      return { held: { verdict: check.verdict, note: check.note } };
+    }
+  }
+  await asUser(uid, (db) => db.query("insert into group_messages(group_id, author_id, kind, body, reply_to) values ($1,$2,'student',$3,$4)", [group.id, uid, text, replyTo]));
   await notifyGroup(group, "message.new");
   background(() => checkParticipationBalance(group.id));
   // Talking to the group helper by name ("@Bloom …", "Bloom, …") gets a reply in the chat.
@@ -232,6 +256,7 @@ export async function postMessage(uid: string, sessionId: string, body: string, 
     const allowed = await rateLimit(`ask-group:${uid}`, 8, 300).then(() => true, () => false);
     if (allowed) background(() => facilitate(group.id, { kind: "ask", quick: "question", question: text.slice(0, 500) }, null));
   }
+  return { ok: true };
 }
 
 

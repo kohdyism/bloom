@@ -203,6 +203,10 @@ export function LessonBuilder(props: Props) {
                     </Field>
                   </div>
                   <StageSpecific stage={stage} onChange={(p) => updateStageConfig(selected, p)} />
+                  {stage.kind !== "talk" && stage.kind !== "reflection" ? (
+                    <Switch id="stage-chat" label="Group chat during this stage" description={stage.kind === "discussion" ? "Turn off if the group should only talk out loud." : "Turn off to keep students focused on the task. Bloom and Pip stay available."}
+                      checked={stage.config.groupChat !== false} onCheckedChange={(v) => updateStageConfig(selected, { groupChat: v })} />
+                  ) : null}
                 </CardBody>
               </Card>
             ) : null}
@@ -437,6 +441,12 @@ function SettingsPanel({ draft, update, classId, setClassId, classes, isTemplate
               <option value="slides">Slides</option>
               <option value="photo">Photo of physical work</option>
               <option value="mixed">A mix</option>
+            </Select>
+          </Field>
+          <Field id="chat-supervision" label="Group chat supervision" hint="Supervised: Bloom checks each message before the group sees it. Off-task or unkind messages are held back and the student is told why. Turn the chat on or off for each stage in the stage settings.">
+            <Select value={c.chatSupervision ?? "off"} onChange={(e) => setConfig({ chatSupervision: e.target.value as "off" | "ai" })}>
+              <option value="off">Open chat</option>
+              <option value="ai">Supervised by Bloom (AI)</option>
             </Select>
           </Field>
           <Switch id="pres" label="Groups present their work" checked={c.presentationRequired} onCheckedChange={(v) => setConfig({ presentationRequired: v })} />

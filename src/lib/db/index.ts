@@ -25,13 +25,30 @@ declare global {
 
 export function pool(): Pool {
   if (!globalThis.__bloomPool) {
-    globalThis.__bloomPool = new Pool({
+    const p = new Pool({
       connectionString: config.databaseUrl,
       max: Number(process.env.BLOOM_DB_POOL_MAX ?? 10),
-      idleTimeoutMillis: 30_000,
+      // Close idle connections before the hosting network does, and keep
+      // the rest alive, so a lesson never picks up a dead connection.
+      idleTimeoutMillis: 10_000,
+      keepAlive: true,
+      connectionTimeoutMillis: 10_000,
     });
+    // An idle connection dropped by the database is not a crash: the pool
+    // discards it and opens a fresh one next time.
+    p.on("error", (err) => console.warn("[bloom:db] idle connection closed:", err.message));
+    globalThis.__bloomPool = p;
   }
   return globalThis.__bloomPool;
+}
+
+/** Errors that mean the connection itself broke (not a problem with the query). */
+export function isConnectionError(err: unknown): boolean {
+  const e = err as { code?: string; message?: string };
+  return (
+    ["ECONNRESET", "ECONNREFUSED", "EPIPE", "ETIMEDOUT", "57P01", "57P02", "57P03", "08000", "08003", "08006"].includes(e?.code ?? "") ||
+    /Connection terminated|connection timeout|Client has encountered a connection error|terminating connection/i.test(e?.message ?? "")
+  );
 }
 
 export type Db = {
@@ -67,19 +84,30 @@ export class NotFoundError extends Error {
   }
 }
 
-async function transaction<T>(setup: (c: PoolClient) => Promise<void>, fn: (db: Db) => Promise<T>): Promise<T> {
+async function transaction<T>(setup: (c: PoolClient) => Promise<void>, fn: (db: Db) => Promise<T>, attempt = 0): Promise<T> {
   const client = await pool().connect();
+  let started = false;
+  let broken: Error | undefined;
   try {
     await client.query("begin");
+    started = true;
     await setup(client);
     const result = await fn(wrap(client));
     await client.query("commit");
     return result;
   } catch (err) {
-    await client.query("rollback").catch(() => {});
+    if (isConnectionError(err)) broken = err as Error;
+    else await client.query("rollback").catch(() => {});
+    // A dead connection fails at "begin" before anything ran: safe to retry once on a fresh one.
+    if (broken && !started && attempt === 0) {
+      client.release(broken);
+      broken = undefined;
+      return transaction(setup, fn, 1);
+    }
     throw err;
   } finally {
-    client.release();
+    // Passing the error tells the pool to throw this connection away instead of reusing it.
+    try { client.release(broken); } catch { /* already released for the retry */ }
   }
 }
 
