@@ -151,7 +151,9 @@ export function BloomCoach({ variant = "rail", className }: { variant?: "rail" |
 
   const helpMenu = (
     <Popover.Portal>
-      <Popover.Content side="bottom" align={bar ? "start" : "end"} sideOffset={8} collisionPadding={12} className="animate-pop z-[65] flex w-80 max-w-[calc(100vw-1.5rem)] flex-col gap-1 rounded-2xl border border-line bg-white p-2 shadow-lift">
+      <Popover.Content side="bottom" align="end" sideOffset={8}
+        // Tapping Bloom toggles the menu itself, so it doesn't count as "outside".
+        onInteractOutside={(e) => { if (e.target instanceof Element && e.target.closest("[data-bloom-button]")) e.preventDefault(); }} collisionPadding={12} className="animate-pop z-[65] flex w-80 max-w-[calc(100vw-1.5rem)] flex-col gap-1 rounded-2xl border border-line bg-white p-2 shadow-lift">
         <p className="px-2 pb-1 text-sm text-ink-muted">{ai ? "Bloom answers for your whole group." : "Your teacher is helping your group directly right now."}</p>
         {ai ? ASKS.map(([q, label, Icon]) => (
           <button key={q} type="button" onClick={() => ask(q)} className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-left font-medium hover:bg-[#fff1e8]">
@@ -193,12 +195,10 @@ export function BloomCoach({ variant = "rail", className }: { variant?: "rail" |
       <Popover.Root open={menu} onOpenChange={setMenu}>
         <div className={cn("border-b border-line bg-gradient-to-r from-[#fff4ec] via-[#fff1f6] to-white px-2.5 py-1.5", className)} data-tour="bloom-coach">
           <div className="flex items-center gap-2">
-            <Popover.Anchor asChild>
-              <span className="shrink-0">
-                <Buddy who="bloom" size={36} mood={thinking ? "thinking" : cheer ? "celebrate" : "happy"} cue={buddy.cue} talking={buddy.talking && !thinking}
+            <span className="shrink-0" data-bloom-button>
+              <Buddy who="bloom" size={36} mood={thinking ? "thinking" : cheer ? "celebrate" : "happy"} cue={buddy.cue} talking={buddy.talking && !thinking}
                   onPress={() => setMenu((o) => !o)} pressLabel="Bloom, your group helper — tap for help" expanded={menu} />
               </span>
-            </Popover.Anchor>
             <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="min-w-0 flex-1 text-left" aria-live="polite">
               <span className="sr-only">Bloom says: </span>
               {thinking ? <span className="text-sm text-ink-muted">Bloom is thinking…</span> : <span className={cn("block text-sm leading-snug", !open && "truncate")}>{text}</span>}
@@ -221,12 +221,10 @@ export function BloomCoach({ variant = "rail", className }: { variant?: "rail" |
     <Popover.Root open={menu} onOpenChange={setMenu}>
       <section aria-label="Bloom, your group helper" className={cn("flex min-h-0 flex-col gap-2 overflow-y-auto rounded-[1.75rem] border-2 border-white bg-gradient-to-b from-[#fff4ec] via-[#fff1f6] to-white/95 p-3 shadow-soft", className)} data-tour="bloom-coach">
         <div className="flex items-center gap-2">
-          <Popover.Anchor asChild>
-            <span className="shrink-0">
-              <Buddy who="bloom" size={56} mood={thinking ? "thinking" : cheer ? "celebrate" : "happy"} cue={buddy.cue} talking={buddy.talking && !thinking}
+          <span className="shrink-0" data-bloom-button>
+            <Buddy who="bloom" size={56} mood={thinking ? "thinking" : cheer ? "celebrate" : "happy"} cue={buddy.cue} talking={buddy.talking && !thinking}
                 onPress={() => setMenu((o) => !o)} pressLabel="Bloom, your group helper — tap for help" expanded={menu} />
             </span>
-          </Popover.Anchor>
           <div className="min-w-0 flex-1">
             <p className="font-display text-lg font-bold leading-tight">Bloom</p>
             <p className="text-xs text-ink-muted">Your group&apos;s helper</p>
