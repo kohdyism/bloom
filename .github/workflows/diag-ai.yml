@@ -9,26 +9,12 @@ jobs:
     timeout-minutes: 6
     steps:
       - uses: superfly/flyctl-actions/setup-flyctl@master
-      - name: One test call from the app machine
+      - uses: actions/checkout@v4
+      - name: Real AI workflows from the app machine
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: |
-          cat > probe.mjs <<'JS'
-          import Anthropic from "@anthropic-ai/sdk";
-          const key = process.env.ANTHROPIC_API_KEY ?? "";
-          console.log("PROBE key present:", key.length > 0, "length:", key.length, "starts sk-ant:", key.startsWith("sk-ant"), "has whitespace/quotes:", /[\s"']/.test(key));
-          console.log("PROBE model:", process.env.BLOOM_AI_MODEL || "claude-sonnet-5-5", "mode:", process.env.BLOOM_AI_MODE || "auto");
-          const c = new Anthropic({ apiKey: key, timeout: 20000, maxRetries: 0 });
-          try {
-            const r = await c.messages.create({ model: process.env.BLOOM_AI_MODEL || "claude-sonnet-5-5", max_tokens: 20, messages: [{ role: "user", content: "Say hi in three words." }] });
-            console.log("PROBE OK", r.model, JSON.stringify(r.content).slice(0, 80));
-          } catch (e) {
-            console.log("PROBE ERR", e.status ?? "", (e.message ?? String(e)).replace(/sk-ant[\w-]*/g, "[key]").slice(0, 300));
-          }
-          JS
-          flyctl ssh console -a bloom-kohdyism -C "mkdir -p /tmp/p" >/dev/null 2>&1 || true
-          flyctl ssh sftp shell -a bloom-kohdyism <<< "put probe.mjs /app/probe-diag.mjs" >/dev/null 2>&1 || echo "::notice::sftp failed"
-          out=$(flyctl ssh console -a bloom-kohdyism -C "sh -c 'cd /app && node probe-diag.mjs; rm -f probe-diag.mjs'" 2>&1 | grep PROBE || true)
-          [ -z "$out" ] && out="no output: $(flyctl ssh console -a bloom-kohdyism -C 'echo hi' 2>&1 | tail -2 | tr '\n' ' ')"
-          echo "$out" | while read -r l; do echo "::notice::$l"; done
-          flyctl logs -a bloom-kohdyism --no-tail 2>&1 | grep -E "bloom:ai" | sed -E 's/sk-ant[A-Za-z0-9_-]*/[key]/g' | tail -5 | while read -r l; do echo "::notice::LOG ${l:0:300}"; done
+          flyctl ssh sftp shell -a bloom-kohdyism <<< "put .github/probe-ai.ts /app/src/probe-ai.ts" >/dev/null 2>&1 || echo "::notice::sftp failed"
+          out=$(flyctl ssh console -a bloom-kohdyism -C "sh -c 'cd /app && NODE_OPTIONS=--conditions=react-server npx tsx --tsconfig tsconfig.json src/probe-ai.ts 2>&1 | grep PROBE; rm -f src/probe-ai.ts'" 2>&1 | grep PROBE || true)
+          [ -z "$out" ] && out="no output"
+          echo "$out" | while read -r l; do echo "::notice::${l:0:380}"; done
