@@ -1,20 +1,18 @@
-# Temporary: makes one tiny Claude call from inside the live app (with its own key) and prints only the outcome.
-name: Diagnose live AI
+# One-off, requested by the owner: wipe the live demo's lessons, progress and
+# flowers and reseed the fictional demo data (same demo sign-ins).
+name: Reset live demo data
 on:
   push:
     branches: [diag-ai]
 jobs:
-  probe:
+  reset:
     runs-on: ubuntu-latest
-    timeout-minutes: 6
+    timeout-minutes: 8
     steps:
       - uses: superfly/flyctl-actions/setup-flyctl@master
-      - uses: actions/checkout@v4
-      - name: Real AI workflows from the app machine
+      - name: Reset and reseed
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: |
-          flyctl ssh sftp shell -a bloom-kohdyism <<< "put .github/probe-ai.ts /app/src/probe-ai.ts" >/dev/null 2>&1 || echo "::notice::sftp failed"
-          out=$(flyctl ssh console -a bloom-kohdyism -C "sh -c 'cd /app && NODE_OPTIONS=--conditions=react-server npx tsx --tsconfig tsconfig.json src/probe-ai.ts 2>&1 | grep PROBE; rm -f src/probe-ai.ts'" 2>&1 | grep PROBE || true)
-          [ -z "$out" ] && out="no output"
-          echo "$out" | while read -r l; do echo "::notice::${l:0:380}"; done
+          out=$(flyctl ssh console -a bloom-kohdyism -C "sh -c 'cd /app && npx tsx scripts/db.ts reset 2>&1 | tail -4; rm -rf /data/uploads/* && echo RESET-UPLOADS-CLEARED'" 2>&1 | tail -6)
+          echo "$out" | while read -r l; do echo "::notice::${l:0:300}"; done
