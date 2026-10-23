@@ -23,13 +23,15 @@ export function IdeaBank() {
   return <div className="flex min-h-0 flex-1 flex-col">{brainstorming ? <MyPrivateIdeas /> : <SharedIdeas />}</div>;
 }
 
-function MyPrivateIdeas() {
+/** Your own ideas during thinking time. `inline` = listed under the idea box. */
+export function MyPrivateIdeas({ inline = false }: { inline?: boolean }) {
   const { group, act, requestEdit } = useWorkspace();
   const run = useRun();
   const mine = group.ideas.mine;
+  if (inline && mine.length === 0) return null;
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-3">
-      <p className="flex items-start gap-2 rounded-2xl bg-teal-soft px-3 py-2 text-sm"><Lock className="mt-0.5 size-4 shrink-0 text-teal-strong" aria-hidden="true" />Only you can see these until thinking time ends.</p>
+    <div className={cn("flex flex-col gap-2", inline ? "pt-1" : "min-h-0 flex-1 overflow-y-auto p-3")}>
+      {inline ? <p className="font-display text-base font-semibold">Your ideas so far</p> : <p className="flex items-start gap-2 rounded-2xl bg-teal-soft px-3 py-2 text-sm"><Lock className="mt-0.5 size-4 shrink-0 text-teal-strong" aria-hidden="true" />Only you can see these until thinking time ends.</p>}
       {mine.length === 0 ? <p className="px-1 py-6 text-center text-sm text-ink-muted">Your ideas will appear here as you add them.</p> : (
         <ul className="flex flex-col gap-2" aria-label="Ideas you've added">
           {mine.map((i) => (

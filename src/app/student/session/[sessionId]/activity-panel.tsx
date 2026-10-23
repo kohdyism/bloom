@@ -83,7 +83,13 @@ function TaskText({ text, simplified }: { text: string; simplified: boolean }) {
   );
 }
 
-/** Stages where the group's ideas are reference material beside the activity. */
+/**
+ * The group's ideas sit beside the task only while the group is making its
+ * output (document, slides, whiteboard), where "Add" drops an idea into the
+ * work. Elsewhere they'd just be clutter: thinking time lists your own ideas
+ * under the box, and clustering, discussion and voting show the ideas as the
+ * activity itself.
+ */
 export function hasIdeasTab(kind: string | undefined) {
-  return !!kind && kind !== "synthesis" && kind !== "voting" && kind !== "discussion" && kind !== "complete" && kind !== "talk";
+  return kind === "creation";
 }

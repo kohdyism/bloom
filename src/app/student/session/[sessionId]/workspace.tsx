@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Lightbulb, Megaphone, MessagesSquare, PauseCircle } from "lucide-react";
+import { ChevronDown, Lightbulb, Megaphone, MessagesSquare, PauseCircle } from "lucide-react";
 import type { StudentState } from "@/lib/modules/sessions/state";
 import { useLiveState } from "@/lib/realtime/use-live-state";
 import { api } from "@/lib/realtime/client";
@@ -123,8 +123,11 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
     setChatOpen(true);
     setTimeout(() => document.getElementById("chat-input")?.focus(), 0);
   }, []);
+  // On wide screens the group's ideas fold into a button beside the work.
+  const [ideasOpen, setIdeasOpen] = useState(false);
   const openIdeas = useCallback(() => {
     setMobileTab("activity");
+    setIdeasOpen(true);
     setIdeasSignal((n) => n + 1);
     // On bigger screens the ideas are already beside the work: bring them into view.
     document.querySelector<HTMLElement>('section[data-tour="ideas-tab"]')?.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -168,8 +171,8 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
           <ActivityPanel compact={canvas} ideasBeside className="min-w-0 flex-1" />
           {working ? (
             <div className="flex min-h-0 w-[19rem] shrink-0 flex-col gap-3 xl:w-[23rem]">
-              <BloomCoach className={discussion || ideasBeside ? "max-h-[40%] shrink-0" : "shrink-0"} />
-              {discussion ? <GroupChat compact className="min-h-0 flex-1" /> : ideasBeside ? <IdeasPanel className="min-h-0 flex-1" /> : null}
+              <BloomCoach className={discussion || (ideasBeside && ideasOpen) ? "max-h-[40%] shrink-0" : "min-h-0 shrink"} />
+              {discussion ? <GroupChat compact className="min-h-0 flex-1" /> : ideasBeside ? <IdeasPanel open={ideasOpen} onOpenChange={setIdeasOpen} /> : null}
             </div>
           ) : null}
         </div>
@@ -296,15 +299,23 @@ function PausedOverlay() {
 }
 
 /** The group's ideas beside the activity (bigger screens), for easy reference. */
-function IdeasPanel({ className }: { className?: string }) {
+/** The group's ideas beside the work: a button until you want them, then a list with "Add". */
+function IdeasPanel({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const { group } = useWorkspaceSafe();
-  const brainstorming = group?.stage?.kind === "brainstorm";
+  const count = group?.ideas.shared.length ?? 0;
+  const toggle = (
+    <button type="button" aria-expanded={open} aria-controls="group-ideas-list" onClick={() => onOpenChange(!open)}
+      className={cn("flex w-full items-center gap-2 px-4 py-3 text-left font-display text-base font-bold hover:bg-sun-soft/60", open && "border-b border-line")}>
+      <Lightbulb className="size-5 shrink-0 text-amber" aria-hidden="true" />
+      <span className="flex-1">Our group&apos;s ideas</span>
+      <span className="rounded-full bg-sun px-2 text-sm">{count}</span>
+      <ChevronDown className={cn("size-5 shrink-0 text-ink-muted transition-transform", open && "rotate-180")} aria-hidden="true" />
+    </button>
+  );
   return (
-    <section aria-label={brainstorming ? "Ideas you've added" : "Your group's ideas"} data-tour="ideas-tab" className={cn("flex min-h-0 flex-col overflow-hidden rounded-[1.75rem] border-2 border-white bg-white/95 shadow-soft", className)}>
-      <h2 className="flex items-center gap-2 border-b border-line px-4 py-2.5 font-display text-base font-bold">
-        <Lightbulb className="size-5 text-amber" aria-hidden="true" />{brainstorming ? "Your ideas" : "Your group's ideas"}
-      </h2>
-      <IdeaBank />
+    <section aria-label="Our group's ideas" data-tour="ideas-tab" className={cn("flex flex-col overflow-hidden rounded-[1.75rem] border-2 border-white bg-white/95 shadow-soft", open ? "min-h-0 flex-1" : "shrink-0")}>
+      <h2 className="m-0">{toggle}</h2>
+      {open ? <div id="group-ideas-list" className="flex min-h-0 flex-1 flex-col"><IdeaBank /></div> : null}
     </section>
   );
 }

@@ -105,7 +105,8 @@ test("school improvement: vote, whiteboard, slides, present", async ({ browser }
   await expect(s[0].page.getByRole("button", { name: "Text: Ask the council for £200" })).toBeVisible();
   await shot(s[0].page, "s-whiteboard");
   // Earlier ideas are one tap away while working, ready to add to the board.
-  // On bigger screens the group's ideas sit beside the work.
+  // On bigger screens the group's ideas fold into a button beside the work.
+  await s[0].page.getByRole("button", { name: /Our group's ideas/ }).click();
   await expect(s[0].page.getByRole("button", { name: /^Add to whiteboard: Ramps/ })).toBeVisible();
   await s[0].page.waitForTimeout(400); // let the panel finish sliding in
   await shot(s[0].page, "s-ideas-panel");

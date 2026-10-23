@@ -7,13 +7,14 @@ import { Textarea } from "@/components/ui/primitives";
 import { SpeechButton } from "@/components/live/speech-button";
 import { useRun } from "@/components/ui/toast";
 import { useWorkspace } from "./context";
+import { MyPrivateIdeas } from "./idea-bank";
 import { Buddy, useBuddy } from "@/components/buddy";
 
 const STARTERS = ["I think … because …", "What if we…", "I noticed that…"];
 
 /** Individual thinking (spec §14): private until the stage ends. Saved ideas live in the idea bank. */
 export function Brainstorm() {
-  const { group, act, openAssistant, openIdeas, editRequest } = useWorkspace();
+  const { group, act, openAssistant, editRequest } = useWorkspace();
   const run = useRun();
   const [text, setText] = useState("");
   const [editing, setEditing] = useState<string | null>(null);
@@ -45,11 +46,7 @@ export function Brainstorm() {
         <Buddy who="pip" size={52} mood="happy" cue={buddy.cue} listening={buddy.listening} name="Pip, your private helper" />
         <label htmlFor="idea-text" className="font-display text-xl font-bold">{editing ? "Edit your idea" : "Your idea"}</label>
         <span className="inline-flex items-center gap-1 rounded-full bg-teal-soft px-2.5 py-0.5 text-xs font-semibold text-teal-strong"><Lock className="size-3.5" aria-hidden="true" />Only you can see this</span>
-        {group.ideas.mine.length ? (
-          <button type="button" onClick={openIdeas} className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-sun px-3 py-1 text-sm font-semibold hover:brightness-95" aria-live="polite">
-            {count} idea{count === 1 ? "" : "s"} added · See my ideas
-          </button>
-        ) : null}
+        {count ? <span className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-sun px-3 py-1 text-sm font-semibold" aria-live="polite">{count} idea{count === 1 ? "" : "s"} added</span> : null}
         {editing ? <button type="button" className="inline-flex items-center gap-1 text-sm font-semibold text-ink-muted hover:text-ink" onClick={() => { setEditing(null); setText(""); }}><X className="size-4" aria-hidden="true" />Cancel edit</button> : null}
       </div>
       <Textarea id="idea-text" rows={4} value={text} onChange={(e) => { setText(e.target.value); buddy.listen(); }} maxLength={1000} placeholder="Write your idea here… one thoughtful idea is great." aria-describedby="idea-hint" className="min-h-28 border-2 border-purple/25 bg-white text-[1.1rem] leading-relaxed focus-visible:border-purple" />
@@ -66,6 +63,7 @@ export function Brainstorm() {
         <Button variant="secondary" size="sm" onClick={() => save(false)} disabled={!text.trim()} pending={saving}><Save />Save draft</Button>
         <Button size="md" onClick={() => save(true)} disabled={!text.trim()} pending={saving} className="bg-purple hover:bg-purple-strong"><Send />Add idea</Button>
       </div>
+      <MyPrivateIdeas inline />
     </div>
   );
 }

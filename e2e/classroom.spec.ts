@@ -90,12 +90,10 @@ test("complete inclusive classroom lesson", async ({ browser }) => {
   await expect(a1.page.getByRole("heading", { name: "Think", exact: true })).toBeVisible();
   await a1.page.getByLabel("Your idea").fill("The speaker feels lonely because he sees the world differently from others.");
   await a1.page.getByRole("button", { name: "Add idea" }).click();
-  // Saved ideas appear in the Ideas tab, marked private.
-  await a1.page.getByRole("button", { name: /See my ideas/ }).click();
+  // Saved ideas are listed under the idea box, marked private.
   await expect(a1.page.getByText("Added — private until thinking time ends")).toBeVisible();
   await a2.page.getByLabel("Your idea").fill("Lonely childhood: nature and the storm reflect his feelings.");
   await a2.page.getByRole("button", { name: "Add idea" }).click();
-  await a2.page.getByRole("button", { name: /See my ideas/ }).click();
   await expect(a2.page.getByText("Added — private until thinking time ends")).toBeVisible();
   // Ideas are private: a2 cannot see a1's idea yet.
   await expect(a2.page.getByText("sees the world differently")).toHaveCount(0);
