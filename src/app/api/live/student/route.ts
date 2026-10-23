@@ -24,7 +24,7 @@ const action = z.discriminatedUnion("action", [
   z.object({ action: z.literal("hand"), sessionId: uuid }),
   z.object({ action: z.literal("vote"), sessionId: uuid, targetId: uuid }),
   z.object({ action: z.literal("checkin"), sessionId: uuid, index: z.number().int().min(0).max(20) }),
-  z.object({ action: z.literal("ask_group_ai"), sessionId: uuid, quick: z.enum(["explain_task", "discussion_question", "we_disagree", "we_are_stuck", "question"]), question: z.string().max(500).optional() }),
+  z.object({ action: z.literal("ask_group_ai"), sessionId: uuid, quick: z.enum(["explain_task", "discussion_question", "we_disagree", "we_are_stuck", "hint", "question"]), question: z.string().max(500).optional() }),
   z.object({ action: z.literal("help"), sessionId: uuid, reason: z.enum(["dont_understand", "need_time", "group_help", "speak_to_teacher", "uncomfortable", "other"]), message: z.string().max(1000).default("") }),
   z.object({ action: z.literal("message_teacher"), sessionId: uuid, body: z.string().max(2000), helpRequestId: uuid.nullable() }),
   z.object({ action: z.literal("submit"), sessionId: uuid, note: z.string().max(2000).default(""), expectedVersion: z.number().int().min(0) }),

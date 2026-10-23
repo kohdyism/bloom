@@ -71,8 +71,10 @@ test("school improvement: vote, whiteboard, slides, present", async ({ browser }
   await expect(s[0].page.getByRole("heading", { name: "Discuss", exact: true })).toBeVisible();
   await s[1].page.getByLabel("Message your group").fill("I think the quiet room helps the most people.");
   await s[1].page.getByRole("button", { name: "Send message" }).click();
-  await s[0].page.getByRole("button", { name: "Ask Bloom" }).click();
-  await s[0].page.getByRole("menuitem", { name: "Give us a discussion question" }).click();
+  // Tap Bloom at the top of the task for help; the answer appears in Bloom's bubble for everyone.
+  await s[0].page.getByRole("button", { name: /^Bloom, your group helper/ }).click();
+  await s[0].page.getByRole("button", { name: "Give us a question to discuss" }).click();
+  await expect(s[2].page.locator('[data-tour="bloom-coach"]').getByText(/^Try this/)).toBeVisible();
   await expect(s[2].page.getByText("Simulated AI").first()).toBeVisible();
   await shot(s[2].page, "s-discussion");
   for (const a of s) await ready(a.page);

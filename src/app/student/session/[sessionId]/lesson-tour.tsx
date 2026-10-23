@@ -11,13 +11,15 @@ type Step = { target?: string; title: string; body: string; who?: "bloom" | "pip
 
 const STEPS: Step[] = [
   { who: "both", mood: "happy", title: "Welcome to your lesson!", body: "This is a quick tour of the screen. It takes less than a minute — you can skip it any time." },
-  { target: "group-chat", who: "bloom", mood: "happy", title: "Group chat with Bloom", body: "Talk with your group here. I'm Bloom — I help your group discuss, and everyone in your group sees what I say. Press “Ask Bloom” when your group is stuck." },
-  { target: "activity", who: "bloom", title: "Your task", body: "Each stage, I put your task right here in the chat: what to do, and the activity to do it. It changes as your group moves on." },
+  { target: "bloom-coach", who: "bloom", mood: "happy", title: "I'm Bloom!", body: "I'm your group's helper. I'll guide each stage from up here and cheer you on. Tap me for a hint, or if your group gets stuck." },
+  { target: "activity", title: "Your task", body: "What to do right now, and the activity to do it. It changes as your group moves on." },
   { target: "ideas-tab", title: "Your group's ideas", body: "Ideas from earlier are always one tap away. Copy them, or add them straight into your work." },
+  { target: "chat-button", title: "Group chat", body: "Write to your group here any time. In Discussion stages the chat opens right beside your task." },
+  { target: "group-chat", title: "Group chat", body: "Talk with your group here. Type @Bloom if you'd like Bloom to join in." },
   { target: "timer", title: "Time left", body: "How long is left for this stage. Your work saves itself, even when time's up." },
   { target: "my-role", title: "Your role", body: "Your job in the group, if you have one. Tap it to see what it means." },
   { target: "help", title: "Need a hand?", body: "Raise your hand for your group, or ask your teacher privately with “Need help”. Nobody else sees that." },
-  { target: "plant", title: "Your group's plant", body: "It grows every time your group finishes a stage. At the end it blooms into a flower for everyone's garden — each one is different. Tap it to say hello." },
+  { target: "plant", title: "Your group's plant", body: "It grows every time your group finishes a stage. At the end it blooms into a flower for everyone's garden — each one is different." },
   { target: "ready", title: "I'm ready", body: "When you've done your part, press “I'm ready”. Your group moves on when everyone is ready." },
   { target: "pip", who: "pip", mood: "happy", title: "Pip, just for you", body: "I'm Pip, your private helper. Tap me any time — only you see what you ask me. I give hints, not answers." },
 ];

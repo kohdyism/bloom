@@ -21,12 +21,13 @@ const REACTIONS = [
   { kind: "question", label: "I have a question", icon: MessageCircleQuestion },
 ] as const;
 
-export function Chat({ className, header, empty, after, composerClassName, onActivity, inline, compact = false }: {
+export function Chat({ className, header, empty, after, composerClassName, onActivity, inline, compact = false, placeholder = "Message your group…" }: {
   className?: string; header?: React.ReactNode; empty?: React.ReactNode; after?: React.ReactNode; composerClassName?: string;
   /** Something embedded in the conversation (the stage's task card), placed after messages up to `after`. */
   inline?: { node: React.ReactNode; after: string | null; key: string };
   /** Slim layout for a side column. */
   compact?: boolean;
+  placeholder?: string;
   /** Lets the page animate its helper: "typing" on each keystroke, "sent" after a message goes. */
   onActivity?: (e: "typing" | "sent", text?: string) => void;
 }) {
@@ -196,7 +197,7 @@ export function Chat({ className, header, empty, after, composerClassName, onAct
           <Textarea id="chat-input" rows={1} className="min-h-11 flex-1 resize-none" value={text} maxLength={2000}
             onChange={(e) => { setText(e.target.value); onActivity?.("typing"); }}
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }}
-            placeholder="Message your group, or @Bloom…" title="Enter to send · Shift+Enter for a new line" />
+            placeholder={placeholder} title="Enter to send · Shift+Enter for a new line" />
           <Button type="submit" size="icon" aria-label="Send message" pending={sending} disabled={!text.trim()}><Send /></Button>
         </div>
         <SpeechButton onText={(t) => setText((x) => (x ? `${x} ${t}` : t))} />

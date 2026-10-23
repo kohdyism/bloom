@@ -25,7 +25,7 @@ export type FacilitatorTrigger =
   | { kind: "broaden_participation" }
   | { kind: "refocus" }
   | { kind: "time_warning"; minutes: number }
-  | { kind: "ask"; quick: "explain_task" | "discussion_question" | "we_disagree" | "we_are_stuck" | "question"; question?: string };
+  | { kind: "ask"; quick: "explain_task" | "discussion_question" | "we_disagree" | "we_are_stuck" | "hint" | "question"; question?: string };
 
 export type FacilitatorContext = {
   lessonTitle: string;
@@ -45,7 +45,7 @@ function systemPrompt(ctx: FacilitatorContext) {
   return `You are Bloom, the group facilitator in Canopy, a classroom collaboration tool for students aged 13–14. Your job is to help the group think and work together — you are not a group member and you don't do their thinking for them.
 
 How you speak:
-- 1–3 short sentences, or a very short list. Warm, calm, encouraging, never childish.
+- Your words appear in a speech bubble above the group's task: 1–3 short sentences (under 50 words). Warm, calm, encouraging, never childish.
 - Address the whole group ("you all", "your group"). Never name, single out, praise or criticise one person. Never mention who has or hasn't contributed.
 - Remember students may be contributing out loud in the room, on the board, or in writing — silence in the chat is not disengagement. Invite, never pressure.
 - Ask questions that make students explain their reasoning and use evidence. Encourage building on each other's ideas and respectful disagreement.
@@ -79,6 +79,7 @@ function userPrompt(trigger: FacilitatorTrigger, ctx: FacilitatorContext) {
             discussion_question: "The group asked for a discussion question. Offer one or two open questions grounded in their ideas and the objective.",
             we_disagree: "The group says they disagree. Help them explore it respectfully: invite each view to be explained with reasons and evidence, and look for what they agree on. Don't pick a winner.",
             we_are_stuck: "The group says they're stuck. Offer a small next step or a guiding question — not the answer.",
+            hint: "The group asked for a hint. Give one small, concrete nudge towards the next step (a question, a place to look, or a sentence starter) — never the answer.",
             question: `The group asked: ${untrusted("student_question", trigger.question ?? "", 500)} — answer helpfully within your rules.`,
           }[trigger.quick]
         : "",
@@ -150,6 +151,10 @@ export function simulateFacilitator(trigger: FacilitatorTrigger, ctx: Facilitato
       }
       if (trigger.quick === "we_disagree") {
         return "Disagreeing is useful! Try this: each view gets one minute to explain its reasons and evidence, without interruption. Then ask: what do we agree on, and what would change our minds?";
+      }
+      if (trigger.quick === "hint") {
+        const idea = ctx.sharedIdeas[stableIndex(seed, Math.max(1, ctx.sharedIdeas.length))];
+        return idea ? `Here's a hint: look again at “${truncate(idea, 70)}”. Which words in the task does it help you answer?` : `Here's a hint: start with the first part of the task — “${truncate(ctx.stage.instructions || ctx.stage.title, 70)}”. What's one thing you already know?`;
       }
       if (trigger.quick === "we_are_stuck") {
         return `Let's take a smaller step. Look back at the instructions and pick just the first part. ${goal} What's one thing you already know that could help?`;

@@ -55,8 +55,10 @@ const REST_AFTER_MS = 90_000;
  *  - after a long quiet spell they nod off; a tap wakes them.
  * With reduced motion they still change expression and speak, but don't move.
  */
-export function Buddy({ who, size = 72, mood = "idle", className, name, cue, talking, listening }: {
+export function Buddy({ who, size = 72, mood = "idle", className, name, cue, talking, listening, onPress, pressLabel, expanded }: {
   who: "bloom" | "pip"; size?: number; mood?: Mood; className?: string; name?: string; cue?: Cue | null; talking?: boolean; listening?: boolean;
+  /** When given, a tap does this (with a little hop) instead of a playful line. */
+  onPress?: () => void; pressLabel?: string; expanded?: boolean;
 }) {
   const reduced = useReducedMotion();
   const { prefs } = useA11y();
@@ -92,6 +94,12 @@ export function Buddy({ who, size = 72, mood = "idle", className, name, cue, tal
   }, [cue, play]);
 
   const poke = useCallback(() => {
+    if (onPress) {
+      if (prefs.sound) playSfx(who === "pip" ? "pip" : "bloom");
+      play({ anim: "buddy-hop", mood: "happy" }, 700);
+      onPress();
+      return;
+    }
     // Lots of quick taps in a row make them dizzy.
     const now = Date.now();
     taps.current = [...taps.current.filter((t) => now - t < 2000), now];
@@ -100,14 +108,14 @@ export function Buddy({ who, size = 72, mood = "idle", className, name, cue, tal
     if (!resting && r !== DIZZY) setI((n) => n + 1);
     if (prefs.sound && r.sfx) playSfx(r.sfx);
     play(r, r.ms ?? 1800);
-  }, [who, resting, i, play, prefs.sound]);
+  }, [who, resting, i, play, prefs.sound, onPress]);
 
   const C = who === "pip" ? Pip : Bloom;
   const shown: Mood = active ? active.mood : resting ? "resting" : talking ? "talking" : listening ? "listening" : mood;
   const loop = !reduced && !active && !resting ? (talking ? "buddy-chatter" : listening ? "buddy-listen" : null) : null;
   const label = name ?? (who === "pip" ? "Pip" : "Bloom");
   return (
-    <button ref={setBtn} type="button" onClick={poke} className={cn("relative inline-flex shrink-0 items-center justify-center rounded-full outline-offset-4", className)} style={{ width: size, height: size }} aria-label={`${label}. Press to say hi.`}>
+    <button ref={setBtn} type="button" onClick={poke} className={cn("relative inline-flex shrink-0 items-center justify-center rounded-full outline-offset-4", className)} style={{ width: size, height: size }} aria-label={onPress ? (pressLabel ?? label) : `${label}. Press to say hi.`} aria-expanded={onPress ? expanded : undefined} aria-haspopup={onPress ? "dialog" : undefined}>
       <span className={cn("block", loop)}>
         <span key={active?.key ?? "still"} className={cn("block", !reduced && active?.anim)}>
           <C mood={shown} size={size} animate={!resting} />

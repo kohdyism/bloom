@@ -35,7 +35,7 @@ export function Brainstorm() {
     if (!text.trim()) return;
     setSaving(true);
     const ok = await run(() => act({ action: "idea_save", id: editing ?? undefined, body: text, submit }), submit ? "Idea added — it stays private until thinking time ends" : "Draft saved");
-    if (ok) { setText(""); setEditing(null); buddy.fire(submit ? "cheer" : "nod", submit ? "Nice idea!" : "Saved!"); }
+    if (ok) { setText(""); setEditing(null); buddy.fire(submit ? "cheer" : "nod"); }
     setSaving(false);
   }
 

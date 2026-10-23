@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Megaphone, MessagesSquare, PauseCircle, PenLine } from "lucide-react";
+import { Lightbulb, Megaphone, MessagesSquare, PauseCircle } from "lucide-react";
 import type { StudentState } from "@/lib/modules/sessions/state";
 import { useLiveState } from "@/lib/realtime/use-live-state";
 import { api } from "@/lib/realtime/client";
@@ -20,6 +20,7 @@ import { ActivityPanel } from "./activity-panel";
 import { GroupChat } from "./group-chat";
 import { Readiness } from "./readiness";
 import { PipLauncher } from "./pip-launcher";
+import { ChatLauncher } from "./chat-launcher";
 import { TalkTime } from "./talk-time";
 import { BloomReveal } from "./bloom-reveal";
 import { LessonTour, tourSeen } from "./lesson-tour";
@@ -31,10 +32,11 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
   const toast = useToast();
   const { prefs } = useA11y();
   const [pipOpen, setPipOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
   const [assistantPrefill, setAssistantPrefill] = useState<{ action?: string; text?: string } | undefined>();
   const [assistantTick, setAssistantTick] = useState(0);
-  const [mobileTab, setMobileTab] = useState<"chat" | "activity">("activity");
+  const [mobileTab, setMobileTab] = useState<"chat" | "activity">("chat");
   const [ideasSignal, setIdeasSignal] = useState(0);
   const [inserter, setInserter] = useState<Inserter | null>(null);
   const [editRequest, setEditRequest] = useState<WorkspaceCtx["editRequest"]>(null);
@@ -96,6 +98,7 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
 
   const openAssistant = useCallback((prefill?: { action?: string; text?: string }) => {
     setAssistantPrefill(prefill);
+    setChatOpen(false);
     setPipOpen(true);
   }, []);
   const requestEdit = useCallback((id: string, body: string) => setEditRequest((r) => ({ id, body, n: (r?.n ?? 0) + 1 })), []);
@@ -115,6 +118,7 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
 
   const openChat = useCallback(() => {
     setMobileTab("chat");
+    setChatOpen(true);
     setTimeout(() => document.getElementById("chat-input")?.focus(), 0);
   }, []);
   const openIdeas = useCallback(() => { setMobileTab("activity"); setIdeasSignal((n) => n + 1); }, []);
@@ -135,39 +139,40 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
   } else if (s.status === "lobby") {
     body = <GroupReveal state={state} />;
   } else {
-    // Most stages: one calm column — the group chat with Bloom, with the task
-    // embedded in it. Big shared canvases (document, whiteboard, slides) get
-    // the room instead, with a slim chat beside them. Talk time clears the
-    // screen. The dock at the bottom holds the plant, "I'm ready" and Pip.
+    // The task is the heart of the screen, with Bloom at its top. In
+    // Discussion stages the group chat sits beside it (or a tab away on a
+    // phone); otherwise the chat is a button in the dock. Big shared
+    // canvases get the room; Talk time clears the screen.
     const canvas = kind === "creation";
     const talk = kind === "talk";
+    const discussion = kind === "discussion";
     const showPlant = s.theme !== "none";
     const doneStages = g.stageStatus === "complete" ? s.stages.length : g.stageIndex;
     let main: React.ReactNode;
     if (talk) {
       main = <TalkTime />;
-    } else if (canvas && wide) {
+    } else if (discussion && wide) {
       main = (
         <div className="flex min-h-0 flex-1 gap-3 p-3">
-          <ActivityPanel className="min-w-0 flex-1" />
-          <GroupChat compact className="w-[22rem] shrink-0 xl:w-[24rem]" />
+          <ActivityPanel className="w-[min(36rem,44%)] shrink-0" />
+          <GroupChat className="min-w-0 flex-1" />
         </div>
       );
-    } else if (canvas) {
+    } else if (discussion) {
       main = (
         <div className="flex min-h-0 flex-1 flex-col gap-2 p-2">
-          <div role="tablist" aria-label="Work or chat" className="flex gap-1 rounded-2xl bg-white/80 p-1 shadow-soft">
-            <button type="button" role="tab" aria-selected={mobileTab === "activity"} onClick={() => setMobileTab("activity")} className={cn("inline-flex flex-1 items-center justify-center gap-2 rounded-xl py-2 font-semibold", mobileTab === "activity" ? "bg-ink text-white" : "text-ink-muted")}><PenLine className="size-5" aria-hidden="true" />Our work</button>
+          <div role="tablist" aria-label="Ideas or chat" className="flex gap-1 rounded-2xl bg-white/80 p-1 shadow-soft">
+            <button type="button" role="tab" aria-selected={mobileTab === "activity"} onClick={() => setMobileTab("activity")} className={cn("inline-flex flex-1 items-center justify-center gap-2 rounded-xl py-2 font-semibold", mobileTab === "activity" ? "bg-ink text-white" : "text-ink-muted")}><Lightbulb className="size-5" aria-hidden="true" />Task &amp; ideas</button>
             <button type="button" role="tab" aria-selected={mobileTab === "chat"} onClick={() => setMobileTab("chat")} className={cn("inline-flex flex-1 items-center justify-center gap-2 rounded-xl py-2 font-semibold", mobileTab === "chat" ? "bg-ink text-white" : "text-ink-muted")}><MessagesSquare className="size-5" aria-hidden="true" />Group chat</button>
           </div>
           <ActivityPanel className={cn("min-w-0 flex-1", mobileTab !== "activity" && "hidden")} />
-          {mobileTab === "chat" ? <GroupChat compact className="min-w-0 flex-1" /> : null}
+          {mobileTab === "chat" ? <GroupChat className="min-w-0 flex-1" /> : null}
         </div>
       );
     } else {
       main = (
         <div className="flex min-h-0 flex-1 justify-center p-2 sm:p-3">
-          <GroupChat className="w-full max-w-4xl" activity={<ActivityPanel variant="card" />} />
+          <ActivityPanel compact={canvas} className={cn("w-full min-w-0", !canvas && "max-w-4xl")} />
         </div>
       );
     }
@@ -184,9 +189,10 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
         {main}
         <div className="flex items-center gap-2 border-t-2 border-white/80 bg-white/85 px-2 py-2 backdrop-blur-md sm:gap-3 sm:px-4" data-dock>
           {showPlant ? <PlantBubble stagesDone={doneStages} totalStages={s.stages.length} flower={g.flower} size={small ? "sm" : "md"} /> : null}
+          {!discussion && !talk ? <ChatLauncher open={chatOpen} onOpenChange={(o) => { setChatOpen(o); if (o) setPipOpen(false); }} compact={small} /> : null}
           <Readiness className="min-w-0 flex-1" />
           {kind === "complete" ? <div className="flex-1" /> : null}
-          <PipLauncher open={pipOpen} onOpenChange={setPipOpen} prefill={assistantPrefill} tick={assistantTick} compact={small} />
+          <PipLauncher open={pipOpen} onOpenChange={(o) => { setPipOpen(o); if (o) setChatOpen(false); }} prefill={assistantPrefill} tick={assistantTick} compact={small} />
         </div>
       </div>
     );

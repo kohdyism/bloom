@@ -226,7 +226,9 @@ export async function postMessage(uid: string, sessionId: string, body: string, 
   await notifyGroup(group, "message.new");
   background(() => checkParticipationBalance(group.id));
   // Talking to the group helper by name ("@Bloom …", "Bloom, …") gets a reply in the chat.
-  if (mentionsHelper(text) && group.ai_enabled) {
+  // (Only in Discussion stages; the rest of the time Bloom helps from the top of the task.)
+  const discussing = (await asServer((db) => loadSession(db, group.session_id)))?.snapshot.stages[group.stage_index]?.kind === "discussion";
+  if (discussing && mentionsHelper(text) && group.ai_enabled) {
     const allowed = await rateLimit(`ask-group:${uid}`, 8, 300).then(() => true, () => false);
     if (allowed) background(() => facilitate(group.id, { kind: "ask", quick: "question", question: text.slice(0, 500) }, null));
   }
@@ -313,7 +315,7 @@ export async function askFacilitator(uid: string, sessionId: string, quick: Extr
     if (!group.ai_enabled) throw conflict("Your teacher is facilitating your group directly right now. You can still use your private assistant or ask your teacher.");
     return group;
   });
-  const labels = { explain_task: "asked Bloom to explain the task", discussion_question: "asked Bloom for a discussion question", we_disagree: "asked Bloom for help with a disagreement", we_are_stuck: "asked Bloom for help getting unstuck", question: "asked Bloom a question" };
+  const labels = { explain_task: "asked Bloom to explain the task", discussion_question: "asked Bloom for a discussion question", we_disagree: "asked Bloom for help with a disagreement", we_are_stuck: "asked Bloom for help getting unstuck", hint: "asked Bloom for a hint", question: "asked Bloom a question" };
   await asServer((db) => db.query("insert into group_messages(group_id, kind, body) values ($1, 'system', $2)", [group.id, `Your group ${labels[quick]}${quick === "question" && question ? `: “${question.slice(0, 200)}”` : "."}`]));
   await notifyGroup(group, "message.new");
   background(() => facilitate(group.id, { kind: "ask", quick, question: question?.slice(0, 500) }, null));

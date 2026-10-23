@@ -73,7 +73,7 @@ export function PlantBubble({ stagesDone, totalStages, className, flower = null,
         ref={setBtn}
         type="button"
         onClick={tap}
-        className={cn("group relative flex shrink-0 items-center justify-center rounded-full bg-white shadow-lift ring-2 ring-white transition-transform hover:-translate-y-0.5", size === "sm" ? "size-14" : "size-[4.75rem]", className)}
+        className={cn("group relative flex shrink-0 items-center justify-center rounded-full bg-white shadow-lift ring-2 ring-white transition-transform hover:-translate-y-0.5", size === "sm" ? "size-12" : "size-[4.75rem]", className)}
         data-testid="plant-bubble"
         data-tour="plant"
       >
@@ -82,7 +82,7 @@ export function PlantBubble({ stagesDone, totalStages, className, flower = null,
           <circle cx="38" cy="38" r={R} fill="none" stroke="#2fbf71" strokeWidth="5" strokeLinecap="round" strokeDasharray={C} strokeDashoffset={C * (1 - progress)} style={{ transition: "stroke-dashoffset 800ms ease" }} />
         </svg>
         <span key={`${sway}-${grew}`} className={cn("block", !reduced && anim)}>
-          <Plant progress={progress} size={size === "sm" ? 38 : 52} flower={flower} />
+          <Plant progress={progress} size={size === "sm" ? 32 : 52} flower={flower} />
         </span>
         {said?.anim === "plant-water" && !reduced ? <span key={`d${said.key}`} className="plant-drop pointer-events-none absolute left-1/2 top-0 h-3 w-2 rounded-full rounded-t-[60%] bg-[#4cb8ff]" aria-hidden="true" /> : null}
         {said ? <SpeechBubble anchor={btn} text={said.say} id={said.key} /> : null}

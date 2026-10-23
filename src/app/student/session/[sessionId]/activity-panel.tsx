@@ -4,19 +4,18 @@ import { useState } from "react";
 import { Lightbulb } from "lucide-react";
 import { STAGE_ICONS } from "@/components/stage-icon";
 import { useA11y } from "@/components/a11y-provider";
-import { Bloom } from "@/components/mascot";
+import { BloomCoach } from "./bloom-coach";
 import { cn } from "@/lib/utils";
 import { useWorkspace } from "./context";
 import { StagePanel } from "./stage-panel";
 import { IdeaBank } from "./idea-bank";
 
 /**
- * The stage activity. Two looks:
- *  - "card": embedded in the group chat, as Bloom handing the group its task;
- *  - "panel": the main area beside a slim chat, for big shared canvases.
- * The group's earlier ideas are one tab away; "I'm ready" lives in the dock.
+ * The group's task: Bloom at the top (speech bubble, cheers, help on tap),
+ * then what to do, then the activity itself. The group's earlier ideas are
+ * one tab away; "I'm ready" lives in the dock at the bottom.
  */
-export function ActivityPanel({ className, variant = "panel" }: { className?: string; variant?: "panel" | "card" }) {
+export function ActivityPanel({ className, compact = false }: { className?: string; compact?: boolean }) {
   const { group, state, ideasSignal } = useWorkspace();
   const { prefs } = useA11y();
   const stage = group.stage;
@@ -33,27 +32,20 @@ export function ActivityPanel({ className, variant = "panel" }: { className?: st
   const showIdeas = ideasTab && tab === "ideas";
   const Icon = stage ? STAGE_ICONS[stage.kind].icon : Lightbulb;
   const ideaCount = kind === "brainstorm" ? group.ideas.mine.length : group.ideas.shared.length;
-  const card = variant === "card";
 
   return (
     <section
       aria-label="Your task"
       data-tour="activity"
       id="task-card"
-      className={cn(
-        card
-          ? "scroll-mt-4 rounded-[1.6rem] border-2 border-[#ffd2c4] bg-white shadow-soft"
-          : "flex min-h-0 flex-col overflow-hidden rounded-[1.75rem] border-2 border-white bg-white/90 shadow-soft",
-        className,
-      )}
+      className={cn("flex min-h-0 flex-col overflow-hidden rounded-[1.75rem] border-2 border-white bg-white/95 shadow-soft", className)}
     >
+      {stage && kind !== "complete" ? <BloomCoach compact={compact} /> : null}
       {stage && kind !== "complete" ? (
-        <div className={cn("border-b border-line px-3 pb-3 pt-3 sm:px-4", card && "rounded-t-[1.5rem] bg-gradient-to-r from-[#fff4ec] to-white")}>
+        <div className={cn("border-b border-line px-3 sm:px-4", compact ? "py-2" : "pb-3 pt-2.5")}>
           <div className="flex flex-wrap items-center gap-2">
-            {card ? <Bloom size={30} mood="happy" animate={false} /> : <span className={cn("inline-flex size-8 items-center justify-center rounded-xl", STAGE_ICONS[stage.kind].tone)} aria-hidden="true"><Icon className="size-4" /></span>}
-            <p className="text-xs font-bold uppercase tracking-wide text-purple sm:text-sm">
-              {card ? <>Your task · stage {group.stageIndex + 1} of {state.session.stages.length}</> : "Your task"}
-            </p>
+            <span className={cn("inline-flex size-7 items-center justify-center rounded-lg", STAGE_ICONS[stage.kind].tone)} aria-hidden="true"><Icon className="size-4" /></span>
+            <p className="text-xs font-bold uppercase tracking-wide text-purple sm:text-sm">Your task · stage {group.stageIndex + 1} of {state.session.stages.length}</p>
             {ideasTab ? (
               <div role="tablist" aria-label="Activity or ideas" className="ml-auto flex gap-1 rounded-xl bg-surface-2 p-0.5 sm:p-1">
                 <button type="button" role="tab" aria-selected={!showIdeas} onClick={() => setTab("activity")} className={cn("rounded-lg px-3 py-1 text-sm font-semibold", !showIdeas ? "bg-white shadow-soft" : "text-ink-muted hover:text-ink")}>Activity</button>
@@ -66,7 +58,7 @@ export function ActivityPanel({ className, variant = "panel" }: { className?: st
           {stage.instructions ? <TaskText text={stage.instructions} simplified={prefs.simplifiedInstructions} /> : null}
         </div>
       ) : null}
-      <div className={cn(card ? "p-3" : "flex min-h-0 flex-1 flex-col overflow-y-auto p-3")}>
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-3">
         {/* The activity stays mounted (hidden) while Ideas is open, so "Add" can reach the editor. */}
         {showIdeas ? <IdeaBank /> : null}
         <div className={cn("flex min-h-0 flex-1 flex-col", showIdeas && "hidden")}><StagePanel /></div>
