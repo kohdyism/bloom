@@ -31,7 +31,7 @@ function MyPrivateIdeas() {
     <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-3">
       <p className="flex items-start gap-2 rounded-2xl bg-teal-soft px-3 py-2 text-sm"><Lock className="mt-0.5 size-4 shrink-0 text-teal-strong" aria-hidden="true" />Only you can see these until thinking time ends.</p>
       {mine.length === 0 ? <p className="px-1 py-6 text-center text-sm text-ink-muted">Your ideas will appear here as you add them.</p> : (
-        <ul className="flex flex-col gap-2" aria-label="Your ideas">
+        <ul className="flex flex-col gap-2" aria-label="Ideas you've added">
           {mine.map((i) => (
             <li key={i.id} className="group rounded-2xl border border-line bg-white p-3 shadow-soft">
               <p className="whitespace-pre-line">{i.body}</p>

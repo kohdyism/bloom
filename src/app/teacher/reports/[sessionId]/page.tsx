@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { AiOriginBadge } from "@/components/live/ai-badge";
 import { IndividualReflections } from "./individual-reflections";
 import { RegenerateButton } from "./regenerate-button";
+import { SummaryPending } from "./summary-pending";
 
 export const metadata = { title: "Lesson report" };
 
@@ -52,7 +53,7 @@ export default async function ReportPage({ params }: { params: Promise<{ session
                 <p className="text-sm font-semibold">Suggestions for next time <span className="font-normal text-ink-muted">(AI suggestions — use your judgement)</span></p>
                 <ul className="mt-1 list-disc pl-5 text-sm">{r.summary.suggestions.map((s) => <li key={s}>{s}</li>)}</ul>
               </div>
-            ) : null}
+            ) : r.status === "ended" ? <SummaryPending sessionId={sessionId} /> : null}
             <p className="text-xs text-ink-muted">Generated only from recorded lesson events, counts and students&apos; own reflection words. It doesn&apos;t include discussion that happened out loud in the room.</p>
           </CardBody>
         </Card>

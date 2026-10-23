@@ -76,6 +76,7 @@ export async function runStructured<S extends z.ZodTypeAny>(opts: {
       anthropic().messages.parse({
         model: config.aiModels[opts.workflow],
         max_tokens: opts.maxTokens ?? 1500,
+        thinking: { type: "disabled" },
         system: opts.system + "\n" + UNTRUSTED_CONTENT_RULES,
         messages: [{ role: "user", content: opts.prompt }],
         output_config: { format: zodOutputFormat(opts.schema) },
@@ -105,7 +106,10 @@ export async function runText(opts: {
     const res = await withTimeout(
       anthropic().messages.create({
         model: config.aiModels[opts.workflow],
-        max_tokens: opts.maxTokens ?? 600,
+        max_tokens: opts.maxTokens ?? 1000,
+        // Short, direct replies: no extended thinking (it can use up the
+        // token budget and leave no text).
+        thinking: { type: "disabled" },
         system: opts.system + "\n" + UNTRUSTED_CONTENT_RULES,
         messages: opts.messages,
       }),
@@ -116,7 +120,7 @@ export async function runText(opts: {
       .map((b) => b.text)
       .join("\n")
       .trim();
-    if (!text) throw new Error("Empty AI response");
+    if (!text) throw new Error(`Empty AI response (stop: ${res.stop_reason}; blocks: ${res.content.map((b) => b.type).join(",") || "none"})`);
     return { data: text.slice(0, 3000), origin: "ai" };
   } catch (err) {
     console.warn(`[bloom:ai] ${opts.workflow} text call failed, using offline helper:`, (err as Error).message);

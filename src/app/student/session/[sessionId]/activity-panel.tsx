@@ -4,24 +4,24 @@ import { useState } from "react";
 import { Lightbulb } from "lucide-react";
 import { STAGE_ICONS } from "@/components/stage-icon";
 import { useA11y } from "@/components/a11y-provider";
-import { BloomCoach } from "./bloom-coach";
 import { cn } from "@/lib/utils";
 import { useWorkspace } from "./context";
 import { StagePanel } from "./stage-panel";
 import { IdeaBank } from "./idea-bank";
 
 /**
- * The group's task: Bloom at the top (speech bubble, cheers, help on tap),
- * then what to do, then the activity itself. The group's earlier ideas are
+ * The group's task: what to do, then the activity itself (Bloom sits beside
+ * it, or in a slim bar on top on phones). The group's earlier ideas are
  * one tab away; "I'm ready" lives in the dock at the bottom.
  */
-export function ActivityPanel({ className, compact = false }: { className?: string; compact?: boolean }) {
+export function ActivityPanel({ className, compact = false, top, ideasBeside = false }: { className?: string; compact?: boolean; top?: React.ReactNode; ideasBeside?: boolean }) {
   const { group, state, ideasSignal } = useWorkspace();
   const { prefs } = useA11y();
   const stage = group.stage;
   const kind = group.stageStatus === "complete" ? "complete" : stage?.kind;
   // Where the ideas ARE the activity, there's no separate Ideas tab.
-  const ideasTab = kind !== "synthesis" && kind !== "voting" && kind !== "discussion" && kind !== "complete";
+  // (On big screens the ideas sit beside the activity instead.)
+  const ideasTab = !ideasBeside && hasIdeasTab(kind);
   const [tab, setTab] = useState<"activity" | "ideas">("activity");
   // "See my ideas" elsewhere on screen switches this panel to the Ideas tab.
   const [seenSignal, setSeenSignal] = useState(ideasSignal);
@@ -40,7 +40,7 @@ export function ActivityPanel({ className, compact = false }: { className?: stri
       id="task-card"
       className={cn("flex min-h-0 flex-col overflow-hidden rounded-[1.75rem] border-2 border-white bg-white/95 shadow-soft", className)}
     >
-      {stage && kind !== "complete" ? <BloomCoach compact={compact} /> : null}
+      {stage && kind !== "complete" ? top : null}
       {stage && kind !== "complete" ? (
         <div className={cn("border-b border-line px-3 sm:px-4", compact ? "py-2" : "pb-3 pt-2.5")}>
           <div className="flex flex-wrap items-center gap-2">
@@ -81,4 +81,9 @@ function TaskText({ text, simplified }: { text: string; simplified: boolean }) {
       {!all ? <button type="button" className="mt-1 text-sm font-semibold text-teal underline-offset-4 hover:underline" onClick={() => setAll(true)}>Show full instructions</button> : null}
     </div>
   );
+}
+
+/** Stages where the group's ideas are reference material beside the activity. */
+export function hasIdeasTab(kind: string | undefined) {
+  return !!kind && kind !== "synthesis" && kind !== "voting" && kind !== "discussion" && kind !== "complete" && kind !== "talk";
 }

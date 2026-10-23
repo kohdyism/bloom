@@ -7,7 +7,8 @@ import { Buddy, useBuddy } from "@/components/buddy";
 import { AiOriginBadge } from "@/components/live/ai-badge";
 import { useRun } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
-import { useMediaQuery } from "@/lib/use-media-query";
+import { mentionsHelper } from "@/lib/domain/mentions";
+import { useNow } from "@/lib/use-now";
 import { useWorkspace } from "./context";
 
 type Quick = "hint" | "explain_task" | "discussion_question" | "we_disagree" | "we_are_stuck";
@@ -50,29 +51,35 @@ const CHEERS = {
 const pick = (list: string[], n: number) => list[n % list.length];
 
 /**
- * Bloom, at the top of the task: a persistent character with a speech bubble.
- * It introduces each stage, cheers the group on as they add and build on
- * ideas, and — when anyone taps it — offers a hint, explains the task, and so
- * on. Its answers appear in the bubble for the whole group.
+ * Bloom, the group's helper, beside the task: a persistent character with a
+ * speech bubble. It introduces each stage, cheers the group on as they add
+ * and build on ideas, and — when anyone taps it — offers a hint, explains the
+ * task, and so on. Its answers appear here for the whole group (never twice:
+ * the group chat is for people).
+ *  - "rail": a slim column beside the task on bigger screens;
+ *  - "bar": one line above the task on phones — tap to read more and ask.
  */
-export function BloomCoach({ compact = false }: { compact?: boolean }) {
-  const { group, act } = useWorkspace();
+export function BloomCoach({ variant = "rail", className }: { variant?: "rail" | "bar"; className?: string }) {
+  const { group, act, state } = useWorkspace();
   const run = useRun();
   const buddy = useBuddy();
-  const small = !useMediaQuery("(min-width: 640px)");
+  const [open, setOpen] = useState(false);
   const { fire, talkFor } = buddy;
   const kind = group.stage?.kind ?? "orientation";
   const [menu, setMenu] = useState(false);
   const [waiting, setWaiting] = useState(false);
   const [question, setQuestion] = useState("");
   const [history, setHistory] = useState(false);
-  // On phones, long messages start folded so the task keeps its room.
-  const [moreKey, setMoreKey] = useState<string | null>(null);
 
   // Bloom's messages this stage (stage intro, answers to the group's requests).
   const since = group.stageStartedAt ? new Date(group.stageStartedAt).getTime() - 2000 : 0;
   const said = useMemo(() => group.messages.filter((m) => m.kind === "ai" && new Date(m.createdAt!).getTime() >= since), [group.messages, since]);
   const latest = said[said.length - 1];
+  const now = useNow();
+  // Someone asked Bloom in the chat ("@Bloom …"): show who asked what, and that Bloom is thinking.
+  const lastMention = [...group.messages].reverse().find((m) => m.kind === "student" && mentionsHelper(m.body));
+  const mentionPending = !!lastMention && (!latest || new Date(lastMention.createdAt!) > new Date(latest.createdAt!)) && now - new Date(lastMention.createdAt!).getTime() < 30_000;
+  const askedFor = latest && lastMention && new Date(lastMention.createdAt!) < new Date(latest.createdAt!) && new Date(latest.createdAt!).getTime() - new Date(lastMention.createdAt!).getTime() < 60_000 ? lastMention : null;
 
   // A short-lived cheer when the group does something.
   const [cheer, setCheer] = useState<{ text: string; key: number } | null>(null);
@@ -135,63 +142,103 @@ export function BloomCoach({ compact = false }: { compact?: boolean }) {
     void run(() => act({ action: "ask_group_ai", quick, question: text })).then((ok) => { if (!ok) setWaiting(false); });
   };
 
-  const text = waiting ? null : !group.aiEnabled && !cheer ? "Your teacher is facilitating directly for now — I'll be back soon!" : cheer?.text ?? latest?.body ?? TIPS[kind];
-  const long = (text?.length ?? 0) > 110;
+  const thinking = waiting || (mentionPending && group.aiEnabled);
+  const text = thinking ? null : !group.aiEnabled && !cheer ? "Your teacher is facilitating directly for now — I'll be back soon!" : cheer?.text ?? latest?.body ?? TIPS[kind];
   const msgKey = String(cheer?.key ?? latest?.id ?? kind);
-  const more = moreKey === msgKey;
-  const fromAi = !waiting && !cheer && group.aiEnabled && latest;
+  const fromAi = !thinking && !cheer && group.aiEnabled && latest;
   const ai = group.aiEnabled;
-  return (
-    <div className={cn("flex items-start gap-2 border-b border-line bg-gradient-to-r from-[#fff4ec] via-[#fff1f6] to-white", compact ? "px-3 py-2" : "px-3 py-3 sm:px-4")} data-tour="bloom-coach">
-      <Popover.Root open={menu} onOpenChange={setMenu}>
-        <Popover.Anchor asChild>
-          <span className="shrink-0">
-            <Buddy who="bloom" size={compact || small ? 44 : 60} mood={waiting ? "thinking" : cheer ? "celebrate" : "happy"} cue={buddy.cue} talking={buddy.talking && !waiting}
-              onPress={() => setMenu((o) => !o)} pressLabel="Bloom, your group helper — tap for help" expanded={menu} />
-          </span>
-        </Popover.Anchor>
-        <Popover.Portal>
-          <Popover.Content side="bottom" align="start" sideOffset={8} collisionPadding={12} className="animate-pop z-50 flex w-80 max-w-[calc(100vw-1.5rem)] flex-col gap-1 rounded-2xl border border-line bg-white p-2 shadow-lift">
-            <p className="px-2 pb-1 text-sm text-ink-muted">{ai ? "Bloom answers here, for your whole group." : "Your teacher is helping your group directly right now."}</p>
-            {ai ? ASKS.map(([q, label, Icon]) => (
-              <button key={q} type="button" onClick={() => ask(q)} className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-left font-medium hover:bg-[#fff1e8]">
-                <Icon className="size-5 text-[#c4420a]" aria-hidden="true" />{label}
-              </button>
-            )) : null}
-            {ai ? (
-              <form className="mt-1 flex items-center gap-1.5 border-t border-line px-1 pt-2" onSubmit={(e) => { e.preventDefault(); if (question.trim()) ask("question", question.trim()); }}>
-                <label htmlFor="ask-bloom" className="sr-only">Ask Bloom a question</label>
-                <input id="ask-bloom" value={question} onChange={(e) => setQuestion(e.target.value)} maxLength={300} placeholder="Or ask Bloom something…" className="h-10 min-w-0 flex-1 rounded-xl border-2 border-line px-3 text-sm outline-none focus:border-[#ff9f80]" />
-                <button type="submit" disabled={!question.trim()} className="inline-flex size-10 items-center justify-center rounded-xl bg-ink text-white disabled:opacity-40" aria-label="Ask Bloom"><Send className="size-4" /></button>
-              </form>
-            ) : null}
-          </Popover.Content>
-        </Popover.Portal>
-      </Popover.Root>
+  const bar = variant === "bar";
 
-      <div className="min-w-0 flex-1">
-        <div className={cn("relative rounded-2xl rounded-tl-sm border-2 border-[#ffd2c4] bg-white shadow-soft", compact ? "px-3 py-1.5" : "px-3.5 py-2")} aria-live="polite">
-          <p className="flex flex-wrap items-center gap-1.5 text-xs text-ink-muted">
-            <span className="font-semibold text-ink">Bloom</span>
-            {fromAi ? <AiOriginBadge origin={latest.aiOrigin} /> : null}
-            <button type="button" onClick={() => setMenu((o) => !o)} className="ml-auto inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 font-semibold text-[#c4420a] hover:bg-[#fff1e8]" aria-expanded={menu}>
-              Ask Bloom<ChevronDown className="size-3.5" aria-hidden="true" />
+  const helpMenu = (
+    <Popover.Portal>
+      <Popover.Content side="bottom" align={bar ? "start" : "end"} sideOffset={8} collisionPadding={12} className="animate-pop z-[65] flex w-80 max-w-[calc(100vw-1.5rem)] flex-col gap-1 rounded-2xl border border-line bg-white p-2 shadow-lift">
+        <p className="px-2 pb-1 text-sm text-ink-muted">{ai ? "Bloom answers for your whole group." : "Your teacher is helping your group directly right now."}</p>
+        {ai ? ASKS.map(([q, label, Icon]) => (
+          <button key={q} type="button" onClick={() => ask(q)} className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-left font-medium hover:bg-[#fff1e8]">
+            <Icon className="size-5 text-[#c4420a]" aria-hidden="true" />{label}
+          </button>
+        )) : null}
+        {ai ? (
+          <form className="mt-1 flex items-center gap-1.5 border-t border-line px-1 pt-2" onSubmit={(e) => { e.preventDefault(); if (question.trim()) ask("question", question.trim()); }}>
+            <label htmlFor="ask-bloom" className="sr-only">Ask Bloom a question</label>
+            <input id="ask-bloom" value={question} onChange={(e) => setQuestion(e.target.value)} maxLength={300} placeholder="Or ask Bloom something…" className="h-10 min-w-0 flex-1 rounded-xl border-2 border-line px-3 text-sm outline-none focus:border-[#ff9f80]" />
+            <button type="submit" disabled={!question.trim()} className="inline-flex size-10 items-center justify-center rounded-xl bg-ink text-white disabled:opacity-40" aria-label="Ask Bloom"><Send className="size-4" /></button>
+          </form>
+        ) : null}
+      </Popover.Content>
+    </Popover.Portal>
+  );
+  const message = thinking ? (
+    <p className="flex items-center gap-2 py-0.5 text-ink-muted" role="status">
+      <span className="flex gap-1" aria-hidden="true"><span className="animate-pulse-dot size-2 rounded-full bg-[#ff7f6e]" /><span className="animate-pulse-dot size-2 rounded-full bg-[#ff7f6e] [animation-delay:200ms]" /><span className="animate-pulse-dot size-2 rounded-full bg-[#ff7f6e] [animation-delay:400ms]" /></span>
+      Bloom is thinking…
+    </p>
+  ) : (
+    <>
+      {askedFor && !cheer ? <p className="mb-1 truncate border-l-2 border-[#ffd2c4] pl-2 text-xs text-ink-muted">{askedFor.authorId === state.me.id ? "You" : "Your group"} asked: {askedFor.body}</p> : null}
+      <p key={msgKey} className="msg-in whitespace-pre-line text-[0.98rem] leading-snug">{text}</p>
+    </>
+  );
+  const askButton = (
+    <Popover.Trigger asChild>
+      <button type="button" className="inline-flex h-9 items-center justify-center gap-1 rounded-xl bg-[#fff1e8] px-3 text-sm font-semibold text-[#c4420a] hover:brightness-95">
+        Ask Bloom<ChevronDown className="size-4" aria-hidden="true" />
+      </button>
+    </Popover.Trigger>
+  );
+
+  if (bar) {
+    // Phones: one line. Tap it to read the whole message and see earlier ones.
+    return (
+      <Popover.Root open={menu} onOpenChange={setMenu}>
+        <div className={cn("border-b border-line bg-gradient-to-r from-[#fff4ec] via-[#fff1f6] to-white px-2.5 py-1.5", className)} data-tour="bloom-coach">
+          <div className="flex items-center gap-2">
+            <Popover.Anchor asChild>
+              <span className="shrink-0">
+                <Buddy who="bloom" size={36} mood={thinking ? "thinking" : cheer ? "celebrate" : "happy"} cue={buddy.cue} talking={buddy.talking && !thinking}
+                  onPress={() => setMenu((o) => !o)} pressLabel="Bloom, your group helper — tap for help" expanded={menu} />
+              </span>
+            </Popover.Anchor>
+            <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="min-w-0 flex-1 text-left" aria-live="polite">
+              <span className="sr-only">Bloom says: </span>
+              {thinking ? <span className="text-sm text-ink-muted">Bloom is thinking…</span> : <span className={cn("block text-sm leading-snug", !open && "truncate")}>{text}</span>}
             </button>
-          </p>
-          {waiting ? (
-            <p className="flex items-center gap-2 py-0.5 text-ink-muted" role="status">
-              <span className="flex gap-1" aria-hidden="true"><span className="animate-pulse-dot size-2 rounded-full bg-[#ff7f6e]" /><span className="animate-pulse-dot size-2 rounded-full bg-[#ff7f6e] [animation-delay:200ms]" /><span className="animate-pulse-dot size-2 rounded-full bg-[#ff7f6e] [animation-delay:400ms]" /></span>
-              Bloom is thinking…
-            </p>
-          ) : (
-            <>
-              <p key={msgKey} className={cn("msg-in whitespace-pre-line leading-snug", compact ? "text-[0.95rem]" : "text-[1.02rem]", long && !more && "max-sm:line-clamp-3")}>{text}</p>
-              {long ? <button type="button" className="text-xs font-semibold text-[#c4420a] sm:hidden" aria-expanded={more} onClick={() => setMoreKey(more ? null : msgKey)}>{more ? "Show less" : "Read more"}</button> : null}
-            </>
-          )}
+            {askButton}
+          </div>
+          {open && !thinking ? (
+            <div className="mt-1.5 flex flex-col gap-1.5 pl-11">
+              {fromAi ? <AiOriginBadge origin={latest.aiOrigin} className="self-start" /> : null}
+              {said.length > 1 ? <ol className="flex flex-col gap-1">{said.slice(0, -1).reverse().map((m) => <li key={m.id} className="rounded-xl bg-white/80 px-2.5 py-1 text-xs text-ink/80">{m.body}</li>)}</ol> : null}
+            </div>
+          ) : null}
+        </div>
+        {helpMenu}
+      </Popover.Root>
+    );
+  }
+
+  return (
+    <Popover.Root open={menu} onOpenChange={setMenu}>
+      <section aria-label="Bloom, your group helper" className={cn("flex min-h-0 flex-col gap-2 overflow-y-auto rounded-[1.75rem] border-2 border-white bg-gradient-to-b from-[#fff4ec] via-[#fff1f6] to-white/95 p-3 shadow-soft", className)} data-tour="bloom-coach">
+        <div className="flex items-center gap-2">
+          <Popover.Anchor asChild>
+            <span className="shrink-0">
+              <Buddy who="bloom" size={56} mood={thinking ? "thinking" : cheer ? "celebrate" : "happy"} cue={buddy.cue} talking={buddy.talking && !thinking}
+                onPress={() => setMenu((o) => !o)} pressLabel="Bloom, your group helper — tap for help" expanded={menu} />
+            </span>
+          </Popover.Anchor>
+          <div className="min-w-0 flex-1">
+            <p className="font-display text-lg font-bold leading-tight">Bloom</p>
+            <p className="text-xs text-ink-muted">Your group&apos;s helper</p>
+          </div>
+          {askButton}
+        </div>
+        <div className="relative rounded-2xl rounded-tl-sm border-2 border-[#ffd2c4] bg-white px-3 py-2 shadow-soft" aria-live="polite">
+          {fromAi ? <AiOriginBadge origin={latest.aiOrigin} className="mb-1" /> : null}
+          {message}
         </div>
         {said.length > 1 ? (
-          <div className="mt-1 pl-1">
+          <div className="pl-1">
             <button type="button" className="text-xs font-semibold text-ink-muted hover:text-ink" aria-expanded={history} onClick={() => setHistory((h) => !h)}>
               {history ? "Hide" : "See"} what Bloom said earlier ({said.length - 1})
             </button>
@@ -202,7 +249,8 @@ export function BloomCoach({ compact = false }: { compact?: boolean }) {
             ) : null}
           </div>
         ) : null}
-      </div>
-    </div>
+      </section>
+      {helpMenu}
+    </Popover.Root>
   );
 }

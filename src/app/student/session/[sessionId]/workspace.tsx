@@ -14,10 +14,12 @@ import { Avatar } from "@/components/ui/primitives";
 import { artifactBus } from "@/components/collab/artifact-bus";
 import { useNow } from "@/lib/use-now";
 import { cn } from "@/lib/utils";
-import { WorkspaceContext, type Inserter, type StudentAction, type WorkspaceCtx } from "./context";
+import { WorkspaceContext, useWorkspace as useWorkspaceSafe, type Inserter, type StudentAction, type WorkspaceCtx } from "./context";
 import { SessionHeader } from "./session-header";
-import { ActivityPanel } from "./activity-panel";
+import { ActivityPanel, hasIdeasTab } from "./activity-panel";
 import { GroupChat } from "./group-chat";
+import { BloomCoach } from "./bloom-coach";
+import { IdeaBank } from "./idea-bank";
 import { Readiness } from "./readiness";
 import { PipLauncher } from "./pip-launcher";
 import { ChatLauncher } from "./chat-launcher";
@@ -121,7 +123,12 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
     setChatOpen(true);
     setTimeout(() => document.getElementById("chat-input")?.focus(), 0);
   }, []);
-  const openIdeas = useCallback(() => { setMobileTab("activity"); setIdeasSignal((n) => n + 1); }, []);
+  const openIdeas = useCallback(() => {
+    setMobileTab("activity");
+    setIdeasSignal((n) => n + 1);
+    // On bigger screens the ideas are already beside the work: bring them into view.
+    document.querySelector<HTMLElement>('section[data-tour="ideas-tab"]')?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, []);
 
   const now = useNow();
   const latestAnnouncement = state.announcements[0];
@@ -148,31 +155,40 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
     const discussion = kind === "discussion";
     const showPlant = s.theme !== "none";
     const doneStages = g.stageStatus === "complete" ? s.stages.length : g.stageIndex;
+    const ideasBeside = hasIdeasTab(kind);
     let main: React.ReactNode;
     if (talk) {
       main = <TalkTime />;
-    } else if (discussion && wide) {
+    } else if (wide) {
+      // Task in the middle; a slim rail on the right with Bloom on top and,
+      // below it, the group chat (Discussion) or the group's ideas.
+      const working = kind !== "complete";
       main = (
         <div className="flex min-h-0 flex-1 gap-3 p-3">
-          <ActivityPanel className="w-[min(36rem,44%)] shrink-0" />
-          <GroupChat className="min-w-0 flex-1" />
+          <ActivityPanel compact={canvas} ideasBeside className="min-w-0 flex-1" />
+          {working ? (
+            <div className="flex min-h-0 w-[19rem] shrink-0 flex-col gap-3 xl:w-[23rem]">
+              <BloomCoach className={discussion || ideasBeside ? "max-h-[46%] shrink-0" : "shrink-0"} />
+              {discussion ? <GroupChat compact className="min-h-0 flex-1" /> : ideasBeside ? <IdeasPanel className="min-h-0 flex-1" /> : null}
+            </div>
+          ) : null}
         </div>
       );
     } else if (discussion) {
       main = (
         <div className="flex min-h-0 flex-1 flex-col gap-2 p-2">
           <div role="tablist" aria-label="Ideas or chat" className="flex gap-1 rounded-2xl bg-white/80 p-1 shadow-soft">
-            <button type="button" role="tab" aria-selected={mobileTab === "activity"} onClick={() => setMobileTab("activity")} className={cn("inline-flex flex-1 items-center justify-center gap-2 rounded-xl py-2 font-semibold", mobileTab === "activity" ? "bg-ink text-white" : "text-ink-muted")}><Lightbulb className="size-5" aria-hidden="true" />Task &amp; ideas</button>
-            <button type="button" role="tab" aria-selected={mobileTab === "chat"} onClick={() => setMobileTab("chat")} className={cn("inline-flex flex-1 items-center justify-center gap-2 rounded-xl py-2 font-semibold", mobileTab === "chat" ? "bg-ink text-white" : "text-ink-muted")}><MessagesSquare className="size-5" aria-hidden="true" />Group chat</button>
+            <button type="button" role="tab" aria-selected={mobileTab === "activity"} onClick={() => setMobileTab("activity")} className={cn("inline-flex flex-1 items-center justify-center gap-2 rounded-xl py-1.5 font-semibold", mobileTab === "activity" ? "bg-ink text-white" : "text-ink-muted")}><Lightbulb className="size-5" aria-hidden="true" />Task &amp; ideas</button>
+            <button type="button" role="tab" aria-selected={mobileTab === "chat"} onClick={() => setMobileTab("chat")} className={cn("inline-flex flex-1 items-center justify-center gap-2 rounded-xl py-1.5 font-semibold", mobileTab === "chat" ? "bg-ink text-white" : "text-ink-muted")}><MessagesSquare className="size-5" aria-hidden="true" />Group chat</button>
           </div>
-          <ActivityPanel className={cn("min-w-0 flex-1", mobileTab !== "activity" && "hidden")} />
-          {mobileTab === "chat" ? <GroupChat className="min-w-0 flex-1" /> : null}
+          <ActivityPanel top={<BloomCoach variant="bar" />} className={cn("min-w-0 flex-1", mobileTab !== "activity" && "hidden")} />
+          {mobileTab === "chat" ? <GroupChat compact top={<BloomCoach variant="bar" />} className="min-w-0 flex-1" /> : null}
         </div>
       );
     } else {
       main = (
-        <div className="flex min-h-0 flex-1 justify-center p-2 sm:p-3">
-          <ActivityPanel compact={canvas} className={cn("w-full min-w-0", !canvas && "max-w-4xl")} />
+        <div className="flex min-h-0 flex-1 p-2 sm:p-3">
+          <ActivityPanel compact={canvas} top={<BloomCoach variant="bar" />} className="w-full min-w-0" />
         </div>
       );
     }
@@ -276,5 +292,19 @@ function PausedOverlay() {
         <p id="paused-desc" className="text-lg text-ink-muted">Your teacher has paused the lesson. Look up and listen in. Your work is saved and the timer has stopped.</p>
       </div>
     </div>
+  );
+}
+
+/** The group's ideas beside the activity (bigger screens), for easy reference. */
+function IdeasPanel({ className }: { className?: string }) {
+  const { group } = useWorkspaceSafe();
+  const brainstorming = group?.stage?.kind === "brainstorm";
+  return (
+    <section aria-label={brainstorming ? "Ideas you've added" : "Your group's ideas"} data-tour="ideas-tab" className={cn("flex min-h-0 flex-col overflow-hidden rounded-[1.75rem] border-2 border-white bg-white/95 shadow-soft", className)}>
+      <h2 className="flex items-center gap-2 border-b border-line px-4 py-2.5 font-display text-base font-bold">
+        <Lightbulb className="size-5 text-amber" aria-hidden="true" />{brainstorming ? "Your ideas" : "Your group's ideas"}
+      </h2>
+      <IdeaBank />
+    </section>
   );
 }

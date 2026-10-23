@@ -21,40 +21,43 @@ const REACTIONS = [
   { kind: "question", label: "I have a question", icon: MessageCircleQuestion },
 ] as const;
 
-export function Chat({ className, header, empty, after, composerClassName, onActivity, inline, compact = false, placeholder = "Message your group…" }: {
+export function Chat({ className, header, empty, after, composerClassName, onActivity, inline, compact = false, placeholder = "Message your group…", show }: {
   className?: string; header?: React.ReactNode; empty?: React.ReactNode; after?: React.ReactNode; composerClassName?: string;
   /** Something embedded in the conversation (the stage's task card), placed after messages up to `after`. */
   inline?: { node: React.ReactNode; after: string | null; key: string };
   /** Slim layout for a side column. */
   compact?: boolean;
   placeholder?: string;
+  /** Which messages to show (e.g. leave Bloom's out when Bloom speaks elsewhere). */
+  show?: (m: Msg) => boolean;
   /** Lets the page animate its helper: "typing" on each keystroke, "sent" after a message goes. */
   onActivity?: (e: "typing" | "sent", text?: string) => void;
 }) {
   const { group, state, act } = useWorkspace();
+  const msgs = useMemo(() => (show ? group.messages.filter(show) : group.messages), [group.messages, show]);
   const run = useRun();
   const [text, setText] = useState("");
   const [replyTo, setReplyTo] = useState<Msg | null>(null);
   const [sending, setSending] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
   const atBottom = useRef(true);
-  const byId = useMemo(() => new Map(group.messages.map((m) => [m.id, m])), [group.messages]);
-  const pinned = group.messages.filter((m) => m.pinned);
+  const byId = useMemo(() => new Map(msgs.map((m) => [m.id, m])), [msgs]);
+  const pinned = msgs.filter((m) => m.pinned);
   const member = (id: string | null) => group.members.find((m) => m.id === id);
   // Messages already here when the chat opened appear still; new ones slide in.
-  const [seenAtOpen] = useState(() => new Set(group.messages.map((m) => m.id)));
+  const [seenAtOpen] = useState(() => new Set(msgs.map((m) => m.id)));
 
   // New messages: follow along when you're at the bottom; otherwise offer a way down.
   const [unseen, setUnseen] = useState(0);
-  const lastCount = useRef(group.messages.length);
+  const lastCount = useRef(msgs.length);
   useEffect(() => {
     const el = listRef.current;
-    const added = group.messages.length - lastCount.current;
-    lastCount.current = group.messages.length;
+    const added = msgs.length - lastCount.current;
+    lastCount.current = msgs.length;
     if (el && atBottom.current) el.scrollTop = el.scrollHeight;
     // Counting arrivals while scrolled up (a reaction to new server data).
     else if (added > 0) setUnseen((n) => n + added);
-  }, [group.messages.length, after]);
+  }, [msgs.length, after]);
   const toBottom = () => { const el = listRef.current; if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" }); setUnseen(0); };
 
   // A new stage: bring its task card into view.
@@ -80,13 +83,13 @@ export function Chat({ className, header, empty, after, composerClassName, onAct
   }, [inlineKey]);
   const cut = inline ? (() => {
     const t = inline.after ? new Date(inline.after).getTime() : -Infinity;
-    let i = group.messages.findIndex((m) => new Date(m.createdAt!).getTime() > t + 1500);
-    if (i === -1) return group.messages.length;
+    let i = msgs.findIndex((m) => new Date(m.createdAt!).getTime() > t + 1500);
+    if (i === -1) return msgs.length;
     // Bloom's welcome to the stage reads best just above the task it introduces.
-    const m = group.messages[i];
+    const m = msgs[i];
     if (m.kind === "ai" && new Date(m.createdAt!).getTime() < t + 45_000) i++;
     return i;
-  })() : group.messages.length;
+  })() : msgs.length;
 
   async function send() {
     if (!text.trim()) return;
@@ -164,17 +167,17 @@ export function Chat({ className, header, empty, after, composerClassName, onAct
         </button>
       ) : null}
       <ol className="flex flex-col gap-3">
-        {group.messages.length === 0 ? (empty ?? (
+        {msgs.length === 0 ? (empty ?? (
           <li className="flex items-center gap-3 text-sm text-ink-muted"><Mascot size={40} mood="idle" />No messages yet. Chat is optional — talking in the room counts too.</li>
         )) : null}
-        {(inline ? group.messages.slice(0, cut) : group.messages).map(renderMsg)}
+        {(inline ? msgs.slice(0, cut) : msgs).map(renderMsg)}
         {inline ? null : <>{after}</>}
       </ol>
       {inline ? (
         <>
           <div key={inline.key} className="my-3">{inline.node}</div>
           <ol className="flex flex-col gap-3">
-            {group.messages.slice(cut).map(renderMsg)}
+            {msgs.slice(cut).map(renderMsg)}
             {after}
           </ol>
         </>

@@ -28,7 +28,11 @@ export async function listReports(uid: string) {
   });
 }
 
-export async function lessonReport(uid: string, sessionId: string, opts: { regenerate?: boolean } = {}) {
+/**
+ * The lesson report. The AI summary is written once (in the background when
+ * the lesson ends, or on request) — opening a report never waits for it.
+ */
+export async function lessonReport(uid: string, sessionId: string, opts: { regenerate?: boolean; generate?: boolean } = {}) {
   const facts = await asUser(uid, async (db) => {
     const s = await loadSession(db, sessionId);
     if (!s || s.teacher_id !== uid) throw new NotFoundError();
@@ -94,7 +98,7 @@ export async function lessonReport(uid: string, sessionId: string, opts: { regen
   let summary = facts.existing?.summary ?? null;
   let origin = facts.existing?.origin ?? null;
   const canSummarise = facts.session.status === "ended";
-  if (canSummarise && (!summary || opts.regenerate)) {
+  if (canSummarise && ((!summary && opts.generate) || opts.regenerate)) {
     const input: ReportFacts = {
       lessonTitle: facts.session.snapshot.title,
       durationMinutes: facts.durationMinutes,

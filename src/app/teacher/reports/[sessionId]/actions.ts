@@ -11,3 +11,10 @@ export async function regenerateReportAction(sessionId: string) {
   await lessonReport(user.id, sessionId, { regenerate: true });
   revalidatePath(`/teacher/reports/${sessionId}`);
 }
+
+/** Write the summary if it isn't there yet (opening a report never waits for the AI). */
+export async function generateReportAction(sessionId: string) {
+  const user = await requireUser("teacher");
+  await lessonReport(user.id, sessionId, { generate: true });
+  revalidatePath(`/teacher/reports/${sessionId}`);
+}

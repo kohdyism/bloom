@@ -11,6 +11,7 @@ import {
 } from "./common";
 import { advanceGroup, awardFlower, notifyGroup, notifyGroupProgress, onEnterStage, facilitate, postSystem } from "./engine";
 import { background } from "@/lib/background";
+import { lessonReport } from "@/lib/modules/reports";
 
 async function audit(db: Db, actorId: string, sessionId: string, action: string, target = "", details: Record<string, unknown> = {}) {
   await db.query("insert into audit_events(actor_id, session_id, action, target, details) values ($1,$2,$3,$4,$5)", [actorId, sessionId, action, target, JSON.stringify(details)]);
@@ -245,6 +246,8 @@ export async function endSession(uid: string, sessionId: string) {
     );
     for (const g of done) await awardFlower(db, g.id);
   });
+  // Start writing the lesson report's summary now, so it's ready when the teacher opens it.
+  background(() => lessonReport(uid, sessionId, { generate: true }).then(() => undefined));
   await publish([
     { channel: ch.session(sessionId), event: "session.status" },
     { channel: ch.teacher(sessionId), event: "session.status" },

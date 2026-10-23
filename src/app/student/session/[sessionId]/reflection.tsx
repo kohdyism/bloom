@@ -29,9 +29,12 @@ export function Reflection({ sessionId, state }: { sessionId: string; state: Stu
       <div className="mx-auto w-full flex max-w-xl flex-col items-center gap-5 py-10 text-center">
         <Buddy who="bloom" size={110} mood="celebrate" cue={bloomBuddy.cue} />
         <p className="font-display text-2xl font-semibold">Thanks for reflecting!</p>
-        <p className="text-ink-muted">Only your teacher can see your answers. You can close Canopy now.</p>
+        <p className="text-ink-muted">Only your teacher can see your answers. You can look back at this lesson any time from Past lessons.</p>
         {state.group?.flower ? <GardenNote flower={state.group.flower} /> : null}
-        <Button asChild variant="secondary"><Link href="/student">Back to home</Link></Button>
+        <div className="flex flex-wrap justify-center gap-2">
+          <Button asChild><Link href={`/student/past/${state.session.id}`}>Look back at your work</Link></Button>
+          <Button asChild variant="secondary"><Link href="/student">Back to home</Link></Button>
+        </div>
       </div>
     );
   }

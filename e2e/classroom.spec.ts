@@ -93,12 +93,10 @@ test("complete inclusive classroom lesson", async ({ browser }) => {
   // Saved ideas appear in the Ideas tab, marked private.
   await a1.page.getByRole("button", { name: /See my ideas/ }).click();
   await expect(a1.page.getByText("Added — private until thinking time ends")).toBeVisible();
-  await a1.page.getByRole("tab", { name: "Activity", exact: true }).click();
   await a2.page.getByLabel("Your idea").fill("Lonely childhood: nature and the storm reflect his feelings.");
   await a2.page.getByRole("button", { name: "Add idea" }).click();
   await a2.page.getByRole("button", { name: /See my ideas/ }).click();
   await expect(a2.page.getByText("Added — private until thinking time ends")).toBeVisible();
-  await a2.page.getByRole("tab", { name: "Activity", exact: true }).click();
   // Ideas are private: a2 cannot see a1's idea yet.
   await expect(a2.page.getByText("sees the world differently")).toHaveCount(0);
   await ready(a1.page, "I'm done thinking");
@@ -250,8 +248,22 @@ test("complete inclusive classroom lesson", async ({ browser }) => {
   await expect(display.getByText("Great work today, everyone!")).toBeVisible();
   expect(await display.locator("body").innerText()).not.toContain("Having thinking time first");
 
-  // 28–29. Teacher views the report and deliberately opens one reflection.
-  await t.goto(`/teacher/reports/${sessionId}`);
+  // Students can look back at the lesson later: the work, their ideas, their reflection and a private note.
+  await a1.page.getByRole("link", { name: "Look back at your work" }).click();
+  await expect(a1.page.getByRole("heading", { name: "What your group made" })).toBeVisible();
+  await expect(a1.page.getByText("Having thinking time first and clear roles.")).toBeVisible();
+  await a1.page.getByLabel("Looking back").fill("I was proud of sharing my idea first.");
+  await a1.page.getByRole("button", { name: "Save my note" }).click();
+  await expect(a1.page.getByRole("status").filter({ hasText: "Saved" })).toBeVisible();
+  await a1.page.reload();
+  await expect(a1.page.getByLabel("Looking back")).toHaveValue("I was proud of sharing my idea first.");
+  await a1.page.goto("/student/past");
+  await expect(a1.page.getByRole("link", { name: /Reading 'Alone' together/ })).toBeVisible();
+
+  // 28–29. Teacher opens the report from the Lesson reports list and deliberately opens one reflection.
+  await t.goto("/teacher/reports");
+  await t.getByRole("link", { name: "Open report" }).first().click();
+  await expect(t).toHaveURL(new RegExp(`/teacher/reports/${sessionId}`));
   await expect(t.getByRole("heading", { name: "Reading 'Alone' together", exact: true })).toBeVisible();
   await expect(t.getByText("Simulated AI").first()).toBeVisible();
   await expect(t.getByText("Thinking time before discussing")).toBeVisible();

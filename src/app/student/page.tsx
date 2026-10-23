@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, Settings2 } from "lucide-react";
+import { ArrowRight, BookOpen, Settings2 } from "lucide-react";
 import { requireUser } from "@/lib/auth/current-user";
 import { asServer, asUser } from "@/lib/db";
 import { isFlowerId } from "@/lib/domain/flowers";
@@ -45,11 +45,11 @@ export default async function StudentHome() {
       </Card>
       {sessions.length ? (
         <section aria-labelledby="my-lessons">
-          <h2 id="my-lessons" className="mb-3 font-display text-lg font-semibold">My lessons</h2>
+          <div className="mb-3 flex items-baseline justify-between gap-2"><h2 id="my-lessons" className="font-display text-lg font-semibold">My lessons</h2><Link href="/student/past" className="text-sm font-semibold text-teal hover:underline">All past lessons</Link></div>
           <ul className="flex flex-col gap-2">
             {sessions.map((s) => (
               <li key={s.id}>
-                <Link href={`/student/session/${s.id}`} className="group block rounded-2xl">
+                <Link href={s.status === "ended" && s.reflected ? `/student/past/${s.id}` : `/student/session/${s.id}`} className="group block rounded-2xl">
                   <Card className="flex items-center gap-3 p-4 transition-shadow group-hover:shadow-lift">
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold">{s.title}</p>
@@ -65,7 +65,10 @@ export default async function StudentHome() {
         </section>
       ) : null}
       <Garden entries={garden} />
+      <div className="flex flex-wrap gap-2">
+      <Button asChild variant="secondary" className="self-start"><Link href="/student/past"><BookOpen />Past lessons</Link></Button>
       <Button asChild variant="ghost" className="self-start"><Link href="/student/welcome?edit=1"><Settings2 />My working preferences</Link></Button>
+      </div>
     </div>
   );
 }
