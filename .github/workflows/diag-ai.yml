@@ -1,26 +1,17 @@
-# Temporary: one real AI request from the live server, using the app's own settings.
+# Temporary: recent errors from the live app log (safe lines only).
 name: Diagnose live AI
 on:
   push:
     branches: [diag-ai]
 jobs:
-  probe:
+  logs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: superfly/flyctl-actions/setup-flyctl@master
-      - name: Probe
+      - name: Errors
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: |
-          cat > probe.js <<'JS'
-          const Anthropic = require("@anthropic-ai/sdk").default;
-          const c = new Anthropic();
-          c.messages.create({ model: process.env.BLOOM_AI_MODEL || "claude-sonnet-5-5", max_tokens: 200, thinking: { type: "between_tools" },
-            system: "You are Bloom, a friendly group helper. Reply in one short sentence.", messages: [{ role: "user", content: "@Bloom can you give us a hint?" }] })
-            .then((r) => console.log("OK", r.stop_reason, JSON.stringify(r.content.filter((b) => b.type === "text").map((b) => b.text).join(" ")).slice(0, 200)))
-            .catch((e) => console.log("FAIL", e.status, String(e.message).slice(0, 200)));
-          JS
-          flyctl ssh sftp shell -a bloom-kohdyism <<< "put probe.js /app/probe.js" > /dev/null 2>&1 || true
-          out=$(flyctl ssh console -a bloom-kohdyism -C "sh -c 'cd /app && node probe.js; rm -f probe.js'" 2>&1 | grep -E "^(OK|FAIL)" | head -1 | sed -E 's/sk-ant[A-Za-z0-9_-]*/[key]/g')
-          echo "::notice::PROBE ${out:-no output}"
+          flyctl logs -a bloom-kohdyism --no-tail 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | grep -viE "bloom:ai|GET /_next|health" | grep -iE "error|fail|exception|unhandled|denied|violat|constraint|TypeError|500" | sed -E 's/sk-ant[A-Za-z0-9_-]*/[key]/g' | tail -9 | while read -r l; do echo "::notice::${l:0:420}"; done
+          echo "::notice::END $(flyctl logs -a bloom-kohdyism --no-tail 2>&1 | wc -l) lines"
