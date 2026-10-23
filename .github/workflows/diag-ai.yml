@@ -1,28 +1,17 @@
-# One-off, requested by the owner: wipe the live demo's lessons, progress and
-# flowers and reseed the fictional demo data (same demo sign-ins).
-name: Check live demo data
+# Temporary: recent AI fallback reasons from the live app log (only [bloom:ai] lines).
+name: Diagnose live AI
 on:
   push:
     branches: [diag-ai]
 jobs:
-  reset:
+  logs:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 5
     steps:
       - uses: superfly/flyctl-actions/setup-flyctl@master
-      - name: Count rows
+      - name: AI warnings
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: |
-          cat > check.mjs <<'JS'
-          import pg from "pg";
-          const c = new pg.Client({ connectionString: process.env.DATABASE_URL });
-          await c.connect();
-          for (const [k, q] of [["sessions", "select count(*) from activity_sessions"], ["groups", "select count(*) from session_groups"], ["messages", "select count(*) from group_messages"], ["flowers", "select count(*) from session_groups where flower is not null"], ["lessons", "select count(*) from lessons"], ["students", "select count(*) from profiles where role = 'student'"], ["talk stages", "select count(*) from lesson_stages where kind = 'talk'"]]) {
-            const r = await c.query(q); console.log("CHECK", k, r.rows[0].count);
-          }
-          await c.end();
-          JS
-          flyctl ssh sftp shell -a bloom-kohdyism <<< "put check.mjs /app/check-diag.mjs" >/dev/null 2>&1 || echo "::notice::sftp failed"
-          out=$(flyctl ssh console -a bloom-kohdyism -C "sh -c 'cd /app && node check-diag.mjs; rm -f check-diag.mjs'" 2>&1 | grep CHECK)
-          echo "$out" | while read -r l; do echo "::notice::${l:0:300}"; done
+          flyctl logs -a bloom-kohdyism --no-tail 2>&1 | grep -E "bloom:ai|AI request|anthropic|rate|overloaded" | sed -E 's/sk-ant[A-Za-z0-9_-]*/[key]/g' | tail -10 | while read -r l; do echo "::notice::${l:0:400}"; done
+          echo "::notice::done"
