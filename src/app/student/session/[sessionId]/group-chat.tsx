@@ -11,8 +11,8 @@ import { Chat } from "./chat";
  * Discussion stages and is one tap away (in the dock) the rest of the time.
  * Typing "@Bloom" in Discussion asks Bloom, which answers in its own panel.
  */
-// Bloom speaks from its own panel, so its words aren't repeated in the chat.
-const notBloom = (m: { kind: string }) => m.kind !== "ai";
+// Bloom answers in its own panel and the header shows the stage, so the chat skips those lines.
+const notBloom = (m: { kind: string; body: string }) => m.kind !== "ai" && !(m.kind === "system" && m.body.startsWith("Stage complete"));
 
 export function GroupChat({ className, compact = false, onClose, top }: { className?: string; compact?: boolean; onClose?: React.ReactNode; top?: React.ReactNode }) {
   const { group } = useWorkspace();

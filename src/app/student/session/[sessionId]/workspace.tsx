@@ -168,7 +168,7 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
           <ActivityPanel compact={canvas} ideasBeside className="min-w-0 flex-1" />
           {working ? (
             <div className="flex min-h-0 w-[19rem] shrink-0 flex-col gap-3 xl:w-[23rem]">
-              <BloomCoach className={discussion || ideasBeside ? "max-h-[46%] shrink-0" : "shrink-0"} />
+              <BloomCoach className={discussion || ideasBeside ? "max-h-[40%] shrink-0" : "shrink-0"} />
               {discussion ? <GroupChat compact className="min-h-0 flex-1" /> : ideasBeside ? <IdeasPanel className="min-h-0 flex-1" /> : null}
             </div>
           ) : null}

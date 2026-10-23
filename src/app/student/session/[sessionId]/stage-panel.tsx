@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Check, Compass, MessagesSquare, Trophy, Vote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/primitives";
@@ -9,6 +9,8 @@ import { FlowerPicture } from "@/components/flower";
 import { flowerInfo } from "@/lib/domain/flowers";
 import { useRun } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
+import { useReducedMotion } from "@/components/a11y-provider";
+import { useFlip, useSettledOrder } from "@/components/ui/settled-list";
 import { useWorkspace, roleName } from "./context";
 import { Brainstorm } from "./stage-brainstorm";
 import { Synthesis } from "./stage-synthesis";
@@ -91,7 +93,10 @@ function Voting() {
   const { group, act } = useWorkspace();
   const run = useRun();
   const left = group.votes.perStudent - group.votes.mine.length;
-  const ideas = [...group.ideas.shared].sort((a, b) => (group.votes.tally[b.id] ?? 0) - (group.votes.tally[a.id] ?? 0));
+  // Votes count up first; a moment later the ideas glide into their new order.
+  const ideas = useSettledOrder(group.ideas.shared, (i) => group.votes.tally[i.id] ?? 0);
+  const listRef = useRef<HTMLUListElement>(null);
+  useFlip(listRef, ideas.map((i) => i.id).join(","), useReducedMotion());
   const max = Math.max(1, ...ideas.map((i) => group.votes.tally[i.id] ?? 0));
   return (
     <Panel className="flex flex-col gap-3">
@@ -100,18 +105,18 @@ function Voting() {
         <span className="font-normal text-ink-muted">Tap again to take a vote back.</span>
       </p>
       {ideas.length === 0 ? <Notice>No shared ideas to vote on yet.</Notice> : (
-        <ul className="grid gap-2 xl:grid-cols-2">
+        <ul ref={listRef} className="relative grid gap-2 xl:grid-cols-2">
           {ideas.map((i) => {
             const voted = group.votes.mine.includes(i.id);
             const n = group.votes.tally[i.id] ?? 0;
             return (
-              <li key={i.id} className={cn("relative flex items-center gap-3 overflow-hidden rounded-2xl border-2 bg-white p-3", voted ? "border-blue" : "border-line")}>
-                <span className="absolute inset-y-0 left-0 bg-blue-soft transition-all" style={{ width: `${(n / max) * 100}%` }} aria-hidden="true" />
+              <li key={i.id} data-flip-id={i.id} className={cn("relative flex items-center gap-3 overflow-hidden rounded-2xl border-2 bg-white p-3 transition-colors", voted ? "border-blue" : "border-line")}>
+                <span className="absolute inset-y-0 left-0 bg-blue-soft transition-[width] duration-500 ease-out" style={{ width: `${(n / max) * 100}%` }} aria-hidden="true" />
                 <div className="relative min-w-0 flex-1">
                   <p className="font-medium">{i.body}</p>
                   <p className="text-xs text-ink-muted">{i.author}</p>
                 </div>
-                <span className="relative font-display text-xl font-bold tabular-nums text-blue" aria-label={`${n} vote${n === 1 ? "" : "s"}`}>{n}</span>
+                <span key={n} className="relative animate-pop font-display text-xl font-bold tabular-nums text-blue" aria-label={`${n} vote${n === 1 ? "" : "s"}`}>{n}</span>
                 <Button size="sm" variant={voted ? "primary" : "secondary"} className={cn("relative", voted && "bg-blue hover:bg-blue")} aria-pressed={voted} disabled={!voted && left <= 0} onClick={() => run(() => act({ action: "vote", targetId: i.id }))}>
                   {voted ? <><Check />Voted</> : "Vote"}
                 </Button>

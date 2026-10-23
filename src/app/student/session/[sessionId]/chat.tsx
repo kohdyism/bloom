@@ -154,7 +154,7 @@ export function Chat({ className, header, empty, after, composerClassName, onAct
       <div
         ref={listRef}
         onScroll={(e) => { const el = e.currentTarget; atBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 60; if (atBottom.current && unseen) setUnseen(0); }}
-        className={cn("relative min-h-48 flex-1 overflow-y-auto", compact ? "p-3" : "p-4 sm:px-6")}
+        className={cn("relative flex-1 overflow-y-auto", compact ? "min-h-16 p-3" : "min-h-48 p-4 sm:px-6")}
         role="log"
         aria-live="polite"
         aria-relevant="additions"

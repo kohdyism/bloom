@@ -73,14 +73,14 @@ export async function runStructured<S extends z.ZodTypeAny>(opts: {
   if (config.aiMode !== "live") return { data: opts.simulate(), origin: "ai_simulated" };
   try {
     const res = await withTimeout(
-      anthropic().messages.parse({
+      withThinkingFallback((thinking) => anthropic().messages.parse({
         model: config.aiModels[opts.workflow],
         max_tokens: opts.maxTokens ?? 1500,
-        thinking: { type: "disabled" },
+        ...(thinking ? { thinking } : {}),
         system: opts.system + "\n" + UNTRUSTED_CONTENT_RULES,
         messages: [{ role: "user", content: opts.prompt }],
         output_config: { format: zodOutputFormat(opts.schema) },
-      }),
+      })),
       config.aiTimeoutMs,
     );
     const parsed = opts.schema.safeParse(res.parsed_output);
@@ -90,6 +90,26 @@ export async function runStructured<S extends z.ZodTypeAny>(opts: {
   } catch (err) {
     console.warn(`[bloom:ai] ${opts.workflow} structured call failed, using offline helper:`, (err as Error).message);
     return { data: opts.simulate(), origin: "offline_helper" };
+  }
+}
+
+/**
+ * Short, direct replies: the model shouldn't spend its token budget thinking
+ * before it answers. This model turns thinking off with "between_tools" (it
+ * rejects "disabled"). If a future model rejects this setting too, the call is
+ * retried once without it rather than failing.
+ */
+const NO_THINKING = { type: "between_tools" } as const;
+async function withThinkingFallback<T>(call: (thinking: typeof NO_THINKING | undefined) => Promise<T>): Promise<T> {
+  try {
+    return await call(NO_THINKING);
+  } catch (err) {
+    const status = (err as { status?: number }).status;
+    if (status === 400 && /thinking/i.test((err as Error).message)) {
+      console.warn("[bloom:ai] thinking setting rejected; retrying without it");
+      return call(undefined);
+    }
+    throw err;
   }
 }
 
@@ -104,15 +124,13 @@ export async function runText(opts: {
   if (config.aiMode !== "live") return { data: opts.simulate(), origin: "ai_simulated" };
   try {
     const res = await withTimeout(
-      anthropic().messages.create({
+      withThinkingFallback((thinking) => anthropic().messages.create({
         model: config.aiModels[opts.workflow],
         max_tokens: opts.maxTokens ?? 1000,
-        // Short, direct replies: no extended thinking (it can use up the
-        // token budget and leave no text).
-        thinking: { type: "disabled" },
+        ...(thinking ? { thinking } : {}),
         system: opts.system + "\n" + UNTRUSTED_CONTENT_RULES,
         messages: opts.messages,
-      }),
+      })),
       config.aiTimeoutMs,
     );
     const text = res.content
