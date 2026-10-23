@@ -217,6 +217,11 @@ h1, h2, h3, .font-display {
   100% { transform: translateX(0); opacity: 1; }
 }
 .buddy-blink { animation: buddy-blink 4.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes bloom-petals {
+  0%, 100% { transform: rotate(-4deg); }
+  50% { transform: rotate(4deg); }
+}
+.bloom-petals { animation: bloom-petals 5s ease-in-out infinite; transform-box: view-box; transform-origin: 100px 92px; }
 .buddy-float { animation: buddy-float 3.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
 .buddy-breathe { animation: buddy-breathe 3.6s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
 .buddy-hop { animation: buddy-hop 700ms cubic-bezier(.3,.7,.4,1) both; transform-origin: 50% 100%; }
