@@ -2,14 +2,16 @@ import { FlowerPicture } from "@/components/flower";
 import { FLOWERS, type FlowerId } from "@/lib/domain/flowers";
 import { cn } from "@/lib/utils";
 
-export type GardenEntry = { flower: FlowerId; lesson: string; group: string; at: string };
+import type { GardenEntry } from "@/lib/modules/garden";
+export type { GardenEntry };
 
 /**
  * The student's garden: one flower from every group lesson they finished.
  * Flowers not found yet show as gentle silhouettes — something to look
  * forward to, never a score or a comparison with anyone else.
  */
-export function Garden({ entries }: { entries: GardenEntry[] }) {
+export function Garden({ entries, heading = "h2" }: { entries: GardenEntry[]; heading?: "h1" | "h2" }) {
+  const H = heading;
   const byFlower = new Map<FlowerId, GardenEntry[]>();
   for (const e of entries) byFlower.set(e.flower, [...(byFlower.get(e.flower) ?? []), e]);
   const found = byFlower.size;
@@ -17,7 +19,7 @@ export function Garden({ entries }: { entries: GardenEntry[] }) {
     <section id="garden" aria-labelledby="garden-title" className="scroll-mt-6 rounded-[2rem] border-2 border-white bg-gradient-to-b from-[#f2fbf3] to-[#fff7ee] p-5 shadow-soft sm:p-6">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h2 id="garden-title" className="font-display text-2xl font-bold">My garden</h2>
+          <H id="garden-title" className="font-display text-2xl font-bold">My garden</H>
           <p className="text-ink-muted">Every time your group finishes its work, your plant blooms into a flower for your garden.</p>
         </div>
         <p className="rounded-full bg-white px-3 py-1 text-sm font-semibold shadow-soft">{found} of {FLOWERS.length} flowers found</p>

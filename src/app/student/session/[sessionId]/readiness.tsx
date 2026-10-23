@@ -25,6 +25,8 @@ export function Readiness({ className }: { className?: string }) {
   const e = group.evaluation;
   if (!e || group.stageStatus === "complete") return null;
   const kind = group.stage?.kind;
+  // Presenting is run by the teacher: nothing for students to press.
+  if (kind === "presentation") return <p className={cn("text-right text-sm font-semibold text-ink-muted", className)} data-tour="ready">Your teacher runs the presentations</p>;
   const teacherOnly = group.stage?.config.completion === "teacher_only";
   const mine = group.myReadiness;
   const readyLabel = kind === "brainstorm" ? "I'm done thinking" : kind === "talk" ? "We're done talking" : "I'm ready";

@@ -120,24 +120,45 @@ test("school improvement: vote, whiteboard, slides, present", async ({ browser }
   await s[2].page.getByLabel("Edit text", { exact: true }).press("Escape");
   await s[0].page.getByRole("tab", { name: "Slides" }).click();
   await expect(s[0].page.getByRole("button", { name: "Text: A quiet room for everyone" })).toBeVisible();
+  // A second slide, so the class can move through the pitch.
+  await s[0].page.getByRole("button", { name: "Title and points", exact: true }).click();
   await shot(s[0].page, "s-slides");
   for (const a of s) await ready(a.page);
 
   await expect(s[0].page.getByRole("heading", { name: "Submission", exact: true })).toBeVisible();
   await s[0].page.getByRole("button", { name: "Submit for my group" }).click();
-  await expect(s[1].page.getByText(/Version 1 submitted/)).toBeVisible();
+  // Handing in the work moves the group straight on to presenting — no extra "I'm ready" taps.
+  for (const a of s) await expect(a.page.getByText("Your teacher runs the presentations")).toBeVisible();
+  await expect(s[1].page.getByRole("heading", { name: "What your group submitted" })).toBeVisible();
   await shot(s[1].page, "s-submitted");
 
-  // Present the slides; slide control can be handed to a student.
+  // The group can save its work as a PDF (print-ready page).
+  const pdfHref = await s[1].page.getByRole("link", { name: "Save as PDF" }).getAttribute("href");
+  const printPage = await s[1].context.newPage();
+  await printPage.addInitScript(() => { window.print = () => {}; });
+  await printPage.goto(pdfHref!);
+  await expect(printPage.getByRole("img", { name: "Slide 2" })).toBeVisible();
+  await printPage.close();
+
+  // Present the slides. The classroom screen has back/next (and arrow keys);
+  // the presenting group can move the slides from their own devices too.
   await t.getByLabel("Present a group's submitted work").selectOption({ index: 0 });
   await t.getByRole("button", { name: "Present", exact: true }).click();
   await expect(display.getByText("A quiet room for everyone", { exact: true })).toBeVisible();
+  await expect(display.getByText("1 / 2")).toBeVisible();
+  await display.getByRole("button", { name: "Next slide" }).click();
+  await expect(display.getByText("2 / 2")).toBeVisible();
+  await expect(s[0].page.getByRole("img", { name: "Slide 2 of 2" })).toBeVisible();
+  await display.keyboard.press("ArrowLeft");
+  await expect(display.getByText("1 / 2")).toBeVisible();
+  await s[1].page.getByRole("button", { name: "Next slide" }).click();
+  await expect(display.getByText("2 / 2")).toBeVisible();
   await shot(display, "d-presentation");
   await t.getByLabel("Slide control").selectOption({ label: "Priya D" });
   await expect(s[2].page.getByText("Your teacher gave you control of the slides.")).toBeVisible();
   await shot(t, "t-dashboard");
   await t.getByRole("button", { name: "Stop presenting" }).click();
-  await expect(display.getByText("Cluster ideas").or(display.getByText("Submission")).first()).toBeVisible();
+  await expect(display.getByText("Present", { exact: true })).toBeVisible();
   await shot(display, "d-overview");
 
   for (const a of [teacher, ...s]) await a.context.close();

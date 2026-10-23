@@ -97,7 +97,7 @@ export function Reflection({ sessionId, state }: { sessionId: string; state: Stu
 function GardenNote({ flower }: { flower: FlowerId }) {
   const info = flowerInfo(flower);
   return (
-    <Link href="/student#garden" className="flex items-center gap-3 self-center rounded-3xl border-2 border-white bg-gradient-to-r from-[#fff7e8] to-[#ffeef6] py-2 pl-2 pr-5 text-left shadow-soft hover:shadow-lift">
+    <Link href="/student/garden" className="flex items-center gap-3 self-center rounded-3xl border-2 border-white bg-gradient-to-r from-[#fff7e8] to-[#ffeef6] py-2 pl-2 pr-5 text-left shadow-soft hover:shadow-lift">
       <FlowerPicture id={flower} size={52} />
       <span className="flex flex-col leading-tight">
         <span className="text-xs font-bold uppercase tracking-wide text-purple">Your group&apos;s plant bloomed</span>

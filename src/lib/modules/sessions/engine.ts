@@ -91,6 +91,12 @@ export async function syncGroup(groupId: string, opts: { quiet?: boolean } = {})
     const evaluation = await evaluateGroup(db, session, group);
     if (!evaluation) return null;
     if (evaluation.canAutoAdvance) return { advance: true as const, group };
+    // Handing in the work right before presenting is the group's "we're done":
+    // no extra ready taps. (Elsewhere the group stays, so it can revise if the
+    // teacher returns the work.)
+    const here = currentStage(session, group);
+    const next = session.snapshot.stages[group.stage_index + 1];
+    if (here?.kind === "submission" && next?.kind === "presentation" && here.config.completion !== "teacher_only" && evaluation.requirementsMet && evaluation.activeCount > 0) return { advance: true as const, group };
     if (evaluation.requirementsMet && group.stage_status === "active") {
       await db.query("update session_groups set stage_status = 'ready_check' where id = $1", [groupId]);
       // Only worth a message when the group actually had something to do first.

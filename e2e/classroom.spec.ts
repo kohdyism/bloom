@@ -186,8 +186,10 @@ test("complete inclusive classroom lesson", async ({ browser }) => {
   await ready(a2.page);
   await expect(a1.page.getByRole("heading", { name: "Submission", exact: true })).toBeVisible();
   await a1.page.getByRole("button", { name: "Submit for my group" }).click();
-  await expect(a2.page.getByText(/Version 1 submitted by Ben O/)).toBeVisible();
-  await expect(a2.page.getByRole("list", { name: "Submission status" }).getByText("Submitted")).toBeVisible();
+  // Submitting moves the whole group on to presenting, where they see what they handed in.
+  await expect(a2.page.getByRole("heading", { name: "What your group submitted" })).toBeVisible();
+  await expect(a2.page.getByText("Version 1", { exact: true })).toBeVisible();
+  await expect(a2.page.getByText("Your teacher runs the presentations")).toBeVisible();
 
   // 24–25. Teacher presents; other students (another group) view it read-only.
   await t.getByLabel("Present a group's submitted work").selectOption({ index: 0 });

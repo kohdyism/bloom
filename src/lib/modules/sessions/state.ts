@@ -252,6 +252,23 @@ export type GroupContent = Awaited<ReturnType<typeof groupContent>>;
 // ---------------------------------------------------------------------------
 // Public classroom display — built from an explicit allow-list
 // ---------------------------------------------------------------------------
+/**
+ * The classroom screen can move the slides of whatever is being presented
+ * (a clicker or the arrow keys on the classroom computer). Nothing else.
+ */
+export async function displaySetSlide(token: string, slide: number) {
+  const id = await asServer(async (db) => {
+    const row = await db.maybeOne<{ id: string }>(
+      `update activity_sessions set presentation = jsonb_set(presentation, '{slide}', to_jsonb($2::int))
+       where display_token = $1 and presentation is not null and status <> 'ended' returning id`,
+      [token, Math.max(0, Math.min(200, Math.floor(slide)))],
+    );
+    return row?.id ?? null;
+  });
+  if (!id) throw new NotFoundError();
+  return id;
+}
+
 export async function displayState(token: string) {
   return asServer(async (db) => {
     const row = await db.maybeOne<{ id: string }>("select id from activity_sessions where display_token = $1", [token]);
@@ -323,4 +340,23 @@ export async function studentOwnSubmission(uid: string, sessionId: string) {
     "select id, version, content, note from submissions where group_id = $1 order by version desc limit 1",
     [groupId],
   ));
+}
+
+/**
+ * A submitted piece of work for export (print / save as PDF). Only the
+ * lesson's teacher or a member of the group that made it can open it.
+ */
+export async function submissionForExport(uid: string, submissionId: string) {
+  return asServer(async (db) => {
+    const row = await db.maybeOne<{ content: Record<string, unknown>; version: number; created_at: Date; group_name: string; group_id: string; title: string; teacher_id: string; session_id: string }>(
+      `select sub.content, sub.version, sub.created_at, g.name as group_name, g.id as group_id, s.snapshot ->> 'title' as title, s.teacher_id, s.id as session_id
+       from submissions sub join session_groups g on g.id = sub.group_id join activity_sessions s on s.id = g.session_id where sub.id = $1`,
+      [submissionId],
+    );
+    if (!row) throw new NotFoundError();
+    const member = await db.maybeOne("select 1 from group_members where group_id = $1 and student_id = $2", [row.group_id, uid]);
+    if (row.teacher_id !== uid && !member) throw new NotFoundError();
+    const members = await db.query<{ display_name: string }>("select p.display_name from group_members m join profiles p on p.id = m.student_id where m.group_id = $1 order by p.display_name", [row.group_id]);
+    return { content: row.content, version: row.version, submittedAt: iso(row.created_at), groupName: row.group_name, title: row.title, members: members.map((m) => m.display_name) };
+  });
 }

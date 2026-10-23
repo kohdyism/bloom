@@ -49,7 +49,7 @@ export function BloomReveal() {
           <RDialog.Title className="font-display text-4xl font-bold leading-tight">{info.name}</RDialog.Title>
           <RDialog.Description className="text-lg text-ink-muted">{info.blurb} It&apos;s now in the garden of everyone in group {group.name}.</RDialog.Description>
           <div className="mt-2 flex flex-wrap justify-center gap-2">
-            <Button asChild variant="secondary"><Link href="/student#garden"><Flower2 />See my garden</Link></Button>
+            <Button asChild variant="secondary"><Link href="/student/garden"><Flower2 />See my garden</Link></Button>
             <RDialog.Close asChild><Button>Lovely!</Button></RDialog.Close>
           </div>
         </RDialog.Content>

@@ -374,7 +374,12 @@ export async function requestToPresent(uid: string, sessionId: string) {
 export async function presenterNavigate(uid: string, sessionId: string, slide: number) {
   await asUser(uid, async (db) => {
     const s = await loadSession(db, sessionId);
-    if (!s?.presentation || s.presentation.presenterId !== uid) throw forbidden("Your teacher controls the slides right now.");
+    if (!s?.presentation) throw forbidden("Nothing is being presented.");
+    // The presenting group runs its own slides. If the teacher handed control
+    // to one person, only they can.
+    const p = s.presentation;
+    const member = await db.maybeOne("select 1 from group_members where group_id = $1 and student_id = $2", [p.groupId, uid]);
+    if (p.presenterId ? p.presenterId !== uid : !member) throw forbidden("Your teacher controls the slides right now.");
     await asServer((sdb) => sdb.query("update activity_sessions set presentation = jsonb_set(presentation, '{slide}', to_jsonb($2::int)) where id = $1", [sessionId, Math.max(0, Math.min(200, Math.floor(slide)))]));
   });
   await publishPresentation(sessionId);

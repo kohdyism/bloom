@@ -45,7 +45,7 @@ export default async function LookBackPage(props: { params: Promise<{ sessionId:
 
       <section aria-labelledby="work-h" className="flex flex-col gap-3">
         <h2 id="work-h" className="flex items-center gap-2 font-display text-xl font-semibold"><Sparkles className="size-5 text-purple" aria-hidden="true" />What your group made</h2>
-        <Card className="p-4">{own ? <PastWork content={own.content as SubmissionContent} note={own.note} /> : <p className="text-ink-muted">Your group didn&apos;t hand anything in for this lesson.</p>}</Card>
+        <Card className="p-4">{own ? <PastWork id={own.id} content={own.content as SubmissionContent} note={own.note} /> : <p className="text-ink-muted">Your group didn&apos;t hand anything in for this lesson.</p>}</Card>
       </section>
 
       <section aria-labelledby="ideas-h" className="flex flex-col gap-3">

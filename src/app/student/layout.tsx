@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { BookOpen, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { requireUser } from "@/lib/auth/current-user";
 import { Mascot } from "@/components/mascot";
 import { Avatar } from "@/components/ui/primitives";
 import { AccessibilitySettingsButton } from "@/components/accessibility-settings";
 import { signOutAction } from "@/app/(auth)/sign-in/actions";
 import { StudentNav } from "./student-nav";
+import { StudentTabs } from "./student-tabs";
 
 export default async function StudentLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser("student");
@@ -16,11 +17,9 @@ export default async function StudentLayout({ children }: { children: React.Reac
         <div className="mx-auto w-full flex h-14 max-w-7xl items-center gap-3 px-4">
           <Link href="/student" className="flex items-center gap-2 rounded-lg">
             <Mascot size={30} animate={false} />
-            <span className="font-display text-lg font-bold">Canopy</span>
+            <span className="font-display text-lg font-bold max-sm:sr-only">Canopy</span>
           </Link>
-          <nav aria-label="Student" className="ml-2 flex items-center">
-            <Link href="/student/past" className="inline-flex h-10 items-center gap-1.5 rounded-xl px-3 text-sm font-semibold hover:bg-surface-2"><BookOpen className="size-4" aria-hidden="true" />Past lessons</Link>
-          </nav>
+          <StudentTabs />
           <div className="ml-auto flex items-center gap-1">
             <span className="hidden items-center gap-2 pr-2 text-sm font-medium sm:flex"><Avatar name={user.displayName} color={user.avatarColor} size="sm" />{user.displayName}</span>
             <AccessibilitySettingsButton showStudentOptions compact />

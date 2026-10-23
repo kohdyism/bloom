@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Bot, BotOff, Pause, Play, RotateCcw, SkipForward, StepBack, Sparkles, Send, ArrowRightLeft, FileCheck2 } from "lucide-react";
+import { Bot, BotOff, Pause, Play, RotateCcw, SkipForward, StepBack, Sparkles, Send, ArrowRightLeft, FileCheck2, Download } from "lucide-react";
 import type { GroupContent, TeacherState } from "@/lib/modules/sessions/state";
 import { useLiveState } from "@/lib/realtime/use-live-state";
 import { api } from "@/lib/realtime/client";
@@ -204,6 +204,7 @@ function SubmissionReview({ sessionId, submissionId, onClose, onDone }: { sessio
             <label htmlFor="fb" className="text-sm font-semibold">Feedback for the group</label>
             <Textarea id="fb" rows={3} value={text} onChange={(e) => setFeedback(e.target.value)} placeholder="What went well, and one thing to improve." />
             <div className="flex flex-wrap justify-end gap-2">
+              <Button asChild variant="ghost" className="mr-auto"><a href={`/print/${submissionId}`} target="_blank" rel="noreferrer"><Download />Save as PDF</a></Button>
               <Button variant="secondary" onClick={() => send("returned")}>Return for revision</Button>
               <Button onClick={() => send("reviewed")}>Mark reviewed</Button>
             </div>

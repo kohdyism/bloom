@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, BookOpen, Settings2 } from "lucide-react";
+import { ArrowRight, Settings2 } from "lucide-react";
 import { requireUser } from "@/lib/auth/current-user";
-import { asServer, asUser } from "@/lib/db";
-import { isFlowerId } from "@/lib/domain/flowers";
-import { Garden, type GardenEntry } from "./garden";
+import { asUser } from "@/lib/db";
+import { FLOWERS } from "@/lib/domain/flowers";
+import { myGarden } from "@/lib/modules/garden";
+import { FlowerPicture } from "@/components/flower";
 import { MascotSays } from "@/components/mascot";
 import { Badge, Card } from "@/components/ui/primitives";
 import { Button } from "@/components/ui/button";
@@ -25,15 +26,7 @@ export default async function StudentHome() {
       [user.id],
     ),
   );
-  // Read on the server for this student only (their own groups).
-  const garden: GardenEntry[] = (await asServer((db) =>
-    db.query<{ flower: string; lesson: string; group_name: string; at: Date }>(
-      `select g.flower, s.snapshot ->> 'title' as lesson, g.name as group_name, coalesce(s.ended_at, g.updated_at) as at
-       from group_members gm join session_groups g on g.id = gm.group_id join activity_sessions s on s.id = g.session_id
-       where gm.student_id = $1 and g.flower is not null order by at`,
-      [user.id],
-    ),
-  )).filter((r) => isFlowerId(r.flower)).map((r) => ({ flower: r.flower as GardenEntry["flower"], lesson: r.lesson, group: r.group_name, at: new Date(r.at).toISOString() }));
+  const garden = await myGarden(user.id);
   return (
     <div className="mx-auto w-full flex max-w-3xl flex-col gap-8 px-4 py-8">
       <MascotSays mood="happy" size={72}>
@@ -64,9 +57,19 @@ export default async function StudentHome() {
           </ul>
         </section>
       ) : null}
-      <Garden entries={garden} />
+      <Link href="/student/garden" className="group block rounded-[2rem]">
+        <Card className="flex items-center gap-4 bg-gradient-to-r from-[#f2fbf3] to-[#fff7ee] p-4 transition-shadow group-hover:shadow-lift">
+          <span className="flex -space-x-3" aria-hidden="true">
+            {(garden.length ? [...new Set(garden.map((g) => g.flower))].slice(-3) : ["daisy" as const]).map((f) => <span key={f} className="flex size-12 items-center justify-center rounded-full border-2 border-white bg-white"><FlowerPicture id={f} size={34} faded={!garden.length} /></span>)}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="font-display text-lg font-bold">My garden</p>
+            <p className="text-sm text-ink-muted">{new Set(garden.map((g) => g.flower)).size} of {FLOWERS.length} flowers found</p>
+          </div>
+          <ArrowRight className="size-4 text-ink-muted" aria-hidden="true" />
+        </Card>
+      </Link>
       <div className="flex flex-wrap gap-2">
-      <Button asChild variant="secondary" className="self-start"><Link href="/student/past"><BookOpen />Past lessons</Link></Button>
       <Button asChild variant="ghost" className="self-start"><Link href="/student/welcome?edit=1"><Settings2 />My working preferences</Link></Button>
       </div>
     </div>

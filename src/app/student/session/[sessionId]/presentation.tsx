@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Presentation } from "lucide-react";
+import { Download, Presentation } from "lucide-react";
 import { api } from "@/lib/realtime/client";
 import { Card } from "@/components/ui/primitives";
 import { Button } from "@/components/ui/button";
@@ -32,8 +32,9 @@ export function PresentationViewer({ compact }: { compact?: boolean }) {
   }, [key, sessionId]);
 
   if (!p || !pres) return null;
-  const iAmPresenter = pres.presenterId === state.me.id;
   const ours = state.group?.id === pres.groupId;
+  // The presenting group runs its own slides (unless the teacher picked one person).
+  const iAmPresenter = pres.presenterId ? pres.presenterId === state.me.id : ours;
   return (
     <Card className="mb-5 border-coral/50 p-4" aria-labelledby="pres-title">
       <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -52,7 +53,7 @@ export function PresentationViewer({ compact }: { compact?: boolean }) {
           controls={iAmPresenter}
         />
       ) : null}
-      {iAmPresenter ? <p className="mt-2 text-sm font-semibold text-teal">Your teacher gave you control of the slides.</p> : !ours ? <p className="mt-2 text-xs text-ink-muted">You&apos;re viewing a read-only copy.</p> : null}
+      {iAmPresenter ? <p className="mt-2 text-sm font-semibold text-teal">{pres.presenterId ? "Your teacher gave you control of the slides." : "You can move the slides — they change on the big screen too."}</p> : !ours ? <p className="mt-2 text-xs text-ink-muted">You&apos;re viewing a read-only copy.</p> : null}
     </Card>
   );
 }
@@ -82,6 +83,7 @@ export function OwnSubmission() {
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <h2 id="own-sub-title" className="font-display text-lg font-semibold">What your group submitted</h2>
         <span className="text-sm text-ink-muted">Version {own.version}</span>
+        <a href={`/print/${own.id}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-sm font-semibold text-teal hover:underline"><Download className="size-4" aria-hidden="true" />Save as PDF</a>
         {kinds.length > 1 ? (
           <div role="tablist" aria-label="Which part" className="ml-auto flex gap-1 rounded-xl bg-surface-2 p-1">
             {kinds.map((k) => (

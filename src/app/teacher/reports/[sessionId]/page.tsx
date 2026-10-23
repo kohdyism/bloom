@@ -80,7 +80,8 @@ export default async function ReportPage({ params }: { params: Promise<{ session
                     <dt className="text-ink-muted">Written messages</dt><dd className="font-semibold">{g.messages}</dd>
                   </dl>
                   {g.roles.length ? <p><span className="text-ink-muted">Roles:</span> {g.roles.map((x) => `${x.name} (${x.role})`).join(", ")}</p> : null}
-                  <div className="flex flex-wrap gap-1.5">{g.submissions.length ? g.submissions.map((s) => <Badge key={s.id} tone={s.status === "reviewed" ? "mint" : s.status === "returned" ? "amber" : "blue"}>v{s.version} · {s.status}</Badge>) : <Badge>No submission</Badge>}</div>
+                  <div className="flex flex-wrap items-center gap-1.5">{g.submissions.length ? g.submissions.map((s) => <Badge key={s.id} tone={s.status === "reviewed" ? "mint" : s.status === "returned" ? "amber" : "blue"}>v{s.version} · {s.status}</Badge>) : <Badge>No submission</Badge>}
+                    {g.submissions.length ? <Link href={`/print/${g.submissions.reduce((a, b) => (b.version > a.version ? b : a)).id}`} target="_blank" className="ml-auto inline-flex items-center gap-1 text-sm font-semibold text-teal hover:underline"><Download className="size-4" aria-hidden="true" />Save work as PDF</Link> : null}</div>
                   {sum ? <p className="rounded-xl bg-purple-soft/40 p-3"><AiOriginBadge origin={r.summaryOrigin} className="mr-1.5" />{sum.summary}</p> : null}
                 </CardBody>
               </Card>
