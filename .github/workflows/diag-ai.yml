@@ -13,7 +13,6 @@ jobs:
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: |
-          for p in /sign-in /student/past /teacher/reports; do echo "::notice::GET $p -> $(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' https://bloom-kohdyism.fly.dev$p)"; done
-          flyctl logs -a bloom-kohdyism --no-tail 2>&1 | grep -E "applying|lesson_notes|seed|Ready in|bloom:ai|Empty AI|Error" | sed -E 's/sk-ant[A-Za-z0-9_-]*/[key]/g' | tail -15 | while read -r l; do echo "::notice::${l:0:400}"; done
-          flyctl ssh console -a bloom-kohdyism -C "sh -c 'ls -d .next/server/app/student/past* 2>&1; ls supabase/migrations | tail -1'" 2>&1 | tail -3 | while read -r l; do echo "::notice::SSH ${l:0:200}"; done
-          echo "::notice::done"
+          out=$(flyctl ssh console -a bloom-kohdyism -C "sh -c 'ls -d .next/server/app/student/past; ls supabase/migrations | tail -1'" 2>&1 | tail -2 | tr '\n' ' ')
+          echo "::notice::SSH ${out:0:300}"
+          flyctl logs -a bloom-kohdyism --no-tail 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | grep -E "lesson_notes|Ready in|bloom:ai|Empty AI" | sed -E 's/sk-ant[A-Za-z0-9_-]*/[key]/g' | tail -8 | while read -r l; do echo "::notice::${l:0:400}"; done
