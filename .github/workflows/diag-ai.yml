@@ -1,4 +1,4 @@
-# Temporary: recent AI fallback reasons from the live app log (only [bloom:ai] lines).
+# Temporary: post-deploy health check and recent AI fallback reasons (only safe log lines).
 name: Diagnose live AI
 on:
   push:
@@ -9,9 +9,10 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: superfly/flyctl-actions/setup-flyctl@master
-      - name: AI warnings
+      - name: Health and AI warnings
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: |
-          flyctl logs -a bloom-kohdyism --no-tail 2>&1 | grep -E "bloom:ai|AI request|anthropic|rate|overloaded" | sed -E 's/sk-ant[A-Za-z0-9_-]*/[key]/g' | tail -10 | while read -r l; do echo "::notice::${l:0:400}"; done
+          for p in /sign-in /student/past /teacher/reports; do echo "::notice::GET $p -> $(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' https://bloom-kohdyism.fly.dev$p)"; done
+          flyctl logs -a bloom-kohdyism --no-tail 2>&1 | grep -E "applying|lesson_notes|seed|Ready in|bloom:ai|Empty AI|Error" | sed -E 's/sk-ant[A-Za-z0-9_-]*/[key]/g' | tail -15 | while read -r l; do echo "::notice::${l:0:400}"; done
           echo "::notice::done"
