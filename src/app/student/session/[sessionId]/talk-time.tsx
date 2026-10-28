@@ -12,6 +12,7 @@ import { LifeBuoy } from "lucide-react";
 import { HelpPanel } from "./help-panel";
 import { MoreMenu } from "./session-header";
 import { Readiness } from "./readiness";
+import { MyEarlierIdeas } from "./idea-bank";
 
 /**
  * Talk time: the screen steps back. A calm, nearly blank page with one big
@@ -23,7 +24,10 @@ export function TalkTime() {
   const { group, state, sessionId, act } = useWorkspace();
   const [peek, setPeek] = useState(false);
   const small = !useMediaQuery("(min-width: 640px)");
+  // A face-to-face Discussion shows only your OWN earlier ideas; talk time shows the group's.
+  const ownOnly = group.stage?.kind === "discussion";
   const ideas = group.ideas.shared;
+  const hasIdeas = ownOnly ? group.ideas.mine.some((i) => i.status === "submitted") : ideas.length > 0;
   return (
     <section aria-labelledby="talk-title" className="relative flex min-h-0 flex-1 flex-col items-center overflow-y-auto bg-gradient-to-b from-[#fff3e6] via-[#ffeef6] to-[#efe9ff] px-5 py-6 text-center sm:py-12">
       {/* No top bar or dock here: just a small timer and help in the corner. */}
@@ -54,12 +58,13 @@ export function TalkTime() {
         <li className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-3.5 py-1.5"><Ear className="size-4 text-purple" aria-hidden="true" />Listen to everyone</li>
         <li className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-3.5 py-1.5"><Hand className="size-4 text-teal" aria-hidden="true" />Build on an idea</li>
       </ul>
-      {ideas.length ? (
+      {hasIdeas ? (
         <div className="mt-8 w-full max-w-xl">
           <button type="button" aria-expanded={peek} onClick={() => setPeek((p) => !p)} className="mx-auto inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold text-ink-muted hover:bg-white/70">
-            {peek ? "Hide" : "Peek at"} your group&apos;s ideas<ChevronDown className={cn("size-4 transition", peek && "rotate-180")} aria-hidden="true" />
+            {peek ? "Hide" : "Peek at"} {ownOnly ? "your ideas from earlier" : <>your group&apos;s ideas</>}<ChevronDown className={cn("size-4 transition", peek && "rotate-180")} aria-hidden="true" />
           </button>
-          {peek ? (
+          {peek && ownOnly ? <div className="mt-3 text-left [&>div]:p-0 [&>div>p:first-child]:hidden"><MyEarlierIdeas /></div> : null}
+          {peek && !ownOnly ? (
             <ul className="mt-3 flex flex-col gap-2 text-left">
               {ideas.map((i) => <li key={i.id} className="rounded-2xl bg-white/90 px-4 py-2.5 shadow-soft"><span className="font-medium">{i.body}</span> <span className="text-xs text-ink-muted">— {i.author}</span></li>)}
             </ul>

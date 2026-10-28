@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useRun } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 import { useWorkspace } from "./context";
+import { chatOpenIn } from "@/lib/domain/lesson";
 
 type Evaluation = NonNullable<ReturnType<typeof useWorkspace>["group"]["evaluation"]>;
 
@@ -29,8 +30,9 @@ export function Readiness({ className }: { className?: string }) {
   if (kind === "presentation") return <p className={cn("text-right text-sm font-semibold text-ink-muted", className)} data-tour="ready">Your teacher runs the presentations</p>;
   const teacherOnly = group.stage?.config.completion === "teacher_only";
   const mine = group.myReadiness;
-  const readyLabel = kind === "brainstorm" ? "I'm done thinking" : kind === "talk" ? "We're done talking" : "I'm ready";
-  const shortLabel = kind === "brainstorm" ? "Done thinking" : kind === "talk" ? "Done talking" : "I'm ready";
+  const talking = kind === "talk" || (kind === "discussion" && !chatOpenIn(group.stage));
+  const readyLabel = kind === "brainstorm" ? "I'm done thinking" : talking ? "We're done talking" : "I'm ready";
+  const shortLabel = kind === "brainstorm" ? "Done thinking" : talking ? "Done talking" : "I'm ready";
   // Each student adds something first (an idea, a vote, or a change to the group's work).
   // The teacher sets the minimum per stage; the button stays locked until it's met.
   const c = group.contribution;

@@ -42,7 +42,7 @@ export type ArtifactKind = (typeof ARTIFACT_KINDS)[number];
 
 export const stageConfigSchema = z.object({
   completion: z.enum(COMPLETION_RULES).default("all_ready"),
-  /** Brainstorm: minimum submitted ideas per present member before the group can move on. */
+  /** Brainstorm: ideas each student adds before "Done thinking" unlocks (at least 1 is always required). */
   minIdeasPerStudent: z.number().int().min(0).max(10).default(1),
   /**
    * The least each student adds before they can press "I'm ready" in voting
@@ -234,7 +234,8 @@ export function contributionNeeded(stage: { kind: StageKind; config: { minIdeasP
   if (!stage) return null;
   const kind = contributionKindFor(stage);
   if (!kind) return null;
-  let n = kind === "idea" ? stage.config.minIdeasPerStudent ?? 1 : stage.config.minContribution ?? defaultMinContribution(stage.kind);
+  // Thinking time always needs at least one idea before "Done thinking"; the teacher can ask for more.
+  let n = kind === "idea" ? Math.max(1, stage.config.minIdeasPerStudent ?? 1) : stage.config.minContribution ?? defaultMinContribution(stage.kind);
   if (kind === "vote") n = Math.min(n, stage.config.votesPerStudent ?? 3);
   if (kind === "work") n = Math.min(n, 1);
   if (n <= 0) return null;

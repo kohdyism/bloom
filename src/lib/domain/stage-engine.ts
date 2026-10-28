@@ -52,7 +52,7 @@ export function evaluateStage(stage: Stage, config: LessonConfig, s: StageSignal
   let requirementLabel = "Ready when you are";
   switch (stage.kind) {
     case "brainstorm": {
-      const min = stage.config.minIdeasPerStudent;
+      const min = Math.max(1, stage.config.minIdeasPerStudent ?? 1);
       const total = Object.values(s.submittedIdeasBy).reduce((a, b) => a + b, 0);
       // Students who contribute verbally can mark themselves ready without typing.
       const satisfied = active.filter((m) => (s.submittedIdeasBy[m] ?? 0) >= min || s.ready[m] === "ready").length;

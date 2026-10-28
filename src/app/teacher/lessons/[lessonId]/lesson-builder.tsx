@@ -333,8 +333,8 @@ function StageSpecific({ stage, onChange }: { stage: Stage; onChange: (p: Partia
   switch (stage.kind) {
     case "brainstorm":
       return (
-        <Field id="stage-min-ideas" label="Ideas each student must add before “I’m done thinking” unlocks" hint="The button stays locked until a student has added this many ideas. Set 0 to make ideas optional. You can always move a group on.">
-          <Input type="number" min={0} max={10} value={stage.config.minIdeasPerStudent} onChange={(e) => onChange({ minIdeasPerStudent: Math.max(0, Math.min(10, Number(e.target.value) || 0)) })} />
+        <Field id="stage-min-ideas" label="Ideas each student must add before “I’m done thinking” unlocks" hint="The button stays locked until a student has added this many ideas (at least 1). You can always move a group on.">
+          <Input type="number" min={1} max={10} value={Math.max(1, stage.config.minIdeasPerStudent)} onChange={(e) => onChange({ minIdeasPerStudent: Math.max(1, Math.min(10, Number(e.target.value) || 1)) })} />
         </Field>
       );
     case "voting":

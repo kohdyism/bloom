@@ -22,10 +22,10 @@ describe("contribution before ready", () => {
     expect(contributionNeeded(makeStage("voting"))?.kind).toBe("vote");
     expect(contributionNeeded(makeStage("creation"))?.kind).toBe("work");
   });
-  it("doesn't block stages without input, or thinking when the teacher made ideas optional", () => {
+  it("doesn't block stages without input, but thinking always needs at least one idea", () => {
     expect(contributionNeeded(makeStage("discussion"))).toBeNull();
     expect(contributionNeeded(makeStage("talk"))).toBeNull();
-    expect(contributionNeeded(makeStage("brainstorm", { config: { minIdeasPerStudent: 0 } }))).toBeNull();
+    expect(contributionNeeded(makeStage("brainstorm", { config: { minIdeasPerStudent: 0 } }))).toMatchObject({ kind: "idea", count: 1 });
   });
 });
 

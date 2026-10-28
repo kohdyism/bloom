@@ -128,6 +128,8 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
   const s = state.session;
   const g = state.group;
   const kind = g?.stageStatus === "complete" ? "complete" : g?.stage?.kind;
+  // Screens down: talk time, and a discussion with the group chat off (face to face).
+  const screensDown = kind === "talk" || (kind === "discussion" && !chatOpenIn(g?.stage));
   const lessonRunning = !!g && s.status === "active";
   // First time in a running lesson on this device: show the tour once.
   useEffect(() => {
@@ -178,7 +180,7 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
     // phone); otherwise the chat is a button in the dock. Big shared
     // canvases get the room; Talk time clears the screen.
     const canvas = kind === "creation";
-    const talk = kind === "talk";
+    const talk = screensDown;
     // The teacher chooses which stages have a group chat.
     const chatHere = kind !== "complete" && chatOpenIn(g.stage);
     const discussion = kind === "discussion" && chatHere;
@@ -254,7 +256,7 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
     <WorkspaceContext.Provider value={ctxValue}>
       <div data-app-shell className="flex min-h-0 flex-1 flex-col">
         {/* Talk time clears the screen: no top bar or dock, just the question. */}
-        {g && kind === "talk" && s.status !== "ended" && s.status !== "lobby" ? null : <SessionHeader state={state} connection={connection} sessionId={sessionId} act={act} onTour={() => setTourOpen(true)} />}
+        {g && screensDown && s.status !== "ended" && s.status !== "lobby" ? null : <SessionHeader state={state} connection={connection} sessionId={sessionId} act={act} onTour={() => setTourOpen(true)} />}
         <p className="sr-only" aria-live="polite">{announce}</p>
         {body}
       </div>
