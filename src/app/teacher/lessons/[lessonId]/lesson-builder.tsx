@@ -2,15 +2,16 @@
 
 import { useActionState, useEffect, useMemo, useState, useTransition } from "react";
 import {
-  ArrowDown, ArrowUp, Copy, Trash2, Plus, Save, Rocket, Sparkles, Check, FileText, Bookmark, Paperclip,
+  ArrowDown, ArrowUp, Copy, Trash2, Plus, Save, Rocket, Sparkles, Check, FileText, Bookmark, Paperclip, Monitor, Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge, Card, CardBody, CardHeader, CardTitle, Field, Input, Label, Notice, Select, Textarea } from "@/components/ui/primitives";
 import { Dialog, DialogClose, DialogContent, DialogTrigger, Switch, Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/overlay";
 import { StageIcon } from "@/components/stage-icon";
 import {
-  COMPLETION_RULES, DEFAULT_ROLES, STAGE_KINDS, STAGE_META, makeStage, type LessonDraft, type Stage, type StageKind, type RoleDef,
+  COMPLETION_RULES, DEFAULT_ROLES, STAGE_META, contributionKindFor, defaultMinContribution, type LessonDraft, type Stage, type RoleDef,
 } from "@/lib/domain/lesson";
+import { STAGE_PRESETS, stageFromPreset } from "@/lib/domain/stage-presets";
 import { cn, minutesLabel } from "@/lib/utils";
 import {
   addMaterialAction, approveDraftAction, deleteLessonAction, duplicateLessonAction, removeMaterialAction, saveLessonAction, type MaterialState,
@@ -177,7 +178,7 @@ export function LessonBuilder(props: Props) {
                   </li>
                 ))}
               </ol>
-              <AddStage onAdd={(k) => { update((d) => { d.stages.splice(selected + 1, 0, makeStage(k)); return d; }); setSelected(selected + 1); }} />
+              <AddStage onAdd={(st) => { update((d) => { d.stages.splice(selected + 1, 0, st); return d; }); setSelected(selected + 1); }} />
             </div>
 
             {stage ? (
@@ -248,25 +249,41 @@ function IconBtn({ label, children, ...rest }: { label: string; children: React.
   );
 }
 
-function AddStage({ onAdd }: { onAdd: (k: StageKind) => void }) {
+function AddStage({ onAdd }: { onAdd: (s: Stage) => void }) {
+  const list = (mode: "online" | "offline") => (
+    <ul className="grid gap-2 sm:grid-cols-2">
+      {STAGE_PRESETS.filter((p) => p.mode === mode).map((p) => (
+        <li key={p.id}>
+          <DialogClose asChild>
+            <button type="button" onClick={() => onAdd(stageFromPreset(p))} className="flex h-full w-full items-start gap-3 rounded-xl border border-line p-3 text-left hover:border-teal hover:bg-teal-soft/40">
+              <StageIcon kind={p.kind} />
+              <span><span className="block font-semibold">{p.label}</span><span className="block text-sm text-ink-muted">{p.blurb}</span></span>
+            </button>
+          </DialogClose>
+        </li>
+      ))}
+    </ul>
+  );
   return (
     <Dialog>
       <DialogTrigger asChild>
         <Button variant="soft"><Plus />Add stage</Button>
       </DialogTrigger>
-      <DialogContent title="Add a stage" description="Stages are optional and can be reordered." wide>
-        <ul className="grid gap-2 sm:grid-cols-2">
-          {STAGE_KINDS.map((k) => (
-            <li key={k}>
-              <DialogClose asChild>
-                <button type="button" onClick={() => onAdd(k)} className="flex h-full w-full items-start gap-3 rounded-xl border border-line p-3 text-left hover:border-teal hover:bg-teal-soft/40">
-                  <StageIcon kind={k} />
-                  <span><span className="block font-semibold">{STAGE_META[k].label}</span><span className="block text-sm text-ink-muted">{STAGE_META[k].blurb}</span></span>
-                </button>
-              </DialogClose>
-            </li>
-          ))}
-        </ul>
+      <DialogContent title="Add a stage" description="Stages are optional and can be reordered. You can edit any of them after adding." wide>
+        <Tabs defaultValue="online">
+          <TabsList aria-label="Kind of task">
+            <TabsTrigger value="online"><Monitor className="size-4" aria-hidden="true" />Online tasks</TabsTrigger>
+            <TabsTrigger value="offline"><Users className="size-4" aria-hidden="true" />Offline tasks</TabsTrigger>
+          </TabsList>
+          <TabsContent value="online">
+            <p className="mb-3 text-sm text-ink-muted">Students work on the screen: writing ideas, voting, building the group&apos;s work.</p>
+            {list("online")}
+          </TabsContent>
+          <TabsContent value="offline">
+            <p className="mb-3 text-sm text-ink-muted">Away from the screen, in the room: talking, moving and making. Canopy shows the task and timer, then steps back.</p>
+            {list("offline")}
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
@@ -290,19 +307,44 @@ function ListEditor({ id, label, hint, items, onChange, placeholder, max = 8 }: 
   );
 }
 
+/**
+ * How much each student adds before their "I'm ready" button unlocks. Only
+ * for stages where the contribution happens on screen and can be counted.
+ */
+function MinContribution({ stage, onChange }: { stage: Stage; onChange: (p: Partial<Stage["config"]>) => void }) {
+  const kind = contributionKindFor(stage);
+  if (stage.kind === "discussion" && !kind) return <p className="text-sm text-ink-muted">Face to face, so there&apos;s nothing to count on screen: students press “I&apos;m ready” when they&apos;re done talking. Turn the group chat on to set a minimum number of messages.</p>;
+  if (stage.kind === "physical" && !kind) return <p className="text-sm text-ink-muted">Turn on photo evidence to require each student to upload photos before “I&apos;m ready” unlocks.</p>;
+  if (!kind) return null;
+  const value = stage.config.minContribution ?? defaultMinContribution(stage.kind);
+  if (kind === "work") {
+    return <Switch id="stage-min-work" label="Each student must add to the shared work before “I’m ready” unlocks" checked={value > 0} onCheckedChange={(v) => onChange({ minContribution: v ? 1 : 0 })} />;
+  }
+  const max = kind === "vote" ? stage.config.votesPerStudent : 20;
+  const noun = kind === "vote" ? "Votes" : kind === "message" ? "Chat messages" : "Photos";
+  return (
+    <Field id="stage-min-contribution" label={`${noun} each student must add before “I’m ready” unlocks`} hint={`The button stays locked until a student reaches this. Set 0 to make it optional.${kind === "vote" ? " It can't be more than the votes per student." : ""}`}>
+      <Input type="number" min={0} max={max} value={Math.min(value, max)} onChange={(e) => onChange({ minContribution: Math.max(0, Math.min(max, Number(e.target.value) || 0)) })} />
+    </Field>
+  );
+}
+
 function StageSpecific({ stage, onChange }: { stage: Stage; onChange: (p: Partial<Stage["config"]>) => void }) {
   switch (stage.kind) {
     case "brainstorm":
       return (
-        <Field id="stage-min-ideas" label="Ideas each student submits before the group can move on" hint="Each student needs to add at least one idea before they can press “I’m done thinking” (set 0 to make ideas optional). You can always move a group on.">
+        <Field id="stage-min-ideas" label="Ideas each student must add before “I’m done thinking” unlocks" hint="The button stays locked until a student has added this many ideas. Set 0 to make ideas optional. You can always move a group on.">
           <Input type="number" min={0} max={10} value={stage.config.minIdeasPerStudent} onChange={(e) => onChange({ minIdeasPerStudent: Math.max(0, Math.min(10, Number(e.target.value) || 0)) })} />
         </Field>
       );
     case "voting":
       return (
-        <Field id="stage-votes" label="Votes per student">
-          <Input type="number" min={1} max={10} value={stage.config.votesPerStudent} onChange={(e) => onChange({ votesPerStudent: Math.max(1, Math.min(10, Number(e.target.value) || 1)) })} />
-        </Field>
+        <>
+          <Field id="stage-votes" label="Votes per student">
+            <Input type="number" min={1} max={10} value={stage.config.votesPerStudent} onChange={(e) => onChange({ votesPerStudent: Math.max(1, Math.min(10, Number(e.target.value) || 1)) })} />
+          </Field>
+          <MinContribution stage={stage} onChange={onChange} />
+        </>
       );
     case "creation":
       return (
@@ -316,13 +358,17 @@ function StageSpecific({ stage, onChange }: { stage: Stage; onChange: (p: Partia
               </label>
             ))}
           </div>
+          <div className="mt-4"><MinContribution stage={stage} onChange={onChange} /></div>
         </fieldset>
       );
+    case "discussion":
+      return <MinContribution stage={stage} onChange={onChange} />;
     case "physical":
       return (
         <>
           <ListEditor id="checkins" label="Progress check-ins" hint="The group ticks these off as they go. The AI never listens to the room." items={stage.config.checkins} onChange={(v) => onChange({ checkins: v })} placeholder="Add check-in" max={10} />
           <Switch id="evidence" label="Photo evidence uploads" checked={stage.config.evidenceUpload} onCheckedChange={(v) => onChange({ evidenceUpload: v })} />
+          <MinContribution stage={stage} onChange={onChange} />
         </>
       );
     case "submission":

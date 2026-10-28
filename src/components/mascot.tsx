@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
  * Canopy's two helpers. Both are decorative (aria-hidden); callers always
  * provide what they "say" as real, readable text.
  *  - Bloom (a smiling flower) is the GROUP facilitator: what Bloom says, the whole group sees.
- *  - Pip (a calm pebble) is the PRIVATE helper: only the student who asks sees Pip's answers.
+ *  - Pip (a calm pebble) is the one-to-one helper: the group never sees Pip's answers (the teacher can).
  * Pure SVG with CSS-only motion so they render anywhere; motion stops under reduced-motion.
  */
 export type Mood = "idle" | "thinking" | "happy" | "resting" | "celebrate" | "talking" | "listening";

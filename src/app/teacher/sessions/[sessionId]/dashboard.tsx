@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { VIEW_LABELS } from "@/components/live/submission-view";
 import { GroupDrawer } from "./group-drawer";
 import { FlagsPanel } from "./flags-panel";
+import { PipConversation } from "./pip-conversation";
 import { PresentControls } from "./present-controls";
 import type { TeacherAction } from "./live-session";
 
@@ -332,7 +333,7 @@ function StudentsPanel({ state, act, groupName }: { state: TeacherState; act: Pr
     <Card>
       <CardHeader>
         <CardTitle>Students</CardTitle>
-        <p className="text-sm text-ink-muted">Private assistant use is shown as counts by type only — you can&apos;t read students&apos; private conversations.</p>
+        <p className="text-sm text-ink-muted">Pip use by type. Open “Read Pip chat” to see exactly what a student wrote to Pip; their group never sees it, and each view is logged.</p>
       </CardHeader>
       <CardBody className="overflow-x-auto">
         <table className="w-full min-w-[40rem] text-sm">
@@ -353,7 +354,7 @@ function StudentsPanel({ state, act, groupName }: { state: TeacherState; act: Pr
                 <td className="py-2 pr-3">{r.present ? <Badge tone="mint">Connected</Badge> : r.joined ? <Badge>Away</Badge> : <Badge>Not joined</Badge>}</td>
                 <td className="py-2 pr-3">
                   {usage(r.id).length ? (
-                    <span className="flex flex-wrap gap-1"><Bot className="size-4 text-purple" aria-hidden="true" />{usage(r.id).map((u) => <Badge key={u.action} tone="purple">{ASSIST_LABELS[u.action] ?? u.action} ×{u.count}</Badge>)}</span>
+                    <span className="flex flex-wrap items-center gap-1"><Bot className="size-4 text-purple" aria-hidden="true" />{usage(r.id).map((u) => <Badge key={u.action} tone="purple">{ASSIST_LABELS[u.action] ?? u.action} ×{u.count}</Badge>)}<PipConversation sessionId={state.session.id} studentId={r.id} studentName={r.name} /></span>
                   ) : <span className="text-ink-muted">—</span>}
                 </td>
                 <td className="py-2 text-right">

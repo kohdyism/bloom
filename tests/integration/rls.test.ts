@@ -107,15 +107,16 @@ describe("row-level security", () => {
     await expect(asUser(ids["ben.o"], (db) => db.query("insert into group_messages(group_id, author_id, kind, body) values ($1, $2, 'student', 'intrude')", [g2, ids["ben.o"]]))).rejects.toMatchObject({ code: "42501" });
   });
 
-  it("private assistant transcripts are visible only to their student — not groupmates, not the teacher", async () => {
+  it("Pip transcripts are visible to their student and the session's teacher — never to groupmates", async () => {
     await askPrivateAssistant(ids["ben.o"], sessionId, "question", "What does 'common spring' mean?");
     const partner = await asUser(ids["dev.p"], (db) => db.query("select * from private_ai_messages where student_id = $1", [ids["ben.o"]]));
     const teacher = await asUser(ids["teacher.demo"], (db) => db.query("select * from private_ai_messages"));
     const own = await asUser(ids["ben.o"], (db) => db.query("select * from private_ai_messages"));
     expect(partner).toHaveLength(0);
-    expect(teacher).toHaveLength(0);
+    // The teacher can read what each student wrote to Pip (students are told so).
+    expect(teacher.length).toBeGreaterThanOrEqual(2);
     expect(own.length).toBeGreaterThanOrEqual(2);
-    // The teacher sees aggregate metadata only.
+    // The usage summary is counts only.
     const usage = await asUser(ids["teacher.demo"], (db) => db.query<{ student_id: string; action: string; request_count: string }>("select * from public.private_ai_usage($1)", [sessionId]));
     expect(usage).toEqual([{ student_id: ids["ben.o"], action: "question", request_count: "1" }]);
     expect(JSON.stringify(usage)).not.toContain("common spring");

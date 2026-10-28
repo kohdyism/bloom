@@ -101,7 +101,7 @@ export async function setReadiness(uid: string, sessionId: string, state: "ready
     if (stageIndex !== undefined && stageIndex !== group.stage_index) throw conflict("Your group has already moved on — have a look at the new stage.");
     if (state === "ready") {
       const need = contributionNeeded(ctx.session.snapshot.stages[group.stage_index]);
-      if (need && !(await hasContributed(db, group, uid, need.kind))) throw conflict(`${need.hint}, then press “I’m ready”.`);
+      if (need && !(await hasContributed(db, group, uid, need.kind, need.count))) throw conflict(`${need.hint}, then press “I’m ready”.`);
     }
     const prev = await db.maybeOne<{ state: string }>("select state from stage_readiness where group_id = $1 and stage_index = $2 and student_id = $3", [group.id, group.stage_index, uid]);
     if (state === null) await db.query("delete from stage_readiness where group_id = $1 and stage_index = $2 and student_id = $3", [group.id, group.stage_index, uid]);

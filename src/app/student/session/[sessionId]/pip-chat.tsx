@@ -27,9 +27,9 @@ const QUICK = [
 ] as const;
 
 /**
- * Private learning assistant (spec §17). Only this student sees the
- * conversation; the teacher sees counts by type, not the words. The notice
- * below says exactly that — it is never described as absolutely confidential.
+ * Private learning assistant (spec §17). The group never sees it; the
+ * teacher can read it. The notice says so in a few words — it is never
+ * described as confidential.
  */
 export function PipChat({ active, prefill, tick, className, composerClassName }: { active: boolean; prefill?: { action?: string; text?: string }; tick: number; className?: string; composerClassName?: string }) {
   const open = active;
@@ -101,7 +101,7 @@ export function PipChat({ active, prefill, tick, className, composerClassName }:
         <Buddy who="pip" size={48} mood={busy ? "thinking" : "happy"} cue={buddy.cue} talking={buddy.talking && !busy} listening={buddy.listening && !busy} />
         <div className="min-w-0 flex-1">
           <h2 className="font-display text-lg font-bold leading-tight">Pip · just for you</h2>
-          <p className="flex items-start gap-1.5 text-xs text-ink-muted"><Lock className="mt-0.5 size-3 shrink-0" aria-hidden="true" />Only you see this. Your teacher sees how often you asked for each kind of help, not the words — unless you write something off-task, not OK, or worrying: then your teacher is told. Pip only helps with today&apos;s task, and gives hints, not answers.</p>
+          <p className="flex items-start gap-1.5 text-xs text-ink-muted"><Lock className="mt-0.5 size-3 shrink-0" aria-hidden="true" />Your teacher can see this chat. Pip helps with today&apos;s task only.</p>
         </div>
       </div>
       <div ref={listRef} className="min-h-0 flex-1 overflow-y-auto px-4 py-3" aria-label="Conversation with Pip" role="log" aria-live="polite">
@@ -125,7 +125,7 @@ export function PipChat({ active, prefill, tick, className, composerClassName }:
         {busy ? <li className="msg-in flex items-center gap-2 text-sm text-ink-muted" role="status"><span className="buddy-chatter block"><Pip size={30} mood="thinking" /></span><span className="flex gap-1" aria-hidden="true"><span className="animate-pulse-dot size-2 rounded-full bg-purple" /><span className="animate-pulse-dot size-2 rounded-full bg-purple [animation-delay:200ms]" /><span className="animate-pulse-dot size-2 rounded-full bg-purple [animation-delay:400ms]" /></span>Pip is thinking…</li> : null}
       </ol>
       </div>
-      {error ? <Notice tone="coral" className="mx-4" role="alert">{error} Your lesson work isn&apos;t affected.</Notice> : null}
+      {error ? <Notice tone="coral" className="mx-4" role="alert">{error}{error.startsWith("Not sent") ? null : <> Your lesson work isn&apos;t affected.</>}</Notice> : null}
       <div className={cn("flex flex-col gap-2 border-t border-line p-3", composerClassName)}>
         <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Quick help">
           {quick.map(([key, label]) => (

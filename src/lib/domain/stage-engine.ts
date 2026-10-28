@@ -57,7 +57,7 @@ export function evaluateStage(stage: Stage, config: LessonConfig, s: StageSignal
       // Students who contribute verbally can mark themselves ready without typing.
       const satisfied = active.filter((m) => (s.submittedIdeasBy[m] ?? 0) >= min || s.ready[m] === "ready").length;
       requirementsMet = total > 0 && satisfied === n;
-      requirementLabel = min > 0 ? `Each person shares ${min} idea${min === 1 ? "" : "s"} (or marks ready if sharing out loud)` : "At least one idea shared";
+      requirementLabel = min > 0 ? `Each person adds ${min} idea${min === 1 ? "" : "s"}` : "At least one idea shared";
       break;
     }
     case "talk":

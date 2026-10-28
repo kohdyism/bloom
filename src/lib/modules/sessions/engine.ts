@@ -118,7 +118,7 @@ export async function syncGroup(groupId: string, opts: { quiet?: boolean } = {})
     await notifyGroupProgress(outcome.group);
     const intensity = outcome.session!.snapshot.config.facilitationIntensity;
     if (intensity === "low" || !outcome.group.ai_enabled) {
-      await postSystemMessage(outcome.group, "This stage's requirements are met. Tap “I'm ready” when your group is happy to move on, or “More time” if you need it.", `${outcome.group.stage_index}:ready_check`);
+      await postSystemMessage(outcome.group, "This stage's requirements are met. Tap “I'm ready” when your group is happy to move on. Need longer? Ask for more time in “More”.", `${outcome.group.stage_index}:ready_check`);
     } else {
       background(() => facilitate(groupId, { kind: "ready_check" }, `${outcome.group.stage_index}:ready_check`));
     }

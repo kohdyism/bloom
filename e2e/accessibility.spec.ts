@@ -77,7 +77,9 @@ test("main screens have no serious automated accessibility violations", async ({
   await s.page.reload();
   await expect(s.page.getByRole("heading", { name: "Think", exact: true })).toBeVisible();
   await expect(s.page.getByRole("dialog", { name: "Welcome to your lesson!" })).toHaveCount(0);
-  await s.page.getByRole("button", { name: "How this screen works (tour)" }).click();
+  // Raise hand, more time, the tour and settings live in one "More" menu.
+  await s.page.getByRole("button", { name: "More", exact: true }).click();
+  await s.page.getByRole("button", { name: "How this screen works" }).click();
   await expect(s.page.getByRole("dialog", { name: "Welcome to your lesson!" })).toBeVisible();
   await s.page.keyboard.press("Escape");
   await expect(s.page.getByRole("dialog", { name: "Welcome to your lesson!" })).toHaveCount(0);
@@ -101,7 +103,8 @@ test("main screens have no serious automated accessibility violations", async ({
   await audit(t, "teacher live dashboard");
 
   // High-contrast and large-text modes.
-  await s.page.getByRole("button", { name: "Accessibility and display settings" }).click();
+  await s.page.getByRole("button", { name: "More", exact: true }).click();
+  await s.page.getByRole("button", { name: "Settings", exact: true }).click();
   await s.page.getByLabel("High contrast").click();
   await s.page.getByLabel("Extra large").check({ force: true });
   await expect(s.page.locator("html")).toHaveAttribute("data-contrast", "high");

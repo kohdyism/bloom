@@ -70,6 +70,17 @@ export function AccessibilitySettingsPanel({ showStudentOptions = false }: { sho
   );
 }
 
+/** The same settings sheet, opened from elsewhere (e.g. the student "More" menu). */
+export function AccessibilitySettingsDialog({ open, onOpenChange, showStudentOptions }: { open: boolean; onOpenChange: (o: boolean) => void; showStudentOptions?: boolean }) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <SheetContent title="Settings" description="Make Canopy work the way that suits you.">
+        <AccessibilitySettingsPanel showStudentOptions={showStudentOptions} />
+      </SheetContent>
+    </Dialog>
+  );
+}
+
 export function AccessibilitySettingsButton({ showStudentOptions, compact }: { showStudentOptions?: boolean; compact?: boolean }) {
   return (
     <Dialog>

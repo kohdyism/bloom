@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Clock3, Undo2 } from "lucide-react";
+import { Check, Clock3, Lock, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRun } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
@@ -32,7 +32,9 @@ export function Readiness({ className }: { className?: string }) {
   const readyLabel = kind === "brainstorm" ? "I'm done thinking" : kind === "talk" ? "We're done talking" : "I'm ready";
   const shortLabel = kind === "brainstorm" ? "Done thinking" : kind === "talk" ? "Done talking" : "I'm ready";
   // Each student adds something first (an idea, a vote, or a change to the group's work).
-  const blocked = group.contribution && !group.contribution.done ? group.contribution.hint : null;
+  // The teacher sets the minimum per stage; the button stays locked until it's met.
+  const c = group.contribution;
+  const blocked = c && !c.done ? (c.need > 1 ? `${c.hint} (${c.have} of ${c.need})` : c.hint) : null;
   return (
     <div className={cn("flex min-w-0 flex-col gap-1 sm:flex-row sm:items-center sm:gap-3", className)} data-tour="ready">
       <div className="flex min-w-0 items-baseline gap-1.5 sm:flex-1 sm:flex-col sm:items-end sm:gap-0 sm:text-right">
@@ -59,8 +61,7 @@ export function Readiness({ className }: { className?: string }) {
         </span>
       ) : (
         <span className="flex shrink-0 items-center gap-1.5 max-sm:justify-end">
-          <Button variant="secondary" className="h-10 rounded-2xl px-3" onClick={() => run(() => act({ action: "readiness", state: "need_time", stageIndex: group.stageIndex }))} aria-label="More time"><Clock3 /><span className="max-sm:hidden">More time</span></Button>
-          <Button className="h-10 rounded-2xl px-3 text-base sm:px-6" aria-label={readyLabel} disabled={!!blocked} aria-describedby={blocked ? "ready-hint" : undefined} title={blocked ?? undefined} onClick={() => run(() => act({ action: "readiness", state: "ready", stageIndex: group.stageIndex }))}><Check /><span className="max-sm:hidden">{readyLabel}</span><span className="sm:hidden">{shortLabel}</span></Button>
+          <Button className={cn("h-10 rounded-2xl px-3 text-base sm:px-6", blocked && "bg-surface-2 text-ink-faint shadow-none opacity-100 hover:bg-surface-2")} aria-label={readyLabel} disabled={!!blocked} aria-describedby={blocked ? "ready-hint" : undefined} title={blocked ?? undefined} onClick={() => run(() => act({ action: "readiness", state: "ready", stageIndex: group.stageIndex }))}>{blocked ? <Lock /> : <Check />}<span className="max-sm:hidden">{readyLabel}</span><span className="sm:hidden">{shortLabel}</span></Button>
         </span>
       )}
     </div>

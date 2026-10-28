@@ -238,14 +238,14 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
         {s.presentation && kind !== "presentation" ? <div className="mx-2 mt-2 sm:mx-3"><PresentationViewer compact /></div> : null}
         {g.stage && kind !== "complete" ? <h1 className={cn("sr-only", talk && "hidden")}>{g.stage.title}</h1> : null}
         {main}
-        <div className="flex items-center gap-2 border-t-2 border-white/80 bg-white/85 px-2 py-1.5 backdrop-blur-md sm:gap-3 sm:px-4" data-dock>
+        {talk ? null : <div className="flex items-center gap-2 border-t-2 border-white/80 bg-white/85 px-2 py-1.5 backdrop-blur-md sm:gap-3 sm:px-4" data-dock>
           {showPlant ? <PlantBubble stagesDone={doneStages} totalStages={s.stages.length} flower={g.flower} size="sm" /> : null}
           {!discussion && !talk && chatHere ? <ChatLauncher open={chatOpen} onOpenChange={(o) => { setChatOpen(o); if (o) { setPipOpen(false); setIdeasOpen(false); setMaterialsOpen(false); } }} compact={small} /> : null}
           {ideasBeside && !small ? ideasLauncher : null}
           <Readiness className="min-w-0 flex-1" />
           {kind === "complete" ? <div className="flex-1" /> : null}
-          {g.pipAvailable ? <PipLauncher open={pipOpen} onOpenChange={(o) => { setPipOpen(o); if (o) { setChatOpen(false); setIdeasOpen(false); setMaterialsOpen(false); } }} prefill={assistantPrefill} tick={assistantTick} compact={small} /> : null}
-        </div>
+          {g.pipAvailable ? <PipLauncher open={pipOpen} onOpenChange={(o) => { setPipOpen(o); if (o) { setChatOpen(false); setIdeasOpen(false); setMaterialsOpen(false); } }} prefill={assistantPrefill} tick={assistantTick} /> : null}
+        </div>}
       </div>
     );
   }
@@ -253,7 +253,8 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
   return (
     <WorkspaceContext.Provider value={ctxValue}>
       <div data-app-shell className="flex min-h-0 flex-1 flex-col">
-        <SessionHeader state={state} connection={connection} sessionId={sessionId} act={act} onTour={() => setTourOpen(true)} />
+        {/* Talk time clears the screen: no top bar or dock, just the question. */}
+        {g && kind === "talk" && s.status !== "ended" && s.status !== "lobby" ? null : <SessionHeader state={state} connection={connection} sessionId={sessionId} act={act} onTour={() => setTourOpen(true)} />}
         <p className="sr-only" aria-live="polite">{announce}</p>
         {body}
       </div>

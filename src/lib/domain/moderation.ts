@@ -99,3 +99,12 @@ export const IDEA_NOTES: Record<FlagCategory | "nonsense" | "banned", string> = 
   nonsense: "That doesn't look like an idea yet. Try writing one real idea — even a short one is great.",
   banned: "That uses a word your teacher has asked everyone not to use. Try saying it another way.",
 };
+
+/** Why a question to Pip wasn't sent (shown to the student, who can edit and try again). */
+export const PIP_NOTES: Record<"off_task" | "unkind" | "inappropriate" | "nonsense" | "banned", string> = {
+  off_task: "Not sent. Pip only helps with today's task — try asking something about the task.",
+  nonsense: "Not sent. That doesn't look like a question yet — try asking Pip about the task.",
+  unkind: "Not sent. That could hurt someone. If something is wrong in your group, press “Need help”.",
+  inappropriate: "Not sent. That isn't OK to ask in class. Try a question about the task.",
+  banned: "Not sent. That uses a word your teacher has asked everyone not to use.",
+};

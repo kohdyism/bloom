@@ -44,6 +44,13 @@ export const stageConfigSchema = z.object({
   completion: z.enum(COMPLETION_RULES).default("all_ready"),
   /** Brainstorm: minimum submitted ideas per present member before the group can move on. */
   minIdeasPerStudent: z.number().int().min(0).max(10).default(1),
+  /**
+   * The least each student adds before they can press "I'm ready" in voting
+   * (votes), a written discussion (messages), creation (0 or 1: a change to the
+   * shared work) and hands-on stages with photos (photos). Unset = the stage's
+   * default. Thinking time uses minIdeasPerStudent.
+   */
+  minContribution: z.number().int().min(0).max(20).optional(),
   /** Creation: which shared artifacts are available. */
   artifacts: z.array(z.enum(ARTIFACT_KINDS)).default([]),
   /** Voting: how many votes each student can place. */
@@ -187,11 +194,53 @@ export function pipAvailableIn(stage: { kind: StageKind; config: { privateAssist
   return stage.config.privateAssistant !== false;
 }
 
-/** Stages where each student must add something before they can say they're ready. */
-export function contributionNeeded(stage: { kind: StageKind; config: { minIdeasPerStudent?: number } } | null | undefined): null | { kind: "idea" | "vote" | "work"; hint: string } {
+export type ContributionKind = "idea" | "vote" | "work" | "message" | "photo";
+
+const NOUN: Record<ContributionKind, [string, string]> = {
+  idea: ["idea", "ideas"],
+  vote: ["vote", "votes"],
+  work: ["change to your group's work", "changes to your group's work"],
+  message: ["message in the group chat", "messages in the group chat"],
+  photo: ["photo", "photos"],
+};
+
+/** "1 idea", "3 votes" — for hints and the builder. */
+export function contributionLabel(kind: ContributionKind, n: number) {
+  return `${n} ${NOUN[kind][n === 1 ? 0 : 1]}`;
+}
+
+/** The stage's default minimum when the teacher hasn't set one. */
+export function defaultMinContribution(kind: StageKind): number {
+  return kind === "voting" || kind === "creation" ? 1 : 0;
+}
+
+/** Which stages can have a minimum, and what students add there (null = nothing to count on screen). */
+export function contributionKindFor(stage: { kind: StageKind; config: { groupChat?: boolean; evidenceUpload?: boolean } }): ContributionKind | null {
+  switch (stage.kind) {
+    case "brainstorm": return "idea";
+    case "voting": return "vote";
+    case "creation": return "work";
+    case "discussion": return chatOpenIn(stage) ? "message" : null;
+    case "physical": return stage.config.evidenceUpload ? "photo" : null;
+    default: return null;
+  }
+}
+
+/**
+ * Stages where each student must add something before they can say they're
+ * ready, and how much: the teacher sets the minimum per stage.
+ */
+export function contributionNeeded(stage: { kind: StageKind; config: { minIdeasPerStudent?: number; minContribution?: number; votesPerStudent?: number; groupChat?: boolean; evidenceUpload?: boolean } } | null | undefined): null | { kind: ContributionKind; count: number; hint: string } {
   if (!stage) return null;
-  if (stage.kind === "brainstorm") return (stage.config.minIdeasPerStudent ?? 1) > 0 ? { kind: "idea", hint: "Add at least one idea first" } : null;
-  if (stage.kind === "voting") return { kind: "vote", hint: "Vote for at least one idea first" };
-  if (stage.kind === "creation") return { kind: "work", hint: "Add something to your group's work first" };
-  return null;
+  const kind = contributionKindFor(stage);
+  if (!kind) return null;
+  let n = kind === "idea" ? stage.config.minIdeasPerStudent ?? 1 : stage.config.minContribution ?? defaultMinContribution(stage.kind);
+  if (kind === "vote") n = Math.min(n, stage.config.votesPerStudent ?? 3);
+  if (kind === "work") n = Math.min(n, 1);
+  if (n <= 0) return null;
+  const hint = kind === "work" ? "Add something to your group's work first"
+    : kind === "vote" && n === 1 ? "Vote for at least one idea first"
+    : kind === "idea" && n === 1 ? "Add at least one idea first"
+    : `Add at least ${contributionLabel(kind, n)} first`;
+  return { kind, count: n, hint };
 }

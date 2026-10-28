@@ -1,11 +1,11 @@
 import "server-only";
-import { asServer, asUser } from "@/lib/db";
+import { asServer, asUser, NotFoundError } from "@/lib/db";
 import { publish, ch } from "@/lib/realtime/server";
 import { rateLimit } from "@/lib/security/rate-limit";
 import type { AccommodationKind } from "@/lib/domain/students";
 import { QUICK_ACTIONS, tutorReply, type QuickAction, type TutorContext } from "@/lib/ai/tutor";
 import { pipAvailableIn } from "@/lib/domain/lesson";
-import { bannedWordHit, PIP_REDIRECTS, ruleCheck, type FlagCategory } from "@/lib/domain/moderation";
+import { bannedWordHit, looksLikeNonsense, PIP_NOTES, PIP_REDIRECTS, ruleCheck, safeguardingConcern, type FlagCategory } from "@/lib/domain/moderation";
 import { aiSettingsForSession } from "./ai-settings";
 import { reviewChatMessage } from "@/lib/ai/chat-guard";
 import { config as appConfig } from "@/lib/config";
@@ -14,9 +14,9 @@ import { conflict } from "@/lib/api";
 import { studentContext } from "./sessions/student";
 
 /**
- * Private learning assistant. Transcripts are readable only by the student
- * (RLS has no teacher policy). Teachers see aggregate counts by action via
- * public.private_ai_usage().
+ * One-to-one learning assistant (Pip). Other students never see a transcript;
+ * the lesson's teacher can read it (each view is logged), and Pip's panel
+ * tells students so.
  */
 export async function privateConversation(uid: string, sessionId: string) {
   return asUser(uid, async (db) => {
@@ -40,6 +40,28 @@ const PREF_TEXT: Record<string, Record<string, string>> = {
 export async function askPrivateAssistant(uid: string, sessionId: string, action: QuickAction | "question", text: string | undefined) {
   if (action === "question" && !text?.trim()) throw new Error("Type a question first.");
   await rateLimit(`tutor:${uid}`, 30, 600);
+  // Guardrails first: irrelevant, unkind or inappropriate questions are never sent to Pip.
+  // (Worrying ones still go through, so the student gets a supportive answer and the teacher an alert.)
+  const asked = text?.trim() ?? "";
+  const settings = await aiSettingsForSession(sessionId);
+  if (asked && !safeguardingConcern(asked)) {
+    const pre = await asUser(uid, (db) => studentContext(db, uid, sessionId));
+    const stage = pre.group ? pre.session.snapshot.stages[pre.group.stage_index] : pre.session.snapshot.stages[0];
+    let block: keyof typeof PIP_NOTES | null = null;
+    const rule = ruleCheck(asked);
+    if (rule && rule !== "safeguarding") block = rule;
+    else if (bannedWordHit(asked, settings.bannedWords)) block = "banned";
+    else if (action === "question" && looksLikeNonsense(asked)) block = "nonsense";
+    else if (action === "question" && asked.length > 3 && appConfig.aiMode === "live") {
+      const v = await reviewChatMessage({ lesson: pre.session.snapshot.title, stage: stage?.title ?? "", instructions: stage?.instructions ?? "", recent: [], text: asked, teacherInstructions: settings.instructions }).catch(() => null);
+      if (v && v.verdict !== "ok" && v.verdict !== "safeguarding") block = v.verdict;
+    }
+    if (block) {
+      const flag: FlagCategory | null = block === "nonsense" ? null : block === "banned" ? "inappropriate" : block;
+      if (flag) await raiseFlag({ sessionId, groupId: pre.group?.id ?? null, studentId: uid, source: "pip", category: flag, excerpt: asked }).catch(() => {});
+      throw conflict(PIP_NOTES[block], "pip_not_sent");
+    }
+  }
   const ctx = await asUser(uid, async (db) => {
     const { session, group } = await studentContext(db, uid, sessionId);
     // The teacher decides when Pip is available; face-to-face stages never have it.
@@ -95,18 +117,10 @@ export async function askPrivateAssistant(uid: string, sessionId: string, action
     };
     return context;
   });
-  // Guardrails: Pip only helps with the task. Off-task, unkind or inappropriate questions get a
-  // kind redirect instead of an answer, and worrying ones are passed to the teacher straight away.
-  const asked = text?.trim() ?? "";
-  const settings = await aiSettingsForSession(sessionId);
+  // Worrying messages get a supportive reply (not the tutor) and reach the teacher straight away.
   ctx.teacherInstructions = settings.instructions;
   ctx.bannedWords = settings.bannedWords;
-  let category: FlagCategory | null = asked ? ruleCheck(asked) : null;
-  if (!category && asked && bannedWordHit(asked, settings.bannedWords)) category = "inappropriate";
-  if (!category && action === "question" && asked.length > 3 && appConfig.aiMode === "live") {
-    const verdict = await reviewChatMessage({ lesson: ctx.lessonTitle, stage: ctx.stage.title, instructions: ctx.stage.instructions, recent: [], text: asked, teacherInstructions: settings.instructions }).catch(() => null);
-    if (verdict && verdict.verdict !== "ok") category = verdict.verdict;
-  }
+  const category: FlagCategory | null = asked && safeguardingConcern(asked) ? "safeguarding" : null;
   if (category) {
     const redirect = PIP_REDIRECTS[category];
     await asServer((db) =>
@@ -124,3 +138,17 @@ export async function askPrivateAssistant(uid: string, sessionId: string, action
   return { reply: reply.data, origin: reply.origin };
 }
 
+
+/** The teacher reads one student's Pip conversation in their lesson (logged). */
+export async function teacherPipConversation(uid: string, sessionId: string, studentId: string) {
+  return asUser(uid, async (db) => {
+    const s = await db.maybeOne("select 1 from activity_sessions where id = $1 and teacher_id = $2", [sessionId, uid]);
+    if (!s) throw new NotFoundError();
+    const rows = await db.query<{ id: string; role: string; action: string; origin: string | null; body: string; created_at: Date }>(
+      "select id, role, action, origin, body, created_at from private_ai_messages where session_id = $1 and student_id = $2 order by created_at limit 300",
+      [sessionId, studentId],
+    );
+    await db.query("insert into audit_events(actor_id, session_id, action, target) values ($1,$2,'pip.viewed',$3)", [uid, sessionId, studentId]);
+    return rows.map((r) => ({ id: r.id, role: r.role, action: r.action, origin: r.origin, body: r.body, createdAt: r.created_at.toISOString() }));
+  });
+}

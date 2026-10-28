@@ -7,6 +7,11 @@ import { cn } from "@/lib/utils";
 import { useMediaQuery } from "@/lib/use-media-query";
 import { useWorkspace } from "./context";
 import { ReadAloudButton } from "@/components/read-aloud";
+import { BigTimer } from "@/components/live/big-timer";
+import { LifeBuoy } from "lucide-react";
+import { HelpPanel } from "./help-panel";
+import { MoreMenu } from "./session-header";
+import { Readiness } from "./readiness";
 
 /**
  * Talk time: the screen steps back. A calm, nearly blank page with one big
@@ -15,13 +20,23 @@ import { ReadAloudButton } from "@/components/read-aloud";
  * wants a reminder.
  */
 export function TalkTime() {
-  const { group } = useWorkspace();
+  const { group, state, sessionId, act } = useWorkspace();
   const [peek, setPeek] = useState(false);
   const small = !useMediaQuery("(min-width: 640px)");
   const ideas = group.ideas.shared;
   return (
     <section aria-labelledby="talk-title" className="relative flex min-h-0 flex-1 flex-col items-center overflow-y-auto bg-gradient-to-b from-[#fff3e6] via-[#ffeef6] to-[#efe9ff] px-5 py-6 text-center sm:py-12">
-      <div className="flex flex-col items-center gap-3">
+      {/* No top bar or dock here: just a small timer and help in the corner. */}
+      <div className="absolute inset-x-3 top-3 flex items-center justify-between gap-2">
+        {group.stage ? <BigTimer timer={group.timer} totalSeconds={group.stage.durationSeconds} compact /> : <span />}
+        <span className="flex items-center gap-1.5" data-tour="help">
+          <HelpPanel state={state} sessionId={sessionId} act={act} trigger={
+            <button type="button" className="inline-flex h-10 items-center gap-1.5 rounded-2xl bg-coral px-3 font-semibold text-white shadow-soft hover:brightness-95"><LifeBuoy className="size-5" aria-hidden="true" /><span className="max-sm:hidden">Need help</span><span className="sm:hidden">Help</span></button>
+          } />
+          <MoreMenu state={state} act={act} className="bg-white/80" />
+        </span>
+      </div>
+      <div className="mt-10 flex flex-col items-center gap-3 sm:mt-4">
         <Buddy who="bloom" size={small ? 76 : 120} mood="happy" name="Bloom" />
         <p className="relative max-w-md rounded-3xl border-2 border-white bg-white px-4 py-2.5 font-display text-base font-semibold shadow-soft sm:px-5 sm:py-3 sm:text-xl">
           <span className="absolute -top-2 left-1/2 size-4 -translate-x-1/2 rotate-45 border-l-2 border-t-2 border-white bg-white" aria-hidden="true" />
@@ -51,6 +66,9 @@ export function TalkTime() {
           ) : null}
         </div>
       ) : null}
+      <div className="mt-auto w-full max-w-xl pt-8">
+        <div className="rounded-3xl bg-white/80 px-4 py-3 shadow-soft"><Readiness /></div>
+      </div>
     </section>
   );
 }

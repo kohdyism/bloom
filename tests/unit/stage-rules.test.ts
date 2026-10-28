@@ -28,3 +28,21 @@ describe("contribution before ready", () => {
     expect(contributionNeeded(makeStage("brainstorm", { config: { minIdeasPerStudent: 0 } }))).toBeNull();
   });
 });
+
+describe("teacher-set minimums before ready", () => {
+  it("uses the teacher's number for ideas, votes, chat messages and photos", () => {
+    expect(contributionNeeded(makeStage("brainstorm", { config: { minIdeasPerStudent: 3 } }))).toMatchObject({ kind: "idea", count: 3 });
+    expect(contributionNeeded(makeStage("voting", { config: { minContribution: 2, votesPerStudent: 3 } }))).toMatchObject({ kind: "vote", count: 2 });
+    expect(contributionNeeded(makeStage("discussion", { config: { minContribution: 2 } }))).toMatchObject({ kind: "message", count: 2 });
+    expect(contributionNeeded(makeStage("physical", { config: { minContribution: 1, evidenceUpload: true } }))).toMatchObject({ kind: "photo", count: 1 });
+  });
+  it("never asks for more votes than a student has, and can be switched off", () => {
+    expect(contributionNeeded(makeStage("voting", { config: { minContribution: 9, votesPerStudent: 2 } }))?.count).toBe(2);
+    expect(contributionNeeded(makeStage("voting", { config: { minContribution: 0 } }))).toBeNull();
+    expect(contributionNeeded(makeStage("creation", { config: { minContribution: 0 } }))).toBeNull();
+  });
+  it("has nothing to count when the task is off screen", () => {
+    expect(contributionNeeded(makeStage("discussion", { config: { minContribution: 2, groupChat: false } }))).toBeNull();
+    expect(contributionNeeded(makeStage("physical", { config: { minContribution: 2 } }))).toBeNull();
+  });
+});

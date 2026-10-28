@@ -132,7 +132,7 @@ export function simulateFacilitator(trigger: FacilitatorTrigger, ctx: Facilitato
         "If you'd rather talk it through first, that's fine — jot down a few words afterwards so your idea is counted.",
       ]);
     case "ready_check":
-      return `Nice work — you've done what this stage needs. When you're happy, tap “I'm ready”${ctx.nextStageTitle ? ` to move on to ${ctx.nextStageTitle}` : ""}. Need longer? Tap “More time”.`;
+      return `Nice work — you've done what this stage needs. When you're happy, tap “I'm ready”${ctx.nextStageTitle ? ` to move on to ${ctx.nextStageTitle}` : ""}. Need longer? Ask for more time in “More”.`;
     case "broaden_participation":
       return pickOne(seed, [
         "Lots of good thinking here. Before you go further, could you hear from a couple of different perspectives? Taking turns — out loud, here, or on the board — all counts.",

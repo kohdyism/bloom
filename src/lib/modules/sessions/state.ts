@@ -5,7 +5,7 @@ import { evaluateStage, progressFraction, timerState, type StageEvaluation } fro
 import { contributionNeeded, pipAvailableIn, type Stage } from "@/lib/domain/lesson";
 import type { SynthesisCluster } from "@/lib/ai/synthesis";
 import { collectSignals } from "./engine";
-import { hasContributed, loadSession, PRESENCE_WINDOW_SECONDS, type GroupRow, type Presentation, type SessionRow } from "./common";
+import { contributionCount, loadSession, PRESENCE_WINDOW_SECONDS, type GroupRow, type Presentation, type SessionRow } from "./common";
 import { studentContext } from "./student";
 import { snapshotGroupWork } from "../artifacts";
 import type { FlagCategory } from "@/lib/domain/moderation";
@@ -237,7 +237,8 @@ async function groupContent(db: Db, s: SessionRow, g: GroupRow, viewerId: string
   })() : null;
   // Each student adds something before they can say they're ready (ideas, votes, shared work).
   const need = viewer === "student" && g.stage_status !== "complete" ? contributionNeeded(stage) : null;
-  const contribution = need ? { kind: need.kind, hint: need.hint, done: await hasContributed(db, g, viewerId, need.kind) } : null;
+  const have = need ? await contributionCount(db, g, viewerId, need.kind) : 0;
+  const contribution = need ? { kind: need.kind, hint: need.hint, need: need.count, have: Math.min(have, need.count), done: have >= need.count } : null;
   const announcements = await db.query<{ id: string; body: string; created_at: Date }>("select id, body, created_at from announcements where group_id = $1 order by created_at desc limit 5", [g.id]);
 
   return {

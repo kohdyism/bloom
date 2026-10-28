@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import * as Y from "yjs";
+import type { Page } from "@playwright/test";
 import { apiAs, joinSession, ready, signInAs, STUDENT_PASSWORD, TEACHER, type Actor } from "./helpers";
 
 /**
@@ -7,6 +8,10 @@ import { apiAs, joinSession, ready, signInAs, STUDENT_PASSWORD, TEACHER, type Ac
  * students in genuinely separate authenticated browser contexts, plus the
  * public display. Steps are numbered to match the brief.
  */
+const shot = async (page: Page, name: string) => {
+  if (process.env.SCREENSHOT_DIR) await page.screenshot({ path: `${process.env.SCREENSHOT_DIR}/${name}.png` });
+};
+
 test("complete inclusive classroom lesson", async ({ browser }) => {
   // 1–2. Teacher signs in and opens the Literature class's lesson.
   const teacher = await signInAs(browser, TEACHER.username, TEACHER.password);
@@ -34,6 +39,12 @@ test("complete inclusive classroom lesson", async ({ browser }) => {
   await t.getByRole("heading", { name: "Reading 'Alone' together", exact: true }).click();
   await expect(t.getByLabel("Lesson title")).toHaveValue("Reading 'Alone' together");
   await t.getByRole("button", { name: "Add stage" }).click();
+  // Tasks are split into online (on screen) and offline (in the room).
+  await t.getByRole("dialog").getByRole("tab", { name: "Offline tasks" }).click();
+  await expect(t.getByRole("dialog").getByRole("button", { name: /^Debate/ })).toBeVisible();
+  await expect(t.getByRole("dialog").getByRole("button", { name: /^Discussion/ })).toBeVisible();
+  await shot(t, "add-stage-offline");
+  await t.getByRole("dialog").getByRole("tab", { name: "Online tasks" }).click();
   await t.getByRole("dialog").getByRole("button", { name: /^Role selection/ }).click();
   await t.getByRole("button", { name: "Move Role selection up" }).click();
   await t.getByLabel("Duration (minutes)").fill("4");
@@ -115,6 +126,10 @@ test("complete inclusive classroom lesson", async ({ browser }) => {
   const tooSoon = await apiAs(a1, "POST", "/api/live/student", { action: "readiness", sessionId, state: "ready" });
   expect(tooSoon.status).toBe(409);
   // Nonsense isn't shared: the idea is held back with a kind note, and the text stays to edit.
+  await shot(a1.page, "brainstorm");
+  await a1.page.getByRole("button", { name: "More", exact: true }).click();
+  await shot(a1.page, "more-menu");
+  await a1.page.keyboard.press("Escape");
   await a1.page.getByLabel("Your idea").fill("asdfghjk");
   await a1.page.getByRole("button", { name: "Add idea" }).click();
   await expect(a1.page.getByText("That doesn't look like an idea yet").first()).toBeVisible();
@@ -142,6 +157,11 @@ test("complete inclusive classroom lesson", async ({ browser }) => {
   // Talk time: the screen steps back so the group talks face to face.
   await expect(a1.page.getByRole("heading", { name: "Discussion time!" })).toBeVisible();
   await expect(a1.page.getByLabel("Message your group")).toHaveCount(0);
+  // No top bar or dock in talk time — only a small timer, Need help and More.
+  await expect(a1.page.locator("[data-dock]")).toHaveCount(0);
+  await expect(a1.page.locator("header")).toHaveCount(0);
+  await expect(a1.page.getByRole("button", { name: "More", exact: true })).toBeVisible();
+  await shot(a1.page, "talk-time");
   await ready(a1.page, "We're done talking");
   await ready(a2.page, "We're done talking");
 
@@ -184,10 +204,20 @@ test("complete inclusive classroom lesson", async ({ browser }) => {
   await expect(a1.page.getByText("Add something to your group's work first")).toBeVisible();
 
   // 15. Private AI assistance (student-only) is back once the group is making its work.
+  await shot(a1.page, "creation");
   await a1.page.getByRole("button", { name: "Ask Pip (private)" }).click();
+  await shot(a1.page, "pip-open");
   await a1.page.getByRole("button", { name: "Explain simply" }).click();
   await expect(a1.page.getByRole("log", { name: "Conversation with Pip" }).getByText("Simulated AI")).toBeVisible();
+  // Off-task questions are never sent to Pip; the student can edit and try again.
+  await a1.page.getByLabel("Your question for Pip").fill("who wants to play fortnite later");
+  await a1.page.getByRole("button", { name: "Ask", exact: true }).click();
+  await expect(a1.page.getByText("Not sent. Pip only helps with today's task")).toBeVisible();
   await a1.page.keyboard.press("Escape");
+  // The teacher can read exactly what the student wrote to Pip.
+  await t.getByRole("button", { name: "Read Pip chat" }).first().click();
+  await expect(t.getByRole("dialog").getByText("Explain simply")).toBeVisible();
+  await t.keyboard.press("Escape");
 
   // 19–20. Multiple students edit the shared document; edits are visible to both.
   const ed1 = a1.page.getByRole("textbox", { name: "Shared document" });

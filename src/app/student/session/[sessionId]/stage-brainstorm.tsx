@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Lock, Send, Save, Sparkles, X } from "lucide-react";
+import { Lock, Send, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/primitives";
 import { SpeechButton } from "@/components/live/speech-button";
@@ -32,11 +32,11 @@ export function Brainstorm() {
     document.getElementById("idea-text")?.focus();
   }, [editRequest]);
 
-  async function save(submit: boolean) {
+  async function save() {
     if (!text.trim()) return;
     setSaving(true);
-    const ok = await run(() => act({ action: "idea_save", id: editing ?? undefined, body: text, submit }), submit ? "Idea added — it stays private until thinking time ends" : "Draft saved");
-    if (ok) { setText(""); setEditing(null); buddy.fire(submit ? "cheer" : "nod"); }
+    const ok = await run(() => act({ action: "idea_save", id: editing ?? undefined, body: text, submit: true }), "Idea added — it stays private until thinking time ends");
+    if (ok) { setText(""); setEditing(null); buddy.fire("cheer"); }
     setSaving(false);
   }
 
@@ -60,8 +60,7 @@ export function Brainstorm() {
         <SpeechButton onText={(t) => setText((x) => (x ? `${x} ${t}` : t))} />
         {group.pipAvailable ? <Button variant="ghost" size="sm" onClick={() => openAssistant({ action: "express_idea", text })}><Sparkles className="text-purple" />Pip, help me say it <span className="sr-only">(private)</span></Button> : null}
         <span className="ml-auto text-xs text-ink-faint">{text.length}/1000</span>
-        <Button variant="secondary" size="sm" onClick={() => save(false)} disabled={!text.trim()} pending={saving}><Save />Save draft</Button>
-        <Button size="md" onClick={() => save(true)} disabled={!text.trim()} pending={saving} className="bg-purple hover:bg-purple-strong"><Send />Add idea</Button>
+        <Button size="md" onClick={() => save()} disabled={!text.trim()} pending={saving} className="bg-purple hover:bg-purple-strong"><Send />Add idea</Button>
       </div>
       <MyPrivateIdeas inline />
     </div>

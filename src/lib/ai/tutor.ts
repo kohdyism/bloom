@@ -63,13 +63,13 @@ export function teacherBlock(instructions?: string, banned?: string[]) {
 }
 
 function systemPrompt(ctx: TutorContext) {
-  return `You are Pip, a private learning assistant in Canopy for one student aged 13–14. Only this student sees this conversation (their teacher sees only how many times they asked for each kind of help, not the words).
+  return `You are Pip, a private learning assistant in Canopy for one student aged 13–14. Their group never sees this conversation; their teacher can read it.
 
 ${LEVELS[ctx.level] ?? LEVELS[2]}
 
 Rules:
 - Never write the group's final answer, paragraph, slides or other assessed output — even at Level 3, and even if asked directly. Instead help the student plan, structure or say it in their own words.
-- Be warm, brief and concrete. Short paragraphs or numbered steps. UK English.
+- Keep every reply SHORT and easy to read: at most 3 short sentences, or at most 3 numbered steps of a few words each. Under 60 words. One idea at a time; end with one simple question if it helps. Plain words. UK English.
 - Respect these preferences the student or their teacher has set: ${ctx.preferences.length ? ctx.preferences.join("; ") : "none stated"}.
 - Never mention other students' names or what any individual said; refer to "your group".
 - Only help with today's task and the learning around it. If the student asks about something unrelated (games, social media, homework for another subject, personal trivia), don't answer it: say kindly that you only help with today's task, and offer to explain the task or break it into steps.
@@ -102,7 +102,7 @@ export async function tutorReply(ctx: TutorContext, request: { action: QuickActi
     if (last && last.role === m.role) last.content += `\n\n${m.content}`;
     else merged.push({ ...m });
   }
-  return runText({ workflow: "tutor", system: systemPrompt(ctx), messages: merged, maxTokens: 700, simulate: () => simulateTutor(ctx, request) });
+  return runText({ workflow: "tutor", system: systemPrompt(ctx), messages: merged, maxTokens: 300, simulate: () => simulateTutor(ctx, request) });
 }
 
 const DISTRESS = /\b(unsafe|scared|hurt(ing)? me|bully|bullied|bullying|upset|crying|hate myself|uncomfortable|not ok|not okay)\b/i;
@@ -110,7 +110,7 @@ const DISTRESS = /\b(unsafe|scared|hurt(ing)? me|bully|bullied|bullying|upset|cr
 /** Deterministic replies used without a live AI, grounded in the stage text. */
 export function simulateTutor(ctx: TutorContext, request: { action: QuickAction | "question"; text?: string }): string {
   if (request.text && DISTRESS.test(request.text)) {
-    return "I'm really glad you said something. You don't have to handle this on your own — please tap “Need help” at the top of the screen and choose “Something is making me uncomfortable” or “I want to speak with the teacher”. Your teacher will see it straight away. You can also talk to any adult you trust.";
+    return "I'm glad you said something. Please tap “Need help” to tell your teacher — they'll see it straight away. You can also talk to an adult you trust.";
   }
   const sentences = ctx.stage.instructions.split(/(?<=[.?!])\s+/).map((s) => s.trim()).filter(Boolean);
   const lvl = ctx.level;
@@ -122,7 +122,7 @@ export function simulateTutor(ctx: TutorContext, request: { action: QuickAction 
         : `This stage is “${ctx.stage.title}”. ${ctx.objectives[0] ? `It's helping you to ${lowerFirst(ctx.objectives[0])}.` : ""}`;
     case "break_into_steps": {
       const steps = sentences.length ? sentences : [`Read the task for “${ctx.stage.title}”.`, "Decide what you think.", "Share it with your group."];
-      return `Here it is step by step:\n${steps.slice(0, 5).map((s, i) => `${i + 1}. ${s}`).join("\n")}\n\nTake them one at a time — you don't need to do them all at once.`;
+      return `Step by step:\n${steps.slice(0, 3).map((s, i) => `${i + 1}. ${truncate(s, 70)}`).join("\n")}\nOne at a time is fine.`;
     }
     case "show_example":
       if (lvl === 1) return "Instead of an example, try this: what's one thing you already know about this topic? Start there and ask yourself “why?”.";
@@ -131,19 +131,19 @@ export function simulateTutor(ctx: TutorContext, request: { action: QuickAction 
       return `Your group is on “${ctx.stage.title}”. ${sentences[0] ?? ""} ${ctx.groupIdeas.length ? `So far your group has shared ${ctx.groupIdeas.length} idea${ctx.groupIdeas.length === 1 ? "" : "s"}.` : "No ideas have been shared with the group yet."}`.trim();
     case "summarise_discussion": {
       if (!ctx.recentDiscussion.length) return "There hasn't been any written discussion yet — your group may be talking in the room. You could ask them to recap the main point so far.";
-      const points = ctx.recentDiscussion.slice(-4).map((m) => `• ${truncate(m.body, 90)}`);
-      return `Here's what's been said recently:\n${points.join("\n")}\n\nIs there one point you agree with, or one you'd question?`;
+      const points = ctx.recentDiscussion.slice(-3).map((m) => `• ${truncate(m.body, 60)}`);
+      return `Recently:\n${points.join("\n")}\nWhich point do you agree with?`;
     }
     case "express_idea": {
       const mine = request.text?.trim() || ctx.myIdeas[ctx.myIdeas.length - 1];
       if (!mine) return "Tell me your idea in a few words — any words — and I'll help you shape it. You could start with: “I think… because…”.";
       if (lvl === 1) return `You've got the start of something: “${truncate(mine, 100)}”. What's the reason behind it? What made you think that?`;
-      return `Your idea: “${truncate(mine, 100)}”.\nTry shaping it like this:\n1. I think… (your point)\n2. because… (your reason)\n3. for example… (a detail or quote)\nYou've already got the first part — what's your reason?`;
+      return `Try: “I think… because… for example…”.\nYou have the first part: “${truncate(mine, 70)}”. What's your reason?`;
     }
     case "prepare_to_contribute":
       return pickOne(seed, [
-        "Here are some ways to join in:\n• “I'd like to add to that idea…”\n• “I see it a bit differently, because…”\n• “Can I ask what you meant by…?”\nYou can also add your thought to the board or chat — that counts too.",
-        "A calm way in: write your point down first, then say “I wrote something down — can I share it?”. Short is fine. Adding it to the board or chat is just as valid.",
+        "Ways to join in:\n• “I'd like to add to that…”\n• “I see it differently, because…”\nWriting it on the board counts too.",
+        "Write your point down first, then say “Can I share what I wrote?”. Short is fine.",
       ]);
     case "stuck":
       return lvl === 1
@@ -153,7 +153,7 @@ export function simulateTutor(ctx: TutorContext, request: { action: QuickAction 
     default:
       return lvl === 1
         ? "Good question. What do you already know that might help answer it? Look back at the task and see which part it connects to."
-        : `Good question. Think about how it connects to the task: “${truncate(sentences[0] ?? ctx.stage.title, 90)}”. If you're still unsure, try asking your group what they think — or I can break the task into steps.`;
+        : `Good question. How does it link to the task: “${truncate(sentences[0] ?? ctx.stage.title, 70)}”? I can also break it into steps.`;
   }
 }
 
@@ -161,11 +161,11 @@ function exampleFor(kind: StageKind, subject: string, lvl: number) {
   const s = subject.toLowerCase();
   if (s.includes("literature") || s.includes("english")) {
     return lvl === 3
-      ? "Here's a worked example on a different poem. Line: “The fog comes on little cat feet.”\n1. Point: the fog is presented as quiet and sneaky.\n2. Evidence: “little cat feet”.\n3. Explain: comparing fog to a cat suggests it moves silently and gently.\nNow try the same three steps with a line from your poem."
-      : "For example, with a different line — “The fog comes on little cat feet” — you might say: “The fog seems quiet because it's compared to a cat.” Notice the pattern: point, quote, explanation. Try it with your poem.";
+      ? "Example (different poem): “The fog comes on little cat feet.”\n1. Point: the fog is quiet.\n2. Quote: “little cat feet”.\n3. Why: cats move silently.\nNow try it with your poem."
+      : "Example: “The fog seems quiet because it's compared to a cat.” Point, quote, why. Try it with your poem.";
   }
-  if (kind === "physical") return "For example, a group testing paper boats might agree: one person folds, one times, one records. They test, change one thing, and test again so it's a fair comparison.";
-  return "For example, if the task were “improve the canteen”, an idea might be: “Add a quiet table, because some people find it noisy — that would help more people enjoy lunch.” Notice: idea, reason, who it helps.";
+  if (kind === "physical") return "Example: one person folds, one times, one records. Change one thing, then test again.";
+  return "Example: “Add a quiet table, because the canteen is noisy.” Idea, then reason.";
 }
 
 function pickOne(seed: string, options: string[]) {
