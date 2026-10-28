@@ -107,6 +107,8 @@ test("complete inclusive classroom lesson", async ({ browser }) => {
   await expect(a1.page.getByRole("dialog", { name: "Poem: Alone" }).getByText(/From childhood.s hour/)).toBeVisible();
   if (process.env.SCREENSHOT_DIR) await a1.page.screenshot({ path: `${process.env.SCREENSHOT_DIR}/s-materials.png` });
   await a1.page.getByRole("button", { name: "Close materials" }).click();
+  // Read aloud: the task can be read out with the device's own voice.
+  await expect(a1.page.getByRole("button", { name: "Read the task aloud" })).toBeVisible();
   // Nobody can say they're done before adding an idea (the server refuses too).
   await expect(a1.page.getByRole("button", { name: "I'm done thinking" })).toBeDisabled();
   await expect(a1.page.getByText("Add at least one idea first")).toBeVisible();

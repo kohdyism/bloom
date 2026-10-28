@@ -12,6 +12,11 @@ export const accessibilitySchema = z.object({
   mascot: z.enum(["show", "minimised", "hidden"]).default("show"),
   gamification: z.enum(["show", "minimised"]).default("show"),
   speechInput: z.boolean().default(true),
+  /** Read-aloud buttons next to tasks, messages and ideas (the device's own voice). */
+  readAloud: z.boolean().default(true),
+  speechRate: z.enum(["slow", "normal"]).default("normal"),
+  /** Read each new task aloud when the group reaches a new stage. */
+  autoRead: z.boolean().default(false),
   simplifiedInstructions: z.boolean().default(false),
 });
 export type AccessibilityPrefs = z.infer<typeof accessibilitySchema>;

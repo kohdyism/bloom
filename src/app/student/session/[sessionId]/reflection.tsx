@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, Notice, Textarea } from "@/components/ui/primitives";
 import { Buddy, useBuddy } from "@/components/buddy";
 import { cn } from "@/lib/utils";
+import { ReadAloudButton } from "@/components/read-aloud";
 
 /** Post-lesson reflection (spec §24): anchored 1–5 scales + optional free text. */
 export function Reflection({ sessionId, state }: { sessionId: string; state: StudentState }) {
@@ -66,7 +67,7 @@ export function Reflection({ sessionId, state }: { sessionId: string; state: Stu
       {set.ratings.map((r) => (
         <Card key={r.key} className="p-5">
           <fieldset>
-            <legend className="mb-3 font-semibold">{r.question}{r.optional ? <span className="font-normal text-ink-muted"> (optional)</span> : null}</legend>
+            <legend className="mb-3 font-semibold">{r.question}{r.optional ? <span className="font-normal text-ink-muted"> (optional)</span> : null}<ReadAloudButton text={`${r.question} 1 means ${r.low}. 5 means ${r.high}.`} label="Read this question aloud" className="-my-1 ml-1 align-middle" /></legend>
             <div className="flex items-stretch gap-2">
               {[1, 2, 3, 4, 5].map((n) => (
                 <label key={n} className={cn("relative flex flex-1 cursor-pointer flex-col items-center justify-center rounded-xl border-2 py-3 text-lg font-bold has-[:focus-visible]:outline has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-[var(--focus)]", ratings[r.key] === n ? "border-teal bg-teal text-white" : "border-line bg-surface hover:border-line-strong")}>
@@ -84,7 +85,7 @@ export function Reflection({ sessionId, state }: { sessionId: string; state: Stu
       ))}
       {set.questions.map((q) => (
         <div key={q.key} className="flex flex-col gap-1.5">
-          <label htmlFor={`rq-${q.key}`} className="font-semibold">{q.question} <span className="font-normal text-ink-muted">(optional — skip if you like)</span></label>
+          <span className="flex items-center gap-1"><label htmlFor={`rq-${q.key}`} className="font-semibold">{q.question} <span className="font-normal text-ink-muted">(optional — skip if you like)</span></label><ReadAloudButton text={q.question} label="Read this question aloud" /></span>
           <Textarea id={`rq-${q.key}`} rows={2} value={answers[q.key] ?? ""} onChange={(e) => { setAnswers({ ...answers, [q.key]: e.target.value }); bloomBuddy.listen(); }} maxLength={1000} />
         </div>
       ))}

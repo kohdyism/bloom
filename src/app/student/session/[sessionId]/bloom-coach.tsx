@@ -7,6 +7,7 @@ import { Buddy, useBuddy } from "@/components/buddy";
 import { AiOriginBadge } from "@/components/live/ai-badge";
 import { useRun } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
+import { ReadAloudButton } from "@/components/read-aloud";
 import { mentionsHelper } from "@/lib/domain/mentions";
 import { useNow } from "@/lib/use-now";
 import { useWorkspace } from "./context";
@@ -178,7 +179,10 @@ export function BloomCoach({ variant = "rail", className }: { variant?: "rail" |
   ) : (
     <>
       {askedFor && !cheer ? <p className="mb-1 truncate border-l-2 border-[#ffd2c4] pl-2 text-xs text-ink-muted">{askedFor.authorId === state.me.id ? "You" : "Your group"} asked: {askedFor.body}</p> : null}
-      <p key={msgKey} className="msg-in whitespace-pre-line text-[0.98rem] leading-snug">{text}</p>
+      <div className="flex items-start gap-1">
+        <p key={msgKey} className="msg-in min-w-0 flex-1 whitespace-pre-line text-[0.98rem] leading-snug">{text}</p>
+        <ReadAloudButton text={text ?? ""} label="Read what Bloom said" />
+      </div>
     </>
   );
   const askButton = (

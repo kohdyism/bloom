@@ -6,6 +6,7 @@ import { Buddy } from "@/components/buddy";
 import { cn } from "@/lib/utils";
 import { useMediaQuery } from "@/lib/use-media-query";
 import { useWorkspace } from "./context";
+import { ReadAloudButton } from "@/components/read-aloud";
 
 /**
  * Talk time: the screen steps back. A calm, nearly blank page with one big
@@ -31,7 +32,7 @@ export function TalkTime() {
         Discussion time!
       </h1>
       {group.stage?.instructions ? (
-        <p className="mt-5 max-w-2xl font-display text-xl font-semibold leading-snug text-ink/85 sm:mt-6 sm:text-3xl">{group.stage.instructions}</p>
+        <p className="mt-5 max-w-2xl font-display text-xl font-semibold leading-snug text-ink/85 sm:mt-6 sm:text-3xl">{group.stage.instructions}<ReadAloudButton text={group.stage.instructions} label="Read the question aloud" size="md" className="ml-2 align-middle" /></p>
       ) : null}
       <ul className="mt-8 flex flex-wrap justify-center gap-2 text-sm font-semibold text-ink-muted sm:text-base" aria-label="Tips">
         <li className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-3.5 py-1.5"><Repeat2 className="size-4 text-coral" aria-hidden="true" />Take turns</li>

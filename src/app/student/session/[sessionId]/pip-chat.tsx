@@ -10,6 +10,7 @@ import { AiOriginBadge } from "@/components/live/ai-badge";
 import { SpeechButton } from "@/components/live/speech-button";
 import { api } from "@/lib/realtime/client";
 import { cn } from "@/lib/utils";
+import { ReadAloudButton } from "@/components/read-aloud";
 import { useWorkspace } from "./context";
 
 type PMsg = { id: string; role: string; action: string; origin: string | null; body: string; createdAt: string };
@@ -115,6 +116,7 @@ export function PipChat({ active, prefill, tick, className, composerClassName }:
               {m.role !== "student" ? <p className="flex items-center gap-1.5 text-xs text-ink-muted"><span className="font-semibold text-ink">Pip</span><AiOriginBadge origin={m.origin} /></p> : null}
               <div className={cn("whitespace-pre-line rounded-2xl px-3.5 py-2.5 text-[0.95rem]", m.role === "student" ? "bg-teal-soft" : "border-2 border-purple/25 bg-[#f6f2ff]")}>
                 <span className="sr-only">{m.role === "student" ? "You: " : "Pip: "}</span>{m.body}
+                {m.role !== "student" ? <ReadAloudButton text={m.body} label="Read Pip's answer aloud" className="-mb-1 ml-1 align-middle" /> : null}
               </div>
               {m.role !== "student" && /Need help/.test(m.body) ? <span className="inline-flex items-center gap-1 text-xs font-semibold text-coral"><LifeBuoy className="size-3.5" aria-hidden="true" />Use the “Need help” button at the top to reach your teacher.</span> : null}
             </div>

@@ -10,6 +10,7 @@ import { SpeechButton } from "@/components/live/speech-button";
 import { Mascot } from "@/components/mascot";
 import { useRun } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
+import { ReadAloudButton } from "@/components/read-aloud";
 import { useWorkspace } from "./context";
 
 type Msg = GroupContent["messages"][number];
@@ -131,7 +132,7 @@ export function Chat({ className, header, empty, after, composerClassName, onAct
                 </p>
                 <div className={cn("rounded-2xl px-3.5 py-2.5 text-[0.95rem]", m.kind === "ai" ? "border-2 border-[#ffd2c4] bg-[#fff6f1]" : m.kind === "teacher" ? "bg-blue-soft" : mine ? "bg-teal-soft" : "bg-surface-2")}>
                   {parent ? <p className="mb-1 flex gap-1 border-l-2 border-line-strong pl-2 text-xs text-ink-muted"><CornerDownRight className="size-3 shrink-0" aria-hidden="true" /><span className="truncate">{parent.author}: {parent.body}</span></p> : null}
-                  <p className="whitespace-pre-line">{m.body}</p>
+                  <p className="whitespace-pre-line">{m.body}<ReadAloudButton text={`${m.author} said: ${m.body}`} label="Read this message aloud" className="-my-1 ml-1 align-middle" /></p>
                 </div>
                 <div className="flex flex-wrap items-center gap-1">
                   {REACTIONS.map(({ kind, label, icon: Icon }) => {

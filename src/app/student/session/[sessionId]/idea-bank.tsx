@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/primitives";
 import { Button } from "@/components/ui/button";
 import { useRun, useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
+import { ReadAloudButton } from "@/components/read-aloud";
 import { useWorkspace } from "./context";
 
 type SharedIdea = ReturnType<typeof useWorkspace>["group"]["ideas"]["shared"][number];
@@ -36,7 +37,7 @@ export function MyEarlierIdeas() {
       <h3 className="font-display text-lg font-bold">Your ideas from earlier</h3>
       {mine.length === 0 ? <p className="px-1 py-4 text-ink-muted">You didn&apos;t write any ideas earlier. That&apos;s fine — listen, then add your thoughts out loud.</p> : (
         <ul className="flex flex-col gap-2" aria-label="Your ideas from earlier">
-          {mine.map((i) => <li key={i.id} className="whitespace-pre-line rounded-2xl border border-line bg-white p-3 text-[1.05rem] shadow-soft">{i.body}</li>)}
+          {mine.map((i) => <li key={i.id} className="flex items-start gap-1 whitespace-pre-line rounded-2xl border border-line bg-white p-3 text-[1.05rem] shadow-soft"><span className="min-w-0 flex-1">{i.body}</span><ReadAloudButton text={i.body} label="Read this idea aloud" /></li>)}
         </ul>
       )}
     </div>
@@ -151,7 +152,7 @@ function IdeaCard({ idea, parent, votes, onBuild }: { idea: SharedIdea; parent?:
   return (
     <li className="group rounded-2xl border border-line bg-white p-3 shadow-soft transition hover:border-purple/40 hover:shadow-lift">
       {parent ? <p className="mb-1 flex gap-1 text-xs text-ink-muted"><CornerDownRight className="size-3 shrink-0" aria-hidden="true" /><span className="truncate">Builds on: {parent.body}</span></p> : null}
-      <p className="whitespace-pre-line text-[0.97rem] leading-snug">{idea.body}</p>
+      <p className="whitespace-pre-line text-[0.97rem] leading-snug">{idea.body}<ReadAloudButton text={idea.body} label="Read this idea aloud" className="-my-1 ml-1 align-middle" /></p>
       <div className="mt-2 flex items-center gap-1">
         <span className="min-w-0 flex-1 truncate text-xs text-ink-muted">— {idea.author}{votes ? ` · ${votes} vote${votes === 1 ? "" : "s"}` : ""}</span>
         <button type="button" onClick={copy} className="inline-flex h-8 items-center gap-1 rounded-lg px-2 text-xs font-semibold text-ink-muted hover:bg-surface-2 hover:text-ink" aria-label={`Copy idea: ${idea.body.slice(0, 60)}`}>

@@ -9,6 +9,7 @@ import { FlowerPicture } from "@/components/flower";
 import { flowerInfo } from "@/lib/domain/flowers";
 import { useRun } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
+import { ReadAloudButton } from "@/components/read-aloud";
 import { useReducedMotion } from "@/components/a11y-provider";
 import { useFlip, useSettledOrder } from "@/components/ui/settled-list";
 import { useWorkspace, roleName } from "./context";
@@ -113,7 +114,7 @@ function Voting() {
               <li key={i.id} data-flip-id={i.id} className={cn("relative flex items-center gap-3 overflow-hidden rounded-2xl border-2 bg-white p-3 transition-colors", voted ? "border-blue" : "border-line")}>
                 <span className="absolute inset-y-0 left-0 bg-blue-soft transition-[width] duration-500 ease-out" style={{ width: `${(n / max) * 100}%` }} aria-hidden="true" />
                 <div className="relative min-w-0 flex-1">
-                  <p className="font-medium">{i.body}</p>
+                  <p className="font-medium">{i.body}<ReadAloudButton text={i.body} label="Read this idea aloud" className="-my-1 ml-1 align-middle" /></p>
                   <p className="text-xs text-ink-muted">{i.author}</p>
                 </div>
                 <span key={n} className="relative animate-pop font-display text-xl font-bold tabular-nums text-blue" aria-label={`${n} vote${n === 1 ? "" : "s"}`}>{n}</span>

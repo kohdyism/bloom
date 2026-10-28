@@ -5,6 +5,7 @@ import { Lightbulb } from "lucide-react";
 import { STAGE_ICONS } from "@/components/stage-icon";
 import { useA11y } from "@/components/a11y-provider";
 import { cn } from "@/lib/utils";
+import { ReadAloudButton } from "@/components/read-aloud";
 import { useWorkspace } from "./context";
 import { StagePanel } from "./stage-panel";
 import { IdeaBank } from "./idea-bank";
@@ -81,7 +82,10 @@ function TaskText({ text, simplified }: { text: string; simplified: boolean }) {
   const long = text.length > 90;
   return (
     <div className="mt-1.5">
-      <p className={cn("whitespace-pre-line font-display text-lg font-semibold leading-snug sm:text-xl", long && !open && "max-sm:line-clamp-2")}>{all ? text : sentences[0]}</p>
+      <div className="flex items-start gap-1">
+        <p className={cn("min-w-0 flex-1 whitespace-pre-line font-display text-lg font-semibold leading-snug sm:text-xl", long && !open && "max-sm:line-clamp-2")}>{all ? text : sentences[0]}</p>
+        <ReadAloudButton text={text} label="Read the task aloud" size="md" />
+      </div>
       {long ? <button type="button" className="mt-0.5 text-sm font-semibold text-teal underline-offset-4 hover:underline sm:hidden" aria-expanded={open} onClick={() => setOpen((o) => !o)}>{open ? "Show less" : "Show all"}</button> : null}
       {!all ? <button type="button" className="mt-1 text-sm font-semibold text-teal underline-offset-4 hover:underline" onClick={() => setAll(true)}>Show full instructions</button> : null}
     </div>

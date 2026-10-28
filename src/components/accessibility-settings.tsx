@@ -49,6 +49,16 @@ export function AccessibilitySettingsPanel({ showStudentOptions = false }: { sho
             options={[{ value: "show", label: "Show" }, { value: "minimised", label: "Minimise" }]} />
           <Switch id="a11y-simple" label="Simpler instructions first" description="Show a short, plain-language version of each task at the top."
             checked={prefs.simplifiedInstructions} onCheckedChange={(v) => update({ simplifiedInstructions: v })} />
+          <Switch id="a11y-read" label="Read aloud" description="Speaker buttons next to the task, messages and ideas read them out with your device's voice. Nothing is sent anywhere."
+            checked={prefs.readAloud} onCheckedChange={(v) => update({ readAloud: v })} />
+          {prefs.readAloud ? (
+            <>
+              <Segmented label="Reading speed" value={prefs.speechRate} onChange={(v) => update({ speechRate: v })}
+                options={[{ value: "slow", label: "Slower" }, { value: "normal", label: "Normal" }]} />
+              <Switch id="a11y-autoread" label="Read each new task aloud" description="When your group moves to a new stage, the task is read out automatically."
+                checked={prefs.autoRead} onCheckedChange={(v) => update({ autoRead: v })} />
+            </>
+          ) : null}
           <Switch id="a11y-speech" label="Speech-to-text button" description="Lets you speak instead of type, where your device supports it. Canopy never listens unless you press the button."
             checked={prefs.speechInput} onCheckedChange={(v) => update({ speechInput: v })} />
         </>

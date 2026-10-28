@@ -9,6 +9,7 @@ import { useMediaQuery } from "@/lib/use-media-query";
 import { useToast } from "@/components/ui/toast";
 import { useA11y } from "@/components/a11y-provider";
 import { Buddy } from "@/components/buddy";
+import { speak } from "@/components/read-aloud";
 import { PlantBubble } from "@/components/live/plant-bubble";
 import { Avatar } from "@/components/ui/primitives";
 import { artifactBus } from "@/components/collab/artifact-bus";
@@ -102,11 +103,13 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
     if (!g) return;
     if (lastStage.current !== undefined && g.stageIndex !== lastStage.current) {
       setAnnounce(g.stageStatus === "complete" ? "Your group finished every stage." : `New stage: ${g.stage?.title}`);
+      // Students who chose it hear each new task read aloud.
+      if (prefs.autoRead && prefs.readAloud && g.stage && g.stageStatus !== "complete") speak(`New task: ${g.stage.title}. ${g.stage.instructions}`, { rate: prefs.speechRate });
       // Only the finish gets a pop-up; the header and chat already show each new stage.
       if (prefs.celebrations && g.stageStatus === "complete") toast({ title: "Every stage complete — well done, team!", tone: "teal" });
     }
     lastStage.current = g.stageIndex;
-  }, [state.group, prefs.celebrations, toast]);
+  }, [state.group, prefs.celebrations, prefs.autoRead, prefs.readAloud, prefs.speechRate, toast]);
 
   const act = useCallback(async (b: StudentAction) => {
     const res = await api("/api/live/student", { method: "POST", json: { sessionId, ...b } });

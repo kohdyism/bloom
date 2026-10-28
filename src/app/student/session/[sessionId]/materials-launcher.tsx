@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Dialog as RDialog } from "radix-ui";
 import { BookOpen, ExternalLink, FileText, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ReadAloudButton } from "@/components/read-aloud";
 
 type Material = { id: string; title: string; kind: string; body: string };
 
@@ -58,7 +59,10 @@ export function MaterialsLauncher({ materials, open, onOpenChange }: { materials
           ) : null}
           <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
             {current.kind === "text" ? (
+              <>
+              <div className="mx-auto mb-2 flex max-w-prose items-center gap-2"><ReadAloudButton text={`${current.title}. ${current.body}`} label="Read this aloud" size="md" /><span className="text-sm text-ink-muted">Read aloud</span></div>
               <div className="mx-auto max-w-prose whitespace-pre-line font-serif text-[1.15rem] leading-[1.75]">{current.body}</div>
+              </>
             ) : (
               <a className="inline-flex items-center gap-1.5 font-semibold text-teal underline" href={`/api/materials/${current.id}`} target="_blank" rel="noreferrer"><ExternalLink className="size-4" aria-hidden="true" />Open the file</a>
             )}
