@@ -1,4 +1,5 @@
 import "server-only";
+import { teacherBlock } from "./tutor";
 import { runText, stableIndex, untrusted, type AiResult } from "./core";
 import type { StageKind } from "@/lib/domain/lesson";
 
@@ -39,6 +40,8 @@ export type FacilitatorContext = {
   intensity: "low" | "moderate" | "high";
   assistanceLevel: number;
   outputType: string;
+  teacherInstructions?: string;
+  bannedWords?: string[];
 };
 
 function systemPrompt(ctx: FacilitatorContext) {
@@ -52,7 +55,7 @@ How you speak:
 - Ask questions that make students explain their reasoning and use evidence. Encourage building on each other's ideas and respectful disagreement.
 - Academic support level ${ctx.assistanceLevel} of 3 (1 = only guiding questions, 2 = clear explanations and scaffolds, 3 = deeper explanation with an analogous example). At every level, never write the group's answer, paragraph, slides or final output.
 
-Lesson: ${ctx.lessonTitle}
+${teacherBlock(ctx.teacherInstructions, ctx.bannedWords)}Lesson: ${ctx.lessonTitle}
 Objectives: ${ctx.objectives.join("; ") || "(not given)"}
 Current stage: ${ctx.stage.title} (${ctx.stage.kind})
 Final output: ${ctx.outputType}`;

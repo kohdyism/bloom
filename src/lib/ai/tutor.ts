@@ -43,6 +43,9 @@ export type TutorContext = {
   preferences: string[];
   level: number;
   history: { role: "student" | "assistant"; body: string }[];
+  /** The teacher's own instructions for Bloom and Pip (AI settings), and words never to use. */
+  teacherInstructions?: string;
+  bannedWords?: string[];
 };
 
 const LEVELS: Record<number, string> = {
@@ -50,6 +53,14 @@ const LEVELS: Record<number, string> = {
   2: "Level 2 — Structured scaffolding. Give clear explanations, simplified instructions, examples of a similar (not identical) kind, sentence starters and outlines.",
   3: "Level 3 — Detailed support. Give deeper explanations and worked examples on an analogous problem or text — never on the group's actual task.",
 };
+
+/** The teacher's standing instructions (AI settings page). They can't override the safety rules above them. */
+export function teacherBlock(instructions?: string, banned?: string[]) {
+  const parts = [];
+  if (instructions?.trim()) parts.push(`The teacher's instructions for all their lessons (follow them unless they conflict with the rules above): ${instructions.trim().slice(0, 2000)}`);
+  if (banned?.length) parts.push(`Never use these words: ${banned.slice(0, 100).join(", ")}.`);
+  return parts.length ? parts.join("\n") + "\n\n" : "";
+}
 
 function systemPrompt(ctx: TutorContext) {
   return `You are Pip, a private learning assistant in Canopy for one student aged 13–14. Only this student sees this conversation (their teacher sees only how many times they asked for each kind of help, not the words).
@@ -64,7 +75,7 @@ Rules:
 - Only help with today's task and the learning around it. If the student asks about something unrelated (games, social media, homework for another subject, personal trivia), don't answer it: say kindly that you only help with today's task, and offer to explain the task or break it into steps.
 - If the student says they feel upset, unsafe, or that something is making them uncomfortable, respond kindly and encourage them to use the "Need help" button to talk to their teacher, or to speak to a trusted adult. Don't try to handle it yourself.
 
-Lesson: ${ctx.lessonTitle} (${ctx.subject || "subject not given"})
+${teacherBlock(ctx.teacherInstructions, ctx.bannedWords)}Lesson: ${ctx.lessonTitle} (${ctx.subject || "subject not given"})
 Objectives: ${ctx.objectives.join("; ") || "(not given)"}
 Current stage: ${ctx.stage.title}`;
 }

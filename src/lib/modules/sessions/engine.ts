@@ -293,7 +293,10 @@ export async function buildFacilitatorContext(db: Db, session: SessionRow, group
   );
   const roles = await db.query<{ student_id: string; role_key: string }>("select student_id, role_key from group_roles where group_id = $1", [group.id]);
   const roleName = (k: string) => session.snapshot.config.roles.find((r) => r.key === k)?.name ?? k;
+  const teacher = await db.maybeOne<{ instructions: string; banned_words: string[] }>("select instructions, banned_words from teacher_ai_settings where teacher_id = $1", [session.teacher_id]);
   return {
+    teacherInstructions: teacher?.instructions ?? "",
+    bannedWords: teacher?.banned_words ?? [],
     lessonTitle: session.snapshot.title,
     objectives: session.snapshot.objectives,
     stage: { kind: stage.kind, title: stage.title, instructions: stage.instructions },

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, LayoutDashboard, Radio, Users, BarChart3 } from "lucide-react";
+import { BookOpen, LayoutDashboard, Radio, Users, BarChart3, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
@@ -11,6 +11,7 @@ const items = [
   { href: "/teacher/lessons", label: "Lesson library", icon: BookOpen },
   { href: "/teacher/sessions", label: "Live sessions", icon: Radio },
   { href: "/teacher/reports", label: "Reports", icon: BarChart3 },
+  { href: "/teacher/ai", label: "AI settings", icon: Sparkles },
 ];
 
 export function TeacherNav() {

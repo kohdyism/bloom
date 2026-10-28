@@ -7,7 +7,7 @@ import { requireUser } from "@/lib/auth/current-user";
 import { lessonDraftSchema, defaultConfig, makeStage, type LessonDraft } from "@/lib/domain/lesson";
 import { LESSON_TEMPLATES } from "@/lib/domain/templates";
 import {
-  addFileMaterial, addStageFile, addTextMaterial, approveAiDraft, createLesson, deleteLesson, duplicateLesson, removeMaterial, saveLesson,
+  addFileMaterial, addStageFile, addTextMaterial, createFolder, deleteFolder, moveLessonToFolder, renameFolder, approveAiDraft, createLesson, deleteLesson, duplicateLesson, removeMaterial, saveLesson,
 } from "@/lib/modules/lessons";
 import { generateLessonDraft } from "@/lib/ai/lesson-generation";
 import { rateLimit, RateLimitError } from "@/lib/security/rate-limit";
@@ -141,4 +141,25 @@ export async function removeMaterialAction(lessonId: string, materialId: string)
   const user = await requireUser("teacher");
   await removeMaterial(user.id, materialId);
   revalidatePath(`/teacher/lessons/${lessonId}`);
+}
+
+// Library folders ------------------------------------------------------------
+type FolderResult = { ok?: boolean; error?: string; id?: string };
+const folderErr = (e: unknown) => ({ error: e instanceof Error && e.message && !e.message.includes("not found") ? e.message : "That didn't work. Please try again." });
+
+export async function createFolderAction(classId: string | null, name: string): Promise<FolderResult> {
+  const user = await requireUser("teacher");
+  try { const id = await createFolder(user.id, classId, name); revalidatePath("/teacher/lessons"); return { ok: true, id }; } catch (e) { return folderErr(e); }
+}
+export async function renameFolderAction(folderId: string, name: string): Promise<FolderResult> {
+  const user = await requireUser("teacher");
+  try { await renameFolder(user.id, folderId, name); revalidatePath("/teacher/lessons"); return { ok: true }; } catch (e) { return folderErr(e); }
+}
+export async function deleteFolderAction(folderId: string): Promise<FolderResult> {
+  const user = await requireUser("teacher");
+  try { await deleteFolder(user.id, folderId); revalidatePath("/teacher/lessons"); return { ok: true }; } catch (e) { return folderErr(e); }
+}
+export async function moveLessonAction(lessonId: string, folderId: string | null): Promise<FolderResult> {
+  const user = await requireUser("teacher");
+  try { await moveLessonToFolder(user.id, lessonId, folderId); revalidatePath("/teacher/lessons"); return { ok: true }; } catch (e) { return folderErr(e); }
 }

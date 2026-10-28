@@ -15,6 +15,20 @@ test("complete inclusive classroom lesson", async ({ browser }) => {
   await t.getByRole("link", { name: /Year 8 Literature — Class 1/ }).click();
   await expect(t.getByRole("heading", { name: "Year 8 Literature — Class 1", exact: true })).toBeVisible();
 
+  // AI settings for all lessons: a banned word the class shouldn't use.
+  await t.getByRole("link", { name: "AI settings" }).click();
+  await t.getByLabel("Words to ban").fill("banana");
+  await t.getByRole("button", { name: "Add", exact: true }).click();
+  await t.getByRole("button", { name: "Save AI settings" }).click();
+  await expect(t.getByRole("status").filter({ hasText: "Saved" })).toBeVisible();
+
+  // The library is organised by class, with the teacher's own folders inside.
+  await t.goto("/teacher/lessons");
+  await t.getByRole("link", { name: /^Year 8 Literature — Class 1/ }).first().click();
+  await expect(t.getByRole("link", { name: /^Poetry unit/ })).toBeVisible();
+  await t.getByRole("link", { name: /^Poetry unit/ }).click();
+  await expect(t.getByRole("heading", { name: "Reading 'Alone' together", exact: true })).toBeVisible();
+
   // 3–4. Open the lesson; configure stages (add role selection), timings and group sizes.
   await t.goto("/teacher/lessons");
   await t.getByRole("heading", { name: "Reading 'Alone' together", exact: true }).click();
@@ -98,6 +112,11 @@ test("complete inclusive classroom lesson", async ({ browser }) => {
   await expect(a1.page.getByText("Add at least one idea first")).toBeVisible();
   const tooSoon = await apiAs(a1, "POST", "/api/live/student", { action: "readiness", sessionId, state: "ready" });
   expect(tooSoon.status).toBe(409);
+  // Nonsense isn't shared: the idea is held back with a kind note, and the text stays to edit.
+  await a1.page.getByLabel("Your idea").fill("asdfghjk");
+  await a1.page.getByRole("button", { name: "Add idea" }).click();
+  await expect(a1.page.getByText("That doesn't look like an idea yet").first()).toBeVisible();
+  await expect(a1.page.getByLabel("Your idea")).toHaveValue("asdfghjk");
   await a1.page.getByLabel("Your idea").fill("The speaker feels lonely because he sees the world differently from others.");
   await a1.page.getByRole("button", { name: "Add idea" }).click();
   // Saved ideas are listed under the idea box, marked private.
@@ -129,6 +148,11 @@ test("complete inclusive classroom lesson", async ({ browser }) => {
   await a1.page.getByLabel("Message your group").fill("I think the storm line is the strongest evidence.");
   await a1.page.getByRole("button", { name: "Send message" }).click();
   await expect(a2.page.getByText("I think the storm line is the strongest evidence.")).toBeVisible();
+  // The teacher's banned word is held back, even in an open chat.
+  await a1.page.getByLabel("Message your group").fill("banana time");
+  await a1.page.getByRole("button", { name: "Send message" }).click();
+  await expect(a1.page.getByText("your teacher has asked everyone not to use")).toBeVisible();
+  await a1.page.getByLabel("Message your group").fill("");
   await a2.page.getByRole("button", { name: "Agree", exact: true }).first().click();
   await expect(a1.page.getByRole("button", { name: "Agree (1)" })).toBeVisible();
   // Discussion is face to face: each student sees only their own earlier ideas, and no AI buttons.

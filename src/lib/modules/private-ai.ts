@@ -5,7 +5,8 @@ import { rateLimit } from "@/lib/security/rate-limit";
 import type { AccommodationKind } from "@/lib/domain/students";
 import { QUICK_ACTIONS, tutorReply, type QuickAction, type TutorContext } from "@/lib/ai/tutor";
 import { pipAvailableIn } from "@/lib/domain/lesson";
-import { PIP_REDIRECTS, ruleCheck, type FlagCategory } from "@/lib/domain/moderation";
+import { bannedWordHit, PIP_REDIRECTS, ruleCheck, type FlagCategory } from "@/lib/domain/moderation";
+import { aiSettingsForSession } from "./ai-settings";
 import { reviewChatMessage } from "@/lib/ai/chat-guard";
 import { config as appConfig } from "@/lib/config";
 import { raiseFlag } from "./flags";
@@ -97,9 +98,13 @@ export async function askPrivateAssistant(uid: string, sessionId: string, action
   // Guardrails: Pip only helps with the task. Off-task, unkind or inappropriate questions get a
   // kind redirect instead of an answer, and worrying ones are passed to the teacher straight away.
   const asked = text?.trim() ?? "";
+  const settings = await aiSettingsForSession(sessionId);
+  ctx.teacherInstructions = settings.instructions;
+  ctx.bannedWords = settings.bannedWords;
   let category: FlagCategory | null = asked ? ruleCheck(asked) : null;
+  if (!category && asked && bannedWordHit(asked, settings.bannedWords)) category = "inappropriate";
   if (!category && action === "question" && asked.length > 3 && appConfig.aiMode === "live") {
-    const verdict = await reviewChatMessage({ lesson: ctx.lessonTitle, stage: ctx.stage.title, instructions: ctx.stage.instructions, recent: [], text: asked }).catch(() => null);
+    const verdict = await reviewChatMessage({ lesson: ctx.lessonTitle, stage: ctx.stage.title, instructions: ctx.stage.instructions, recent: [], text: asked, teacherInstructions: settings.instructions }).catch(() => null);
     if (verdict && verdict.verdict !== "ok") category = verdict.verdict;
   }
   if (category) {

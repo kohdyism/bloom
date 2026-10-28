@@ -5,7 +5,10 @@ import { asServer, asUser, NotFoundError, type Db } from "@/lib/db";
 import { publish, ch } from "@/lib/realtime/server";
 import { ApiError, badRequest, conflict, forbidden } from "@/lib/api";
 import { rateLimit } from "@/lib/security/rate-limit";
-import { safeguardingConcern, type FlagCategory } from "@/lib/domain/moderation";
+import { bannedWordHit, IDEA_NOTES, safeguardingConcern, type FlagCategory } from "@/lib/domain/moderation";
+import { reviewIdea } from "@/lib/ai/idea-guard";
+import { aiSettingsForSession } from "@/lib/modules/ai-settings";
+import { config as appConfig } from "@/lib/config";
 import { cleanReflection, reflectionFor } from "@/lib/domain/reflection";
 import { raiseFlag } from "@/lib/modules/flags";
 import { background } from "@/lib/background";
@@ -125,6 +128,11 @@ export async function saveIdea(uid: string, sessionId: string, input: { id?: str
   const body = input.body.trim();
   if (!body) throw badRequest("Write your idea first.");
   if (body.length > 1000) throw badRequest("Ideas can be up to 1000 characters.");
+  // Ideas are checked before the group sees them (drafts stay private, so they aren't).
+  const pre = await asUser(uid, (db) => studentContext(db, uid, sessionId));
+  const preKind = pre.group ? pre.session.snapshot.stages[pre.group.stage_index]?.kind : undefined;
+  const willShare = input.submit || preKind === "synthesis" || preKind === "discussion" || preKind === "voting";
+  if (willShare && pre.group) await checkIdea(uid, sessionId, pre.session, pre.group, body);
   const { group, shared } = await asUser(uid, async (db) => {
     const ctx = await studentContext(db, uid, sessionId);
     const group = requireGroup(ctx);
@@ -158,6 +166,28 @@ export async function saveIdea(uid: string, sessionId: string, input: { id?: str
   if (shared) await notifyGroup(group, "ideas.updated");
   else await publish([{ channel: ch.teacher(group.session_id), event: "ideas.updated", payload: { groupId: group.id } }, { channel: ch.user(uid), event: "ideas.updated" }]);
   await syncGroup(group.id);
+}
+
+/** Hold back nonsense, off-task, unkind or worrying ideas, with a kind note; tell the teacher when it matters. */
+async function checkIdea(uid: string, sessionId: string, session: SessionRow, group: GroupRow, text: string) {
+  const settings = await aiSettingsForSession(sessionId);
+  const stage = session.snapshot.stages[group.stage_index];
+  const banned = bannedWordHit(text, settings.bannedWords);
+  let verdict: { verdict: string; note: string; flag: FlagCategory | null };
+  if (safeguardingConcern(text)) verdict = { verdict: "safeguarding", note: IDEA_NOTES.safeguarding, flag: "safeguarding" };
+  else if (banned) verdict = { verdict: "banned", note: IDEA_NOTES.banned, flag: "inappropriate" };
+  else if (!settings.ideaCheck) return;
+  else {
+    const v = await reviewIdea({ lesson: session.snapshot.title, stage: stage?.title ?? "", instructions: stage?.instructions ?? "", teacherInstructions: settings.instructions, text, useAi: appConfig.aiMode === "live" && group.ai_enabled });
+    if (v.verdict === "ok") return;
+    verdict = { verdict: v.verdict, note: v.note, flag: v.verdict === "nonsense" ? null : v.verdict };
+  }
+  await asServer((db) => db.query(
+    "insert into audit_events(actor_id, session_id, action, target, details) values ($1,$2,'idea.held',$3,$4)",
+    [uid, sessionId, group.id, JSON.stringify({ verdict: verdict.verdict })],
+  )).catch(() => {});
+  if (verdict.flag) await raiseFlag({ sessionId, groupId: group.id, studentId: uid, source: "idea", category: verdict.flag, excerpt: text }).catch(() => {});
+  throw conflict(verdict.note, "idea_held");
 }
 
 export async function deleteIdea(uid: string, sessionId: string, ideaId: string) {
@@ -241,9 +271,15 @@ export async function postMessage(uid: string, sessionId: string, body: string, 
       : null;
     return { group, supervise };
   });
+  // The teacher's banned words are always held back, supervised chat or not.
+  const settings = await aiSettingsForSession(sessionId);
+  if (bannedWordHit(text, settings.bannedWords)) {
+    await raiseFlag({ sessionId, groupId: group.id, studentId: uid, source: "chat", category: "inappropriate", excerpt: text }).catch(() => {});
+    return { held: { verdict: "inappropriate", note: IDEA_NOTES.banned } };
+  }
   // Supervised chat: Bloom checks the message before anyone else sees it.
   if (supervise) {
-    const check = group.ai_enabled ? await reviewChatMessage({ ...supervise, text }) : quickCheck(text);
+    const check = group.ai_enabled ? await reviewChatMessage({ ...supervise, teacherInstructions: settings.instructions, text }) : quickCheck(text);
     if (check.verdict !== "ok") {
       await asServer((db) => db.query(
         "insert into audit_events(actor_id, session_id, action, target, details) values ($1,$2,'chat.held',$3,$4)",

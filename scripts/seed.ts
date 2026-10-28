@@ -181,6 +181,19 @@ async function createUser(client: Client, opts: { username: string; name: string
   return id;
 }
 
+/** An example library folder: the poem lesson inside a "Poetry unit" folder in its class (only if the teacher has no folders yet). */
+async function demoFolder(client: Client) {
+  const t = await client.query<{ id: string }>("select id from public.profiles where username = $1", [DEMO_TEACHER.username]);
+  if (!t.rowCount) return;
+  const teacherId = t.rows[0].id;
+  const has = await client.query("select 1 from public.lesson_folders where teacher_id = $1 limit 1", [teacherId]);
+  if (has.rowCount) return;
+  const lesson = await client.query<{ id: string; class_id: string | null }>("select id, class_id from public.lessons where teacher_id = $1 and title = $2 limit 1", [teacherId, "Reading 'Alone' together"]);
+  if (!lesson.rowCount) return;
+  const f = await client.query<{ id: string }>("insert into public.lesson_folders(teacher_id, class_id, name) values ($1,$2,'Poetry unit') returning id", [teacherId, lesson.rows[0].class_id]);
+  await client.query("update public.lessons set folder_id = $2 where id = $1", [lesson.rows[0].id, f.rows[0].id]);
+}
+
 export async function seed(client: Client) {
   const existing = await client.query("select 1 from public.profiles where username = $1", [DEMO_TEACHER.username]);
   if (existing.rowCount) {
@@ -195,6 +208,7 @@ export async function seed(client: Client) {
         [JSON.stringify(extra), lesson.draft.title, DEMO_TEACHER.username],
       );
     }
+    await demoFolder(client);
     console.log("  demo data already present — skipping (use db:reset for a clean slate)");
     return;
   }
@@ -273,6 +287,7 @@ export async function seed(client: Client) {
       }
     }
     await client.query("commit");
+    await demoFolder(client);
     console.log(`  seeded 1 teacher, ${studentIds.length} students, ${classDefs.length} classes, ${DEMO_LESSONS.length} lessons`);
   } catch (err) {
     await client.query("rollback");

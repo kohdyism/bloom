@@ -8,15 +8,16 @@ export type LessonListItem = {
   id: string; title: string; subject: string; yearLevel: string; className: string | null; classId: string | null;
   stageCount: number; totalSeconds: number; isTemplate: boolean; source: string; needsApproval: boolean; updatedAt: string;
   tags: string[];
+  folderId: string | null;
 };
 
 export async function listLessons(uid: string): Promise<LessonListItem[]> {
   return asUser(uid, async (db) => {
     const rows = await db.query<{
       id: string; title: string; subject: string; year_level: string; class_name: string | null; class_id: string | null;
-      stages: string; seconds: string | null; is_template: boolean; source: string; ai_draft_approved_at: Date | null; updated_at: Date; tags: unknown;
+      stages: string; seconds: string | null; is_template: boolean; source: string; ai_draft_approved_at: Date | null; updated_at: Date; tags: unknown; folder_id: string | null;
     }>(
-      `select l.id, l.title, l.subject, l.year_level, c.name as class_name, l.class_id, l.is_template, l.source, l.ai_draft_approved_at, l.updated_at, l.config -> 'tags' as tags,
+      `select l.id, l.title, l.subject, l.year_level, c.name as class_name, l.class_id, l.is_template, l.source, l.ai_draft_approved_at, l.updated_at, l.config -> 'tags' as tags, l.folder_id,
               (select count(*) from lesson_stages s where s.lesson_id = l.id) as stages,
               (select sum(duration_seconds) from lesson_stages s where s.lesson_id = l.id) as seconds
        from lessons l left join classes c on c.id = l.class_id
@@ -28,6 +29,7 @@ export async function listLessons(uid: string): Promise<LessonListItem[]> {
       stageCount: Number(r.stages), totalSeconds: Number(r.seconds ?? 0), isTemplate: r.is_template, source: r.source,
       needsApproval: r.source === "ai" && !r.ai_draft_approved_at, updatedAt: r.updated_at.toISOString(),
       tags: Array.isArray(r.tags) ? r.tags.filter((t): t is string => typeof t === "string").slice(0, 10) : [],
+      folderId: r.folder_id,
     }));
   });
 }
@@ -110,6 +112,11 @@ export async function saveLesson(uid: string, lessonId: string, draftInput: Less
       [lessonId, uid, draft.title, draft.description, draft.subject, draft.yearLevel, draft.objectives, JSON.stringify(draft.config), classId],
     );
     if (!updated.length) throw new NotFoundError();
+    // A lesson moved to another class leaves the old class's folder.
+    await db.query(
+      "update lessons set folder_id = null where id = $1 and folder_id is not null and folder_id not in (select id from lesson_folders where class_id is not distinct from $2)",
+      [lessonId, classId],
+    );
     await writeStages(db, lessonId, draft);
   });
 }
@@ -178,4 +185,52 @@ export async function addStageFile(uid: string, lessonId: string, title: string,
 
 export async function removeMaterial(uid: string, materialId: string) {
   await asUser(uid, (db) => db.query("delete from lesson_materials where id = $1", [materialId]));
+}
+
+// ---------------------------------------------------------------------------
+// Library folders: grouped by class first; inside a class, the teacher's own folders.
+// ---------------------------------------------------------------------------
+export type LessonFolder = { id: string; classId: string | null; name: string };
+
+export async function listFolders(uid: string): Promise<LessonFolder[]> {
+  return asUser(uid, async (db) => {
+    const rows = await db.query<{ id: string; class_id: string | null; name: string }>("select id, class_id, name from lesson_folders where teacher_id = $1 order by name", [uid]);
+    return rows.map((r) => ({ id: r.id, classId: r.class_id, name: r.name }));
+  });
+}
+
+export async function createFolder(uid: string, classId: string | null, name: string) {
+  const n = name.trim().slice(0, 80);
+  if (!n) throw new Error("Give the folder a name.");
+  return asUser(uid, async (db) => {
+    if (classId) {
+      const ok = await db.maybeOne("select 1 from classes where id = $1 and teacher_id = $2", [classId, uid]);
+      if (!ok) throw new NotFoundError();
+    }
+    return (await db.one<{ id: string }>("insert into lesson_folders(teacher_id, class_id, name) values ($1,$2,$3) returning id", [uid, classId, n])).id;
+  });
+}
+
+export async function renameFolder(uid: string, folderId: string, name: string) {
+  const n = name.trim().slice(0, 80);
+  if (!n) throw new Error("Give the folder a name.");
+  await asUser(uid, (db) => db.query("update lesson_folders set name = $3 where id = $1 and teacher_id = $2", [folderId, uid, n]));
+}
+
+/** Deleting a folder never deletes lessons: they go back to the class. */
+export async function deleteFolder(uid: string, folderId: string) {
+  await asUser(uid, (db) => db.query("delete from lesson_folders where id = $1 and teacher_id = $2", [folderId, uid]));
+}
+
+export async function moveLessonToFolder(uid: string, lessonId: string, folderId: string | null) {
+  await asUser(uid, async (db) => {
+    const lesson = await db.maybeOne<{ class_id: string | null }>("select class_id from lessons where id = $1 and teacher_id = $2", [lessonId, uid]);
+    if (!lesson) throw new NotFoundError();
+    if (folderId) {
+      const f = await db.maybeOne<{ class_id: string | null }>("select class_id from lesson_folders where id = $1 and teacher_id = $2", [folderId, uid]);
+      if (!f) throw new NotFoundError();
+      if (f.class_id !== lesson.class_id) throw new Error("That folder belongs to a different class.");
+    }
+    await db.query("update lessons set folder_id = $3 where id = $1 and teacher_id = $2", [lessonId, uid, folderId]);
+  });
 }

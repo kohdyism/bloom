@@ -4,6 +4,7 @@ import { uuid } from "@/lib/api";
 import { studentProgress } from "@/lib/modules/student-report";
 import { helpLabel } from "@/lib/domain/help";
 import { PrintBar } from "./print-bar";
+import { QualityReview } from "./quality-review";
 
 export const metadata = { title: "Student progress report" };
 
@@ -32,7 +33,7 @@ export default async function StudentReportPage(props: { params: Promise<{ stude
         <p className="text-sm font-semibold uppercase tracking-wide text-teal">Canopy · Student progress report</p>
         <h1 className="font-display text-3xl font-bold">{r.student.name}</h1>
         <p className="text-ink-muted">{r.lessons.length} lesson{r.lessons.length === 1 ? "" : "s"}{r.lessons.length ? ` · ${day(r.lessons[0].date)} to ${day(r.lessons[r.lessons.length - 1].date)}` : ""} · Printed {day(r.generatedAt)}</p>
-        <p className="mt-2 text-xs text-ink-muted">Confidential: for the student, their family and school staff. Fictional demo data.</p>
+        <p className="mt-2 text-xs text-ink-muted">Confidential: for the student, their family and school staff. Fictional demo data. “Quality of written work” ratings were suggested by AI from written work only and checked by the teacher; they don&apos;t include what was said out loud.</p>
       </header>
 
       <section aria-labelledby="sum-h" className="mb-6">
@@ -84,6 +85,7 @@ export default async function StudentReportPage(props: { params: Promise<{ stude
                 </div>
               </div>
             ) : <p className="mt-2 text-sm text-ink-muted">{l.ended ? "No reflection submitted." : "Lesson still running."}</p>}
+            <QualityReview sessionId={l.sessionId} studentId={r.student.id} review={l.review} />
           </article>
         ))}
       </section>

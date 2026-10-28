@@ -30,14 +30,14 @@ export function quickCheck(text: string): ChatVerdict {
   return v ? { verdict: v, note: CHAT_NOTES[v] } : { verdict: "ok", note: "" };
 }
 
-export async function reviewChatMessage(input: { lesson: string; stage: string; instructions: string; recent: string[]; text: string }): Promise<ChatVerdict> {
+export async function reviewChatMessage(input: { lesson: string; stage: string; instructions: string; recent: string[]; text: string; teacherInstructions?: string }): Promise<ChatVerdict> {
   const quick = quickCheck(input.text);
   // Clear-cut cases don't need the AI.
   if (quick.verdict !== "ok") return quick;
   if (input.text.trim().length <= 3) return quick;
   const res = await runStructured({
     workflow: "facilitator",
-    system: SYSTEM,
+    system: SYSTEM + (input.teacherInstructions ? `\nThe teacher's own guidance (follow it unless it conflicts with the rules above): ${input.teacherInstructions.slice(0, 1000)}` : ""),
     prompt: [
       `Lesson: ${input.lesson}`,
       `Current stage: ${input.stage}`,

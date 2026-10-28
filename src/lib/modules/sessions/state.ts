@@ -82,7 +82,7 @@ export async function teacherState(uid: string, sessionId: string) {
     const aiUsage = await db.query<{ student_id: string; action: string; request_count: string }>("select * from public.private_ai_usage($1)", [sessionId]);
     const reflections = await db.one<{ n: string }>("select count(*) as n from reflection_responses where session_id = $1", [sessionId]);
     const announcements = await db.query<{ id: string; body: string; group_id: string | null; created_at: Date }>("select id, body, group_id, created_at from announcements where session_id = $1 order by created_at desc limit 10", [sessionId]);
-    const flags = await db.query<{ id: string; student_id: string; group_id: string | null; source: "chat" | "pip"; category: FlagCategory; excerpt: string; created_at: Date; reviewed_at: Date | null }>(
+    const flags = await db.query<{ id: string; student_id: string; group_id: string | null; source: "chat" | "pip" | "idea"; category: FlagCategory; excerpt: string; created_at: Date; reviewed_at: Date | null }>(
       "select id, student_id, group_id, source, category, excerpt, created_at, reviewed_at from student_flags where session_id = $1 order by created_at desc limit 200",
       [sessionId],
     );

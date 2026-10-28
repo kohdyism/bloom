@@ -31,9 +31,33 @@ const SAFEGUARDING = new RegExp(
   "i",
 );
 const INAPPROPRIATE = /\b(porn\w*|nudes?|sex(y|ual)?|f+u+c+k\w*|sh[i1]t\w*|b[i1]tch\w*|c[u*]nt|dick|wank\w*|weed|vape|drugs?|cocaine|kill you|stab you|shoot (you|up))\b/i;
-const UNKIND = /\b(stupid|idiot|dumb|shut up|loser|ugly|hate you|freak|moron|retard|stfu|kys)\b/i;
+const UNKIND = /\b(stupid|idiots?|dumb|shut up|losers?|ugly|hate you|freaks?|morons?|retards?|stfu|kys)\b/i;
 const OFF_TASK = /\b(fortnite|roblox|minecraft|tiktok|youtube|instagram|snap(chat)?|lunch break plans|who wants to play)\b/i;
 const MASH = /^(.)\1{5,}$|^([a-z]{1,3})\2{3,}$/i;
+
+/** A teacher's banned word appears in the text (whole words, any case). */
+export function bannedWordHit(text: string, words: readonly string[]): string | null {
+  for (const raw of words) {
+    const w = raw.trim();
+    if (!w) continue;
+    const esc = w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    if (new RegExp(`(^|[^\\p{L}\\p{N}])${esc}($|[^\\p{L}\\p{N}])`, "iu").test(text)) return w;
+  }
+  return null;
+}
+
+/** Clearly not an idea yet: keyboard mashing, a lone filler word, no real words. */
+export function looksLikeNonsense(text: string): boolean {
+  const t = text.trim().toLowerCase();
+  const letters = t.replace(/[^\p{L}]/gu, "");
+  if (letters.length < 2) return true;
+  if (/^(idk|dunno|nothing|no idea|lol|lmao|ok|okay|yes|no|nah|meh|hi|hello|test|\?+|\.+)$/.test(t.replace(/[!.\s]+$/g, ""))) return true;
+  if (MASH.test(letters)) return true;
+  if (/(asdf|qwer|zxcv|hjkl|jkjk|sdfg|dfgh|fghj|ghjk|uiop|wert|xcvb)/.test(letters)) return true;
+  // A long "word" with no vowels at all is almost always mashing.
+  if (t.split(/\s+/).some((w) => w.replace(/[^\p{L}]/gu, "").length >= 6 && !/[aeiouy]/.test(w))) return true;
+  return false;
+}
 
 export function safeguardingConcern(text: string): boolean {
   return SAFEGUARDING.test(text);
@@ -64,4 +88,14 @@ export const PIP_REDIRECTS: Record<FlagCategory, string> = {
   inappropriate: "I can't help with that. I'm here to help with today's task — what part of the task can I help you with?",
   unkind: "I can't help with that. If something is going wrong in your group, you can press “Need help” to tell your teacher. What part of the task can I help with?",
   off_task: "That's not something I can help with — I only help with today's task. Want me to explain the task simply, or break it into steps?",
+};
+
+/** What the student sees when their idea is held back. */
+export const IDEA_NOTES: Record<FlagCategory | "nonsense" | "banned", string> = {
+  safeguarding: CHAT_NOTES.safeguarding,
+  inappropriate: "That idea can't be shared in class. Try another idea about the task.",
+  unkind: "That could hurt someone. Try writing your idea in a kind way.",
+  off_task: "That doesn't seem to be about the task. Have another look at the question and try again.",
+  nonsense: "That doesn't look like an idea yet. Try writing one real idea — even a short one is great.",
+  banned: "That uses a word your teacher has asked everyone not to use. Try saying it another way.",
 };

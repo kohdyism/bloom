@@ -8,7 +8,7 @@ import type { FlagCategory } from "@/lib/domain/moderation";
  * The student is told kindly at the time; the teacher sees who, which kind
  * and when, and can reveal the words on purpose.
  */
-export async function raiseFlag(input: { sessionId: string; groupId: string | null; studentId: string; source: "chat" | "pip"; category: FlagCategory; excerpt: string }) {
+export async function raiseFlag(input: { sessionId: string; groupId: string | null; studentId: string; source: "chat" | "pip" | "idea"; category: FlagCategory; excerpt: string }) {
   await asServer((db) => db.query(
     "insert into student_flags(session_id, group_id, student_id, source, category, excerpt) values ($1,$2,$3,$4,$5,$6)",
     [input.sessionId, input.groupId, input.studentId, input.source, input.category, input.excerpt.trim().slice(0, 600)],

@@ -35,7 +35,7 @@ export function FlagsPanel({ state, names, groupName, act }: { state: TeacherSta
         <span className="font-semibold">{names.get(f.studentId) ?? "A student"}</span>
         <span className="text-ink-muted">{groupName(f.groupId)}</span>
         <Badge tone={f.category === "safeguarding" ? "coral" : f.category === "inappropriate" || f.category === "unkind" ? "amber" : "neutral"}>{FLAG_LABELS[f.category]}</Badge>
-        <Badge tone={f.source === "pip" ? "purple" : "teal"}>{f.source === "pip" ? "Pip (private)" : "Group chat"}</Badge>
+        <Badge tone={f.source === "pip" ? "purple" : f.source === "idea" ? "blue" : "teal"}>{f.source === "pip" ? "Pip (private)" : f.source === "idea" ? "Idea" : "Group chat"}</Badge>
         <span className="text-ink-muted">{time(f.createdAt)}</span>
         {f.reviewed ? <Badge tone="mint"><Check aria-hidden="true" />Reviewed</Badge> : null}
         <span className="ml-auto flex gap-1">
@@ -66,7 +66,7 @@ export function FlagsPanel({ state, names, groupName, act }: { state: TeacherSta
             <label className="flex cursor-pointer items-center gap-2 text-sm font-medium"><input type="checkbox" className="size-4 accent-[var(--teal)]" checked={showReviewed} onChange={(e) => setShowReviewed(e.target.checked)} />Show reviewed</label>
           </CardHeader>
           <CardBody>
-            <p className="mb-3 text-sm text-ink-muted">Messages Bloom held back in the group chat, and questions Pip wouldn&apos;t answer. Students were told why at the time.</p>
+            <p className="mb-3 text-sm text-ink-muted">Messages and ideas Bloom held back before the group saw them, and questions Pip wouldn&apos;t answer. Students were told why at the time.</p>
             {list.length ? <ul className="flex flex-col gap-2">{list.map((f) => row(f))}</ul> : <p className="text-sm text-ink-muted">Nothing new to review.</p>}
           </CardBody>
         </Card>
