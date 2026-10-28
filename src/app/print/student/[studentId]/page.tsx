@@ -63,7 +63,7 @@ export default async function StudentReportPage(props: { params: Promise<{ stude
               <p className="text-sm text-ink-muted">{day(l.date)} · {l.className}{l.groupName ? ` · Group ${l.groupName}` : ""}</p>
             </div>
             <p className="mt-1 text-sm">
-              Took part in {l.stagesDone} of {l.totalStages} stages · {l.ideas} idea{l.ideas === 1 ? "" : "s"} · {l.messages} message{l.messages === 1 ? "" : "s"} · {l.votes} vote{l.votes === 1 ? "" : "s"} · {l.edits} edit{l.edits === 1 ? "" : "s"} to the group&apos;s work
+              Group completed {l.stagesDone} of {l.totalStages} stages · {l.ideas} idea{l.ideas === 1 ? "" : "s"} · {l.messages} message{l.messages === 1 ? "" : "s"} · {l.votes} vote{l.votes === 1 ? "" : "s"} · {l.edits} edit{l.edits === 1 ? "" : "s"} to the group&apos;s work
             </p>
             <p className="mt-1 text-sm">{l.help.length ? <>Asked for help {l.help.length} time{l.help.length === 1 ? "" : "s"}: {l.help.map(helpLabel).join("; ")}</> : "No help requests."}</p>
             {l.reflection ? (

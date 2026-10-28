@@ -46,7 +46,7 @@ export function StageMediaEditor({ lessonId, items, onChange }: { lessonId: stri
   const move = (i: number, d: -1 | 1) => { const next = [...items]; [next[i], next[i + d]] = [next[i + d], next[i]]; onChange(next); };
 
   return (
-    <fieldset className="flex flex-col gap-2 rounded-xl border border-line p-3">
+    <fieldset className="flex min-w-0 flex-col gap-2 rounded-xl border border-line p-3">
       <legend className="px-1 text-sm font-semibold">Pictures, videos and links in the instructions</legend>
       <p className="text-sm text-ink-muted">Shown to students right under the task. Paste a YouTube or Vimeo link, a picture address, or a web page or simulation (e.g. PhET), or upload a picture or PDF.</p>
       {items.length ? (
