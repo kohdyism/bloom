@@ -2,11 +2,14 @@ import "server-only";
 import { isFlowerId } from "@/lib/domain/flowers";
 import { asServer, asUser, NotFoundError, type Db } from "@/lib/db";
 import { evaluateStage, progressFraction, timerState, type StageEvaluation } from "@/lib/domain/stage-engine";
-import type { Stage } from "@/lib/domain/lesson";
+import { contributionNeeded, pipAvailableIn, type Stage } from "@/lib/domain/lesson";
 import type { SynthesisCluster } from "@/lib/ai/synthesis";
 import { collectSignals } from "./engine";
-import { loadSession, PRESENCE_WINDOW_SECONDS, type GroupRow, type Presentation, type SessionRow } from "./common";
+import { hasContributed, loadSession, PRESENCE_WINDOW_SECONDS, type GroupRow, type Presentation, type SessionRow } from "./common";
 import { studentContext } from "./student";
+import { snapshotGroupWork } from "../artifacts";
+import type { FlagCategory } from "@/lib/domain/moderation";
+import { reflectionFor } from "@/lib/domain/reflection";
 
 const iso = (d: Date | null | undefined) => (d ? new Date(d).toISOString() : null);
 
@@ -79,6 +82,10 @@ export async function teacherState(uid: string, sessionId: string) {
     const aiUsage = await db.query<{ student_id: string; action: string; request_count: string }>("select * from public.private_ai_usage($1)", [sessionId]);
     const reflections = await db.one<{ n: string }>("select count(*) as n from reflection_responses where session_id = $1", [sessionId]);
     const announcements = await db.query<{ id: string; body: string; group_id: string | null; created_at: Date }>("select id, body, group_id, created_at from announcements where session_id = $1 order by created_at desc limit 10", [sessionId]);
+    const flags = await db.query<{ id: string; student_id: string; group_id: string | null; source: "chat" | "pip"; category: FlagCategory; excerpt: string; created_at: Date; reviewed_at: Date | null }>(
+      "select id, student_id, group_id, source, category, excerpt, created_at, reviewed_at from student_flags where session_id = $1 order by created_at desc limit 200",
+      [sessionId],
+    );
     return {
       session: {
         id: s.id, status: s.status, title: s.snapshot.title, objectives: s.snapshot.objectives, groupsApproved: s.groups_approved,
@@ -96,6 +103,7 @@ export async function teacherState(uid: string, sessionId: string) {
       aiUsage: aiUsage.map((a) => ({ studentId: a.student_id, action: a.action, count: Number(a.request_count) })),
       reflectionsSubmitted: Number(reflections.n),
       announcements: announcements.map((a) => ({ id: a.id, body: a.body, groupId: a.group_id, createdAt: iso(a.created_at) })),
+      flags: flags.map((f) => ({ id: f.id, studentId: f.student_id, groupId: f.group_id, source: f.source, category: f.category, excerpt: f.excerpt, createdAt: iso(f.created_at), reviewed: !!f.reviewed_at })),
     };
   });
 }
@@ -148,6 +156,7 @@ export async function studentState(uid: string, sessionId: string) {
         anonymity: s.snapshot.config.ideaAnonymity,
         allowResubmission: s.snapshot.config.allowResubmission,
         chatSupervised: s.snapshot.config.chatSupervision === "ai",
+        reflection: reflectionFor(s.snapshot.config),
         presentation: s.presentation,
       },
       announcements: announcements.map((a) => ({ id: a.id, body: a.body, toGroup: !!a.group_id, createdAt: iso(a.created_at) })),
@@ -206,6 +215,29 @@ async function groupContent(db: Db, s: SessionRow, g: GroupRow, viewerId: string
     [g.id],
   );
   const presReq = await db.maybeOne<{ status: string }>("select status from presentation_requests where group_id = $1 order by created_at desc limit 1", [g.id]);
+  // Teacher drill-down: what each member has actually contributed, and the shared work so far.
+  const teacherWork = viewer === "teacher" ? await (async () => {
+    const edits = await db.query<{ author_id: string; n: string }>(
+      "select u.author_id, count(*) as n from artifact_updates u join collaborative_artifacts a on a.id = u.artifact_id where a.group_id = $1 and u.author_id is not null group by u.author_id",
+      [g.id],
+    );
+    const allVotes = await db.query<{ voter_id: string; n: string }>("select voter_id, count(*) as n from votes where group_id = $1 group by voter_id", [g.id]);
+    return {
+      perMember: members.map((m) => ({
+        id: m.id,
+        sharedIdeas: ideas.filter((i) => i.author_id === m.id && i.shared && i.status === "submitted").map((i) => i.body),
+        privateIdeas: ideas.filter((i) => i.author_id === m.id && !i.shared && i.status === "submitted").length,
+        messages: messages.filter((x) => x.kind === "student" && x.author_id === m.id).map((x) => x.body).slice(-3),
+        messageCount: messages.filter((x) => x.kind === "student" && x.author_id === m.id).length,
+        votes: Number(allVotes.find((v) => v.voter_id === m.id)?.n ?? 0),
+        edits: Number(edits.find((e) => e.author_id === m.id)?.n ?? 0),
+      })),
+      current: await snapshotGroupWork(db, g.id),
+    };
+  })() : null;
+  // Each student adds something before they can say they're ready (ideas, votes, shared work).
+  const need = viewer === "student" && g.stage_status !== "complete" ? contributionNeeded(stage) : null;
+  const contribution = need ? { kind: need.kind, hint: need.hint, done: await hasContributed(db, g, viewerId, need.kind) } : null;
   const announcements = await db.query<{ id: string; body: string; created_at: Date }>("select id, body, created_at from announcements where group_id = $1 order by created_at desc limit 5", [g.id]);
 
   return {
@@ -217,6 +249,9 @@ async function groupContent(db: Db, s: SessionRow, g: GroupRow, viewerId: string
     progress: progressFraction(g.stage_index, g.stage_status, s.snapshot.stages.length),
     evaluation,
     myReadiness: signals.ready[viewerId] ?? null,
+    contribution,
+    teacherWork,
+    pipAvailable: g.stage_status !== "complete" && pipAvailableIn(stage, s.snapshot.config),
     readyIds: Object.entries(signals.ready).filter(([, v]) => v === "ready").map(([k]) => k),
     members: members.map((m) => ({ id: m.id, name: m.display_name, avatarColor: m.avatar_color, present: m.present, roles: roles.filter((r) => r.student_id === m.id).map((r) => r.role_key), handRaised: hands.some((h) => h.student_id === m.id) })),
     ideas: {

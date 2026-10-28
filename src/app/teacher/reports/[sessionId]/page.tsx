@@ -4,7 +4,6 @@ import { ArrowLeft, Download } from "lucide-react";
 import { requireUser } from "@/lib/auth/current-user";
 import { lessonReport } from "@/lib/modules/reports";
 import { NotFoundError } from "@/lib/db";
-import { REFLECTION_RATINGS } from "@/lib/domain/reflection";
 import { ASSIST_LABELS } from "@/lib/domain/help";
 import { Badge, Card, CardBody, CardHeader, CardTitle, Notice, PageHeader } from "@/components/ui/primitives";
 import { Button } from "@/components/ui/button";
@@ -98,7 +97,7 @@ export default async function ReportPage({ params }: { params: Promise<{ session
         <CardBody className="flex flex-col gap-6">
           {r.reflection.responses === 0 ? <p className="text-sm text-ink-muted">No reflections yet.</p> : (
             <ul className="flex flex-col gap-4">
-              {REFLECTION_RATINGS.map((q) => {
+              {r.reflection.questions.ratings.map((q) => {
                 const dist = r.reflection.distributions[q.key] ?? [0, 0, 0, 0, 0];
                 const total = dist.reduce((a, b) => a + b, 0);
                 const avg = r.reflection.averages[q.key];
@@ -128,7 +127,7 @@ export default async function ReportPage({ params }: { params: Promise<{ session
               <p className="mt-1 text-xs text-ink-muted">Counted from keywords in students&apos; own answers.</p>
             </div>
           ) : null}
-          <IndividualReflections sessionId={sessionId} respondents={r.reflection.respondents} />
+          <IndividualReflections questions={r.reflection.questions} sessionId={sessionId} respondents={r.reflection.respondents} />
         </CardBody>
       </Card>
 

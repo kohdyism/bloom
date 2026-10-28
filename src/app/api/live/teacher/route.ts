@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { route, uuid } from "@/lib/api";
 import * as T from "@/lib/modules/sessions/teacher";
+import { reviewFlag } from "@/lib/modules/flags";
 
 const action = z.discriminatedUnion("action", [
   z.object({ action: z.literal("approve_groups"), sessionId: uuid, groups: z.array(z.array(uuid).max(12)).max(30) }),
@@ -25,6 +26,7 @@ const action = z.discriminatedUnion("action", [
   z.object({ action: z.literal("present_update"), sessionId: uuid, slide: z.number().int().min(0).max(200).optional(), view: z.enum(["document", "whiteboard", "slides", "media"]).optional(), presenterId: uuid.nullable().optional() }),
   z.object({ action: z.literal("present_stop"), sessionId: uuid }),
   z.object({ action: z.literal("present_decline"), sessionId: uuid, requestId: uuid }),
+  z.object({ action: z.literal("review_flag"), sessionId: uuid, flagId: uuid }),
 ]);
 
 export const POST = route({ role: "teacher", body: action }, async ({ user, body: b }) => {
@@ -52,5 +54,6 @@ export const POST = route({ role: "teacher", body: action }, async ({ user, body
     case "present_update": return T.updatePresentation(u, b.sessionId, { slide: b.slide, view: b.view, presenterId: b.presenterId });
     case "present_stop": return T.stopPresentation(u, b.sessionId);
     case "present_decline": return T.declinePresentationRequest(u, b.sessionId, b.requestId);
+    case "review_flag": return reviewFlag(u, b.sessionId, b.flagId);
   }
 });

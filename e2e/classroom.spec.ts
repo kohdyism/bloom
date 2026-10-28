@@ -93,6 +93,11 @@ test("complete inclusive classroom lesson", async ({ browser }) => {
   await expect(a1.page.getByRole("dialog", { name: "Poem: Alone" }).getByText(/From childhood.s hour/)).toBeVisible();
   if (process.env.SCREENSHOT_DIR) await a1.page.screenshot({ path: `${process.env.SCREENSHOT_DIR}/s-materials.png` });
   await a1.page.getByRole("button", { name: "Close materials" }).click();
+  // Nobody can say they're done before adding an idea (the server refuses too).
+  await expect(a1.page.getByRole("button", { name: "I'm done thinking" })).toBeDisabled();
+  await expect(a1.page.getByText("Add at least one idea first")).toBeVisible();
+  const tooSoon = await apiAs(a1, "POST", "/api/live/student", { action: "readiness", sessionId, state: "ready" });
+  expect(tooSoon.status).toBe(409);
   await a1.page.getByLabel("Your idea").fill("The speaker feels lonely because he sees the world differently from others.");
   await a1.page.getByRole("button", { name: "Add idea" }).click();
   // Saved ideas are listed under the idea box, marked private.
@@ -126,17 +131,11 @@ test("complete inclusive classroom lesson", async ({ browser }) => {
   await expect(a2.page.getByText("I think the storm line is the strongest evidence.")).toBeVisible();
   await a2.page.getByRole("button", { name: "Agree", exact: true }).first().click();
   await expect(a1.page.getByRole("button", { name: "Agree (1)" })).toBeVisible();
-  // In discussion, the group's ideas are the activity beside the chat.
-  await a2.page.getByRole("button", { name: /^Build on idea/ }).first().click();
-  await a2.page.getByLabel("Build on that idea").fill("Yes — and 'all I lov'd — I lov'd alone' shows it clearly.");
-  await a2.page.getByRole("button", { name: "Add to idea bank" }).click();
-  await expect(a1.page.getByText("shows it clearly").first()).toBeVisible();
-
-  // 15. Private AI assistance (student-only).
-  await a1.page.getByRole("button", { name: "Ask Pip (private)" }).click();
-  await a1.page.getByRole("button", { name: "Explain simply" }).click();
-  await expect(a1.page.getByRole("log", { name: "Conversation with Pip" }).getByText("Simulated AI")).toBeVisible();
-  await a1.page.keyboard.press("Escape");
+  // Discussion is face to face: each student sees only their own earlier ideas, and no AI buttons.
+  await expect(a1.page.getByRole("heading", { name: "Your ideas from earlier" })).toBeVisible();
+  await expect(a1.page.getByRole("list", { name: "Your ideas from earlier" }).getByText("sees the world differently")).toBeVisible();
+  await expect(a1.page.getByRole("list", { name: "Your ideas from earlier" }).getByText("Lonely childhood")).toHaveCount(0);
+  await expect(a1.page.getByRole("button", { name: /Ask Pip/ })).toHaveCount(0);
 
   // 16–17. Another student requests teacher help; the teacher receives it immediately.
   await a2.page.getByRole("button", { name: "Need help" }).click();
@@ -154,6 +153,15 @@ test("complete inclusive classroom lesson", async ({ browser }) => {
   await ready(a1.page);
   await ready(a2.page);
   await expect(a1.page.getByRole("heading", { name: "Collaborative writing", exact: true })).toBeVisible();
+  // "I'm ready" waits until each student has added to the shared work.
+  await expect(a1.page.getByRole("button", { name: "I'm ready" })).toBeDisabled();
+  await expect(a1.page.getByText("Add something to your group's work first")).toBeVisible();
+
+  // 15. Private AI assistance (student-only) is back once the group is making its work.
+  await a1.page.getByRole("button", { name: "Ask Pip (private)" }).click();
+  await a1.page.getByRole("button", { name: "Explain simply" }).click();
+  await expect(a1.page.getByRole("log", { name: "Conversation with Pip" }).getByText("Simulated AI")).toBeVisible();
+  await a1.page.keyboard.press("Escape");
 
   // 19–20. Multiple students edit the shared document; edits are visible to both.
   const ed1 = a1.page.getByRole("textbox", { name: "Shared document" });
@@ -242,7 +250,9 @@ test("complete inclusive classroom lesson", async ({ browser }) => {
     // The group submitted its work, so its plant blooms into a flower for everyone's garden.
     await expect(s.page.getByText("Your group's plant bloomed!")).toBeVisible();
     await s.page.getByRole("button", { name: "Lovely!" }).click();
-    for (const q of ["comfort", "opportunity", "listened", "clarity", "overall"]) {
+    // This lesson's teacher added a question about the poem itself.
+    await expect(s.page.getByText("How well did you understand the poem?")).toBeVisible();
+    for (const q of ["comfort", "opportunity", "listened", "clarity", "overall", "understood"]) {
       await s.page.locator(`label:has(input[name="${q}"][value="4"])`).click();
       await expect(s.page.locator(`input[name="${q}"][value="4"]`)).toBeChecked();
     }

@@ -7,7 +7,7 @@ import { requireUser } from "@/lib/auth/current-user";
 import { lessonDraftSchema, defaultConfig, makeStage, type LessonDraft } from "@/lib/domain/lesson";
 import { LESSON_TEMPLATES } from "@/lib/domain/templates";
 import {
-  addFileMaterial, addTextMaterial, approveAiDraft, createLesson, deleteLesson, duplicateLesson, removeMaterial, saveLesson,
+  addFileMaterial, addStageFile, addTextMaterial, approveAiDraft, createLesson, deleteLesson, duplicateLesson, removeMaterial, saveLesson,
 } from "@/lib/modules/lessons";
 import { generateLessonDraft } from "@/lib/ai/lesson-generation";
 import { rateLimit, RateLimitError } from "@/lib/security/rate-limit";
@@ -118,6 +118,23 @@ export async function addMaterialAction(lessonId: string, _: MaterialState, form
   }
   revalidatePath(`/teacher/lessons/${lessonId}`);
   return { ok: true };
+}
+
+export type StageFileResult = { error?: string; file?: { id: string; title: string; mime: string } };
+
+/** Upload a picture or PDF to show inside one stage's instructions. */
+export async function uploadStageFileAction(lessonId: string, form: FormData): Promise<StageFileResult> {
+  const user = await requireUser("teacher");
+  const file = form.get("file");
+  if (!(file instanceof File) || file.size === 0) return { error: "Choose a file first." };
+  if (file.size > MAX_UPLOAD_BYTES) return { error: "That file is over 8 MB. Try a smaller version." };
+  const buf = Buffer.from(await file.arrayBuffer());
+  const mime = sniffMime(buf) ?? (file.type === "text/plain" ? "text/plain" : null);
+  if (!mime || !ALLOWED_MATERIAL_TYPES.includes(mime)) return { error: "Upload a picture (PNG, JPEG, WebP, GIF), a PDF or a plain-text file." };
+  const title = (String(form.get("title") ?? "").trim() || file.name || "File").slice(0, 160);
+  const key = await putObject(`materials/${lessonId}`, buf, mime);
+  const row = await addStageFile(user.id, lessonId, title, key, mime);
+  return { file: { id: row.id, title, mime } };
 }
 
 export async function removeMaterialAction(lessonId: string, materialId: string) {

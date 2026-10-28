@@ -1,6 +1,9 @@
 @import "tailwindcss";
 @import "@fontsource-variable/bricolage-grotesque";
 @import "@fontsource-variable/atkinson-hyperlegible-next";
+@import "@fontsource-variable/lexend";
+@import "@fontsource/opendyslexic/400.css";
+@import "@fontsource/opendyslexic/700.css";
 
 /* Screens tall enough to pin the stage hero while the activity scrolls. */
 @custom-variant tall (@media (min-height: 760px));
@@ -91,6 +94,20 @@
 /* Text size preference (rem-based scale follows the root). */
 :root[data-text="lg"] { font-size: 112.5%; }
 :root[data-text="xl"] { font-size: 125%; }
+
+/* Reading font preference: applies to every piece of text in the app. */
+:root[data-font="lexend"] body,
+:root[data-font="lexend"] body *:not(svg):not(svg *) {
+  font-family: "Lexend Variable", ui-sans-serif, system-ui, sans-serif !important;
+  letter-spacing: 0.005em;
+}
+:root[data-font="opendyslexic"] body,
+:root[data-font="opendyslexic"] body *:not(svg):not(svg *) {
+  font-family: "OpenDyslexic", ui-sans-serif, system-ui, sans-serif !important;
+  letter-spacing: 0;
+  word-spacing: 0.08em;
+}
+:root[data-font="opendyslexic"] { line-height: 1.6; }
 
 @theme inline {
   --color-paper: var(--paper);

@@ -28,6 +28,9 @@ export function GroupDrawer({ sessionId, groupId, onClose, state, act, refreshAl
   const [moveStudent, setMoveStudent] = useState("");
   const [moveTo, setMoveTo] = useState("");
   const [review, setReview] = useState<string | null>(null);
+  // Hide Bloom's and Canopy's messages so the teacher can read only what students wrote.
+  const [studentsOnly, setStudentsOnly] = useState(false);
+  const shownMessages = (g?.messages ?? []).filter((m) => !studentsOnly || m.kind === "student");
   const doAct = async (b: TeacherAction, ok?: string) => {
     const done = await run(() => act({ ...b, groupId }), ok);
     refresh();
@@ -66,6 +69,9 @@ export function GroupDrawer({ sessionId, groupId, onClose, state, act, refreshAl
                 </div>
               ) : null}
             </section>
+
+            {/* What each member has actually written, and the group's shared work */}
+            {g.teacherWork ? <WorkByStudent g={g} /> : null}
 
             {/* Members */}
             <section>
@@ -137,16 +143,22 @@ export function GroupDrawer({ sessionId, groupId, onClose, state, act, refreshAl
             </section>
 
             <section className="flex flex-col gap-2">
-              <h3 className="font-semibold">Recent group messages</h3>
-              {g.messages.length ? (
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="font-semibold">Recent group messages</h3>
+                <label className="flex cursor-pointer items-center gap-2 text-sm font-medium">
+                  <input type="checkbox" className="size-4 accent-[var(--teal)]" checked={studentsOnly} onChange={(e) => setStudentsOnly(e.target.checked)} />
+                  Show student messages only
+                </label>
+              </div>
+              {shownMessages.length ? (
                 <ul className="flex max-h-72 flex-col gap-1.5 overflow-y-auto rounded-xl border border-line p-3 text-sm">
-                  {g.messages.slice(-30).map((m) => (
+                  {shownMessages.slice(-30).map((m) => (
                     <li key={m.id} className={cn(m.kind === "system" && "text-ink-muted italic")}>
                       <span className="font-semibold">{m.author}</span>{m.kind === "ai" ? <AiOriginBadge origin={m.aiOrigin} className="mx-1" /> : null}: {m.body}
                     </li>
                   ))}
                 </ul>
-              ) : <p className="text-sm text-ink-muted">No written messages — the group may be talking in the room.</p>}
+              ) : <p className="text-sm text-ink-muted">{studentsOnly && g.messages.length ? "No messages from students yet." : "No written messages — the group may be talking in the room."}</p>}
             </section>
 
             {/* Submissions */}
@@ -212,5 +224,52 @@ function SubmissionReview({ sessionId, submissionId, onClose, onDone }: { sessio
         )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+function WorkByStudent({ g }: { g: GroupContent }) {
+  const w = g.teacherWork!;
+  const current = w.current as SubmissionContent & { kinds?: string[] };
+  const [view, setView] = useState<string | undefined>();
+  const kinds = current.kinds ?? [];
+  return (
+    <section className="flex flex-col gap-3" aria-labelledby="work-title">
+      <h3 id="work-title" className="font-semibold">Each student&apos;s work</h3>
+      <ul className="grid gap-2 sm:grid-cols-2">
+        {g.members.map((m) => {
+          const p = w.perMember.find((x) => x.id === m.id);
+          if (!p) return null;
+          const nothing = !p.sharedIdeas.length && !p.privateIdeas && !p.messageCount && !p.votes && !p.edits;
+          return (
+            <li key={m.id} className={cn("flex flex-col gap-2 rounded-xl border p-3 text-sm", nothing ? "border-amber bg-amber-soft/40" : "border-line")}>
+              <div className="flex items-center gap-2">
+                <Avatar name={m.name} color={m.avatarColor} size="sm" />
+                <span className="font-semibold">{m.name}</span>
+                {nothing ? <Badge tone="amber">Nothing added yet</Badge> : null}
+              </div>
+              <p className="text-xs text-ink-muted">
+                {p.sharedIdeas.length} idea{p.sharedIdeas.length === 1 ? "" : "s"} shared{p.privateIdeas ? ` · ${p.privateIdeas} still private` : ""} · {p.messageCount} message{p.messageCount === 1 ? "" : "s"} · {p.votes} vote{p.votes === 1 ? "" : "s"} · {p.edits} edit{p.edits === 1 ? "" : "s"} to shared work
+              </p>
+              {p.sharedIdeas.length ? (
+                <ul className="flex flex-col gap-1">{p.sharedIdeas.slice(-4).map((t, i) => <li key={i} className="rounded-lg bg-surface-2 px-2.5 py-1.5">{t}</li>)}</ul>
+              ) : null}
+              {p.messages.length ? (
+                <div>
+                  <p className="text-xs font-semibold text-ink-muted">Latest messages</p>
+                  <ul className="mt-1 flex flex-col gap-1">{p.messages.map((t, i) => <li key={i} className="rounded-lg border border-line px-2.5 py-1.5 italic">“{t}”</li>)}</ul>
+                </div>
+              ) : null}
+            </li>
+          );
+        })}
+      </ul>
+      <div className="flex flex-col gap-2 rounded-xl border border-line p-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="font-semibold">Shared work so far</p>
+          {kinds.length > 1 ? kinds.map((k) => <Button key={k} size="sm" variant={(view ?? kinds[0]) === k ? "primary" : "secondary"} onClick={() => setView(k)}>{k}</Button>) : null}
+        </div>
+        {kinds.length ? <SubmissionView content={current} view={view} mediaUrl={(id) => `/api/media/${id}`} /> : <p className="text-sm text-ink-muted">Nothing in the shared document, whiteboard or slides yet.</p>}
+      </div>
+    </section>
   );
 }

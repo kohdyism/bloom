@@ -39,7 +39,7 @@ export function Chat({ className, header, empty, after, composerClassName, onAct
   const [text, setText] = useState("");
   const [replyTo, setReplyTo] = useState<Msg | null>(null);
   const [sending, setSending] = useState(false);
-  const [held, setHeld] = useState<string | null>(null);
+  const [held, setHeld] = useState<{ note: string; verdict: string } | null>(null);
   const supervised = !!state.session.chatSupervised;
   const listRef = useRef<HTMLDivElement>(null);
   const atBottom = useRef(true);
@@ -99,10 +99,11 @@ export function Chat({ className, header, empty, after, composerClassName, onAct
     setHeld(null);
     let result: unknown = null;
     if (await run(async () => { result = await act({ action: "message", body: text, replyTo: replyTo?.id ?? null }); })) {
-      const h = (result as { held?: { note: string } } | null)?.held;
+      const h = (result as { held?: { note: string; verdict: string } } | null)?.held;
       if (h) {
         // Supervised chat: Bloom kept this one back. Only the writer sees why; the text stays to edit.
-        setHeld(h.note);
+        setHeld(h);
+        if (h.verdict === "safeguarding") setText("");
       } else {
         setText("");
         setReplyTo(null);
@@ -200,9 +201,9 @@ export function Chat({ className, header, empty, after, composerClassName, onAct
       </div>
       <form className={cn("flex flex-col gap-2 border-t border-line p-3", composerClassName)} onSubmit={(e) => { e.preventDefault(); void send(); }}>
         {held ? (
-          <p className="flex items-start gap-2 rounded-xl border border-[#ffd2c4] bg-[#fff6f1] px-3 py-2 text-sm" role="status">
-            <span className="shrink-0 font-semibold text-[#c4420a]">Not sent.</span>
-            <span className="min-w-0 flex-1">{held} <span className="text-ink-muted">Edit it and try again.</span></span>
+          <p className={cn("flex items-start gap-2 rounded-xl border px-3 py-2 text-sm", held.verdict === "safeguarding" ? "border-purple/40 bg-purple-soft" : "border-[#ffd2c4] bg-[#fff6f1]")} role="status">
+            {held.verdict === "safeguarding" ? null : <span className="shrink-0 font-semibold text-[#c4420a]">Not sent.</span>}
+            <span className="min-w-0 flex-1">{held.note} {held.verdict === "safeguarding" ? null : <span className="text-ink-muted">Edit it and try again.</span>}</span>
             <button type="button" aria-label="Dismiss" onClick={() => setHeld(null)}><X className="size-4" /></button>
           </p>
         ) : supervised ? <p className="text-xs text-ink-muted">Bloom checks messages before they&apos;re shared, to keep the chat on task.</p> : null}

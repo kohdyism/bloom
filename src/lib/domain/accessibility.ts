@@ -2,6 +2,8 @@ import { z } from "zod";
 
 export const accessibilitySchema = z.object({
   textSize: z.enum(["md", "lg", "xl"]).default("md"),
+  /** Reading font: the default, or a dyslexia-friendly alternative. */
+  font: z.enum(["default", "lexend", "opendyslexic"]).default("default"),
   contrast: z.enum(["normal", "high"]).default("normal"),
   /** "system" follows the device setting; "reduce" always reduces motion. */
   motion: z.enum(["system", "reduce"]).default("system"),
@@ -24,6 +26,7 @@ export function parseA11y(value: unknown): AccessibilityPrefs {
 export function htmlDataAttributes(p: AccessibilityPrefs) {
   return {
     "data-text": p.textSize,
+    "data-font": p.font,
     "data-contrast": p.contrast,
     "data-motion": p.motion,
   } as const;

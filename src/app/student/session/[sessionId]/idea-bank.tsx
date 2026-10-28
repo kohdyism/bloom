@@ -23,6 +23,26 @@ export function IdeaBank() {
   return <div className="flex min-h-0 flex-1 flex-col">{brainstorming ? <MyPrivateIdeas /> : <SharedIdeas />}</div>;
 }
 
+/**
+ * Discussion: a calm reference list of the ideas you wrote earlier, so you can
+ * talk about them face to face. No AI buttons and no editing here.
+ */
+export function MyEarlierIdeas() {
+  const { group } = useWorkspace();
+  const mine = group.ideas.mine.filter((i) => i.status === "submitted");
+  return (
+    <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3">
+      <p className="rounded-2xl bg-sun-soft px-4 py-3 font-semibold">Talk it through with your group, face to face. Your ideas from earlier are here if you want a reminder.</p>
+      <h3 className="font-display text-lg font-bold">Your ideas from earlier</h3>
+      {mine.length === 0 ? <p className="px-1 py-4 text-ink-muted">You didn&apos;t write any ideas earlier. That&apos;s fine — listen, then add your thoughts out loud.</p> : (
+        <ul className="flex flex-col gap-2" aria-label="Your ideas from earlier">
+          {mine.map((i) => <li key={i.id} className="whitespace-pre-line rounded-2xl border border-line bg-white p-3 text-[1.05rem] shadow-soft">{i.body}</li>)}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 /** Your own ideas during thinking time. `inline` = listed under the idea box. */
 export function MyPrivateIdeas({ inline = false }: { inline?: boolean }) {
   const { group, act, requestEdit } = useWorkspace();

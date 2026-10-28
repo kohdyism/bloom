@@ -28,6 +28,11 @@ export function AccessibilitySettingsPanel({ showStudentOptions = false }: { sho
     <div className="flex flex-col gap-6 p-5">
       <Segmented label="Text size" value={prefs.textSize} onChange={(v) => update({ textSize: v })}
         options={[{ value: "md", label: "Standard" }, { value: "lg", label: "Large" }, { value: "xl", label: "Extra large" }]} />
+      <div>
+        <Segmented label="Reading font" value={prefs.font} onChange={(v) => update({ font: v })}
+          options={[{ value: "default", label: "Standard" }, { value: "lexend", label: "Lexend" }, { value: "opendyslexic", label: "OpenDyslexic" }]} />
+        <p className="mt-1.5 text-sm text-ink-muted">Lexend and OpenDyslexic can make text easier to read for some people, including many with dyslexia.</p>
+      </div>
       <Switch id="a11y-contrast" label="High contrast" description="Stronger text and borders."
         checked={prefs.contrast === "high"} onCheckedChange={(v) => update({ contrast: v ? "high" : "normal" })} />
       <Switch id="a11y-motion" label="Reduce motion" description="Turns off moving and bouncing animations."

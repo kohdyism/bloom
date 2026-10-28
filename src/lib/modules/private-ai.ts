@@ -4,6 +4,12 @@ import { publish, ch } from "@/lib/realtime/server";
 import { rateLimit } from "@/lib/security/rate-limit";
 import type { AccommodationKind } from "@/lib/domain/students";
 import { QUICK_ACTIONS, tutorReply, type QuickAction, type TutorContext } from "@/lib/ai/tutor";
+import { pipAvailableIn } from "@/lib/domain/lesson";
+import { PIP_REDIRECTS, ruleCheck, type FlagCategory } from "@/lib/domain/moderation";
+import { reviewChatMessage } from "@/lib/ai/chat-guard";
+import { config as appConfig } from "@/lib/config";
+import { raiseFlag } from "./flags";
+import { conflict } from "@/lib/api";
 import { studentContext } from "./sessions/student";
 
 /**
@@ -35,6 +41,10 @@ export async function askPrivateAssistant(uid: string, sessionId: string, action
   await rateLimit(`tutor:${uid}`, 30, 600);
   const ctx = await asUser(uid, async (db) => {
     const { session, group } = await studentContext(db, uid, sessionId);
+    // The teacher decides when Pip is available; face-to-face stages never have it.
+    if (!pipAvailableIn(group ? session.snapshot.stages[group.stage_index] : null, session.snapshot.config)) {
+      throw conflict("Pip isn't available right now. Your teacher has switched it off for this part of the lesson.");
+    }
     await db.query(
       "insert into private_ai_messages(student_id, session_id, role, action, body) values ($1,$2,'student',$3,$4)",
       [uid, sessionId, action, action === "question" ? text!.trim().slice(0, 2000) : `${QUICK_ACTIONS[action]}${text?.trim() ? `: ${text.trim().slice(0, 1000)}` : ""}`],
@@ -68,7 +78,8 @@ export async function askPrivateAssistant(uid: string, sessionId: string, action
         smaller_groups: "",
       })[s.kind]).filter(Boolean),
     ];
-    const context: TutorContext = {
+    const context: TutorContext & { groupId: string | null } = {
+      groupId: group?.id ?? null,
       lessonTitle: session.snapshot.title,
       objectives: session.snapshot.objectives,
       subject: session.snapshot.subject,
@@ -83,6 +94,23 @@ export async function askPrivateAssistant(uid: string, sessionId: string, action
     };
     return context;
   });
+  // Guardrails: Pip only helps with the task. Off-task, unkind or inappropriate questions get a
+  // kind redirect instead of an answer, and worrying ones are passed to the teacher straight away.
+  const asked = text?.trim() ?? "";
+  let category: FlagCategory | null = asked ? ruleCheck(asked) : null;
+  if (!category && action === "question" && asked.length > 3 && appConfig.aiMode === "live") {
+    const verdict = await reviewChatMessage({ lesson: ctx.lessonTitle, stage: ctx.stage.title, instructions: ctx.stage.instructions, recent: [], text: asked }).catch(() => null);
+    if (verdict && verdict.verdict !== "ok") category = verdict.verdict;
+  }
+  if (category) {
+    const redirect = PIP_REDIRECTS[category];
+    await asServer((db) =>
+      db.query("insert into private_ai_messages(student_id, session_id, role, action, origin, body) values ($1,$2,'assistant',$3,'offline_helper',$4)", [uid, sessionId, action, redirect]),
+    );
+    await raiseFlag({ sessionId, groupId: ctx.groupId, studentId: uid, source: "pip", category, excerpt: asked }).catch(() => {});
+    await publish([{ channel: ch.user(uid), event: "private_ai.new" }, { channel: ch.teacher(sessionId), event: "ai_usage.updated" }]);
+    return { reply: redirect, origin: "offline_helper" as const };
+  }
   const reply = await tutorReply(ctx, { action, text });
   await asServer((db) =>
     db.query("insert into private_ai_messages(student_id, session_id, role, action, origin, body) values ($1,$2,'assistant',$3,$4,$5)", [uid, sessionId, action, reply.origin, reply.data.slice(0, 6000)]),

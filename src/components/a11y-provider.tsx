@@ -16,6 +16,7 @@ const LOCAL_KEY = "bloom.a11y";
 function apply(p: AccessibilityPrefs) {
   const el = document.documentElement;
   el.dataset.text = p.textSize;
+  el.dataset.font = p.font;
   el.dataset.contrast = p.contrast;
   el.dataset.motion = p.motion;
 }

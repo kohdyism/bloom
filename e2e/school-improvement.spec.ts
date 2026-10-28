@@ -82,16 +82,28 @@ test("school improvement: vote, whiteboard, slides, present", async ({ browser }
   await expect(s[1].page.getByText("I think the quiet room helps the most people.")).toBeVisible();
   await expect(s[1].page.getByText("anyone on fortnite tonight")).toHaveCount(0);
   await s[2].page.getByLabel("Message your group").fill("");
-  // Tap Bloom at the top of the task for help; the answer appears in Bloom's bubble for everyone.
-  await s[0].page.getByRole("button", { name: /^Bloom, your group helper/ }).click();
-  await s[0].page.getByRole("button", { name: "Give us a question to discuss" }).click();
-  await expect(s[2].page.locator('[data-tour="bloom-coach"]').getByText(/^Try this/)).toBeVisible();
-  await expect(s[2].page.getByText("Simulated AI").first()).toBeVisible();
+  // The teacher gets a flag: who, which kind, when; the words stay hidden until they choose to look.
+  await expect(t.getByText("Off-task").first()).toBeVisible();
+  await expect(t.getByText("anyone on fortnite tonight")).toHaveCount(0);
+  await t.getByRole("button", { name: "Show message" }).first().click();
+  await expect(t.getByText("anyone on fortnite tonight")).toBeVisible();
+  await t.getByRole("button", { name: "Mark reviewed" }).first().click();
+  // Discussion is face to face: no Bloom or Pip buttons here.
+  await expect(s[0].page.getByRole("button", { name: /^Bloom, your group helper/ })).toHaveCount(0);
+  await expect(s[0].page.getByRole("button", { name: /Ask Pip/ })).toHaveCount(0);
   await shot(s[2].page, "s-discussion");
   for (const a of s) await ready(a.page);
 
   // Voting.
   await expect(s[0].page.getByRole("heading", { name: "Vote", exact: true })).toBeVisible();
+  // Tap Bloom at the top of the task for help; the answer appears in Bloom's bubble for everyone.
+  await s[0].page.getByRole("button", { name: /^Bloom, your group helper/ }).click();
+  await s[0].page.getByRole("button", { name: "Give us a question to discuss" }).click();
+  await expect(s[2].page.locator('[data-tour="bloom-coach"]').getByText(/^Try this/)).toBeVisible();
+  await expect(s[2].page.getByText("Simulated AI").first()).toBeVisible();
+  await s[0].page.keyboard.press("Escape");
+  // Voting needs at least one vote before "I'm ready".
+  await expect(s[0].page.getByRole("button", { name: "I'm ready" })).toBeDisabled();
   for (const a of s) {
     const row = a.page.getByRole("listitem").filter({ hasText: "Quiet room at lunch" });
     await row.getByRole("button", { name: "Vote" }).click();

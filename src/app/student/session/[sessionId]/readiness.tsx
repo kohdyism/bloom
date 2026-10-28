@@ -31,6 +31,8 @@ export function Readiness({ className }: { className?: string }) {
   const mine = group.myReadiness;
   const readyLabel = kind === "brainstorm" ? "I'm done thinking" : kind === "talk" ? "We're done talking" : "I'm ready";
   const shortLabel = kind === "brainstorm" ? "Done thinking" : kind === "talk" ? "Done talking" : "I'm ready";
+  // Each student adds something first (an idea, a vote, or a change to the group's work).
+  const blocked = group.contribution && !group.contribution.done ? group.contribution.hint : null;
   return (
     <div className={cn("flex min-w-0 flex-col gap-1 sm:flex-row sm:items-center sm:gap-3", className)} data-tour="ready">
       <div className="flex min-w-0 items-baseline gap-1.5 sm:flex-1 sm:flex-col sm:items-end sm:gap-0 sm:text-right">
@@ -40,7 +42,11 @@ export function Readiness({ className }: { className?: string }) {
           </span>
           {e.readyCount} of {e.activeCount} ready
         </p>
-        <p className={cn("min-w-0 truncate text-xs sm:max-w-full", mine === "ready" && !e.requirementsMet ? "font-semibold text-amber" : "text-ink-muted")}><span className="sm:hidden" aria-hidden="true">· </span>{waitingText(e, teacherOnly, mine)}</p>
+        {blocked && !mine ? (
+          <p id="ready-hint" className="min-w-0 truncate text-xs font-semibold text-amber sm:max-w-full"><span className="sm:hidden" aria-hidden="true">· </span>{blocked}</p>
+        ) : (
+          <p className={cn("min-w-0 truncate text-xs sm:max-w-full", mine === "ready" && !e.requirementsMet ? "font-semibold text-amber" : "text-ink-muted")}><span className="sm:hidden" aria-hidden="true">· </span>{waitingText(e, teacherOnly, mine)}</p>
+        )}
       </div>
       {mine ? (
         <span className="flex shrink-0 items-center gap-1 max-sm:justify-end">
@@ -54,7 +60,7 @@ export function Readiness({ className }: { className?: string }) {
       ) : (
         <span className="flex shrink-0 items-center gap-1.5 max-sm:justify-end">
           <Button variant="secondary" className="h-10 rounded-2xl px-3" onClick={() => run(() => act({ action: "readiness", state: "need_time", stageIndex: group.stageIndex }))} aria-label="More time"><Clock3 /><span className="max-sm:hidden">More time</span></Button>
-          <Button className="h-10 rounded-2xl px-3 text-base sm:px-6" aria-label={readyLabel} onClick={() => run(() => act({ action: "readiness", state: "ready", stageIndex: group.stageIndex }))}><Check /><span className="max-sm:hidden">{readyLabel}</span><span className="sm:hidden">{shortLabel}</span></Button>
+          <Button className="h-10 rounded-2xl px-3 text-base sm:px-6" aria-label={readyLabel} disabled={!!blocked} aria-describedby={blocked ? "ready-hint" : undefined} title={blocked ?? undefined} onClick={() => run(() => act({ action: "readiness", state: "ready", stageIndex: group.stageIndex }))}><Check /><span className="max-sm:hidden">{readyLabel}</span><span className="sm:hidden">{shortLabel}</span></Button>
         </span>
       )}
     </div>

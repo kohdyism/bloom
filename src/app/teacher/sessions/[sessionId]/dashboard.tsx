@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
-  BarChart3, Bot, BotOff, Hand, HandHelping, Megaphone, MessageCircle, Monitor, Pause, Play, Presentation, Send, Square, ExternalLink, Clock3, CircleAlert, Check, Eye, Users,
+  BarChart3, Bot, BotOff, Flag, ShieldAlert, Hand, HandHelping, Megaphone, MessageCircle, Monitor, Pause, Play, Presentation, Send, Square, ExternalLink, Clock3, CircleAlert, Check, Eye, Users,
 } from "lucide-react";
 import type { TeacherState } from "@/lib/modules/sessions/state";
 import type { ConnectionState } from "@/lib/realtime/client";
@@ -18,6 +18,7 @@ import { helpLabel, ASSIST_LABELS } from "@/lib/domain/help";
 import { cn } from "@/lib/utils";
 import { VIEW_LABELS } from "@/components/live/submission-view";
 import { GroupDrawer } from "./group-drawer";
+import { FlagsPanel } from "./flags-panel";
 import { PresentControls } from "./present-controls";
 import type { TeacherAction } from "./live-session";
 
@@ -74,6 +75,9 @@ export function Dashboard({ state, act, connection, refresh, focusHelp }: Props)
         </Notice>
       ) : null}
 
+      {/* Moderation flags (chat + Pip); safeguarding concerns can't be missed */}
+      <FlagsPanel state={state} names={names} groupName={groupName} act={act} />
+
       {/* Help requests — private, never shown to other students */}
       <div ref={helpRef} className="scroll-mt-6">
         <HelpPanel state={state} names={names} groupName={groupName} act={act} />
@@ -89,6 +93,7 @@ export function Dashboard({ state, act, connection, refresh, focusHelp }: Props)
             const stage = s.stages[g.stageIndex];
             const help = openHelp.filter((h) => h.groupId === g.id).length;
             const needTime = g.evaluation?.needTimeCount ?? 0;
+            const flagged = state.flags.filter((f) => f.groupId === g.id && !f.reviewed);
             return (
               <li key={g.id}>
                 <Card className={cn("flex h-full flex-col gap-3 p-4", help && "border-amber")}>
@@ -117,6 +122,7 @@ export function Dashboard({ state, act, connection, refresh, focusHelp }: Props)
                   <div className="flex flex-wrap gap-1.5">
                     {waitingForYou(g, stage) ? <Badge tone="coral"><CircleAlert aria-hidden="true" />{waitingForYou(g, stage)}</Badge> : g.stageStatus === "ready_check" ? <Badge tone="blue"><Check aria-hidden="true" />Ready check</Badge> : null}
                     {help ? <Badge tone="amber"><HandHelping aria-hidden="true" />{help} help</Badge> : null}
+                    {flagged.some((f) => f.category === "safeguarding") ? <Badge tone="coral"><ShieldAlert aria-hidden="true" />Safeguarding</Badge> : flagged.length ? <Badge tone="amber"><Flag aria-hidden="true" />{flagged.length} flag{flagged.length === 1 ? "" : "s"}</Badge> : null}
                     {needTime ? <Badge tone="amber"><Clock3 aria-hidden="true" />More time asked</Badge> : null}
                     {g.timer.overdue && g.stageStatus !== "complete" ? <Badge tone="coral"><CircleAlert aria-hidden="true" />Over time</Badge> : null}
                     {g.counts.handsRaised ? <Badge tone="purple"><Hand aria-hidden="true" />{g.counts.handsRaised}</Badge> : null}
@@ -125,7 +131,7 @@ export function Dashboard({ state, act, connection, refresh, focusHelp }: Props)
                     {g.presentationRequestId ? <Badge tone="coral"><Presentation aria-hidden="true" />Wants to present</Badge> : null}
                   </div>
                   <div className="mt-auto flex flex-wrap gap-2 pt-1">
-                    <Button size="sm" variant="soft" onClick={() => setOpenGroup(g.id)}><Eye />Open</Button>
+                    <Button size="sm" variant="soft" onClick={() => setOpenGroup(g.id)}><Eye />See their work</Button>
                     {s.status !== "ended" && g.stageStatus !== "complete" ? (
                       <>
                         <Button size="sm" variant="ghost" onClick={() => run(() => act({ action: "group_extend", groupId: g.id, seconds: 120 }), `${g.name}: +2 minutes`)}>+2 min</Button>

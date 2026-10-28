@@ -49,10 +49,11 @@ test("paper aeroplane: check-ins, photo evidence, teacher interventions", async 
   // Teacher interventions: extend time and take over facilitation.
   await t.getByRole("button", { name: "+2 min" }).first().click();
   await expect(a.page.getByText("Your teacher added 2 more minutes to this stage.")).toBeVisible();
-  await t.getByRole("button", { name: "Open" }).first().click();
+  await t.getByRole("button", { name: "See their work" }).first().click();
   await t.getByRole("button", { name: /Take over \(pause AI prompts\)/ }).click();
-  await expect(a.page.getByText("Your teacher is facilitating directly")).toBeVisible();
   await t.keyboard.press("Escape");
+  // Planning is a discussion: face to face, so no Bloom or Pip buttons on screen.
+  await expect(a.page.getByRole("button", { name: /Ask Pip/ })).toHaveCount(0);
 
   // Class pause is synchronised to every student.
   await t.getByRole("button", { name: "Pause class" }).click();
@@ -64,6 +65,7 @@ test("paper aeroplane: check-ins, photo evidence, teacher interventions", async 
   for (const s of [a, b]) await ready(s.page);
   await expect(a.page.getByRole("heading", { name: "Build and test", exact: true })).toBeVisible();
   await expect(a.page.getByText("Canopy doesn't listen to your group")).toBeVisible();
+  await expect(a.page.getByText("Your teacher is facilitating directly")).toBeVisible();
 
   // Check-ins sync between devices.
   for (const label of ["Design agreed", "First plane built", "Test 1 recorded", "Test 2 recorded", "Test 3 recorded"]) {
@@ -84,7 +86,7 @@ test("paper aeroplane: check-ins, photo evidence, teacher interventions", async 
   await expect(a.page.getByText("includes media")).toBeVisible();
 
   // Teacher reviews and returns for revision; the group sees the feedback.
-  await t.getByRole("button", { name: "Open" }).first().click();
+  await t.getByRole("button", { name: "See their work" }).first().click();
   await t.getByRole("button", { name: "Review" }).click();
   await expect(t.getByRole("img", { name: "Test 2: 4.2 metres" })).toBeVisible();
   await t.getByLabel("Feedback for the group").fill("Great testing! Add which design change helped most.");

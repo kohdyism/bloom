@@ -72,3 +72,31 @@ export const GROUP_COLORS = ["teal", "blue", "purple", "mint", "coral", "amber"]
 
 /** Students counted as present if their realtime connection pinged recently. */
 export const PRESENCE_WINDOW_SECONDS = 50;
+
+/**
+ * Has this student added something in the group's current stage? Used to keep
+ * "I'm ready" from being pressed before they've contributed (an idea, a vote,
+ * or a change to the group's shared work).
+ */
+export async function hasContributed(db: Db, group: GroupRow, uid: string, need: "idea" | "vote" | "work"): Promise<boolean> {
+  if (need === "idea") {
+    const r = await db.maybeOne(
+      "select 1 from individual_ideas where group_id = $1 and author_id = $2 and stage_index = $3 and status = 'submitted' and length(btrim(body)) > 0 limit 1",
+      [group.id, uid, group.stage_index],
+    );
+    return !!r;
+  }
+  if (need === "vote") {
+    const r = await db.maybeOne("select 1 from votes where group_id = $1 and stage_index = $2 and voter_id = $3 limit 1", [group.id, group.stage_index, uid]);
+    return !!r;
+  }
+  const since = group.stage_started_at ?? new Date(0);
+  const r = await db.maybeOne(
+    `select 1 where exists (
+       select 1 from artifact_updates u join collaborative_artifacts a on a.id = u.artifact_id
+       where a.group_id = $1 and u.author_id = $2 and u.created_at >= $3)
+     or exists (select 1 from media_uploads where group_id = $1 and uploader_id = $2 and created_at >= $3)`,
+    [group.id, uid, since],
+  );
+  return !!r;
+}

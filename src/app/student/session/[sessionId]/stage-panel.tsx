@@ -14,7 +14,7 @@ import { useFlip, useSettledOrder } from "@/components/ui/settled-list";
 import { useWorkspace, roleName } from "./context";
 import { Brainstorm } from "./stage-brainstorm";
 import { Synthesis } from "./stage-synthesis";
-import { IdeaBank } from "./idea-bank";
+import { MyEarlierIdeas } from "./idea-bank";
 import { Creation } from "./stage-creation";
 import { Submission } from "./stage-submission";
 import { OwnSubmission, PresentationViewer } from "./presentation";
@@ -32,7 +32,7 @@ export function StagePanel() {
       {kind === "role_selection" ? <RoleSelection /> : null}
       {kind === "brainstorm" ? <Brainstorm /> : null}
       {kind === "synthesis" ? <Synthesis /> : null}
-      {kind === "discussion" ? <IdeaBank /> : null}
+      {kind === "discussion" ? <MyEarlierIdeas /> : null}
       {kind === "voting" ? <Voting /> : null}
       {kind === "creation" ? <Creation /> : null}
       {kind === "physical" ? <Physical /> : null}
@@ -125,7 +125,7 @@ function Voting() {
           })}
         </ul>
       )}
-      <p className="text-sm text-ink-muted">Votes show the group&apos;s priorities — talk about the result before moving on. Don&apos;t want to vote? Press “I&apos;m ready” to pass.</p>
+      <p className="text-sm text-ink-muted">Votes show the group&apos;s priorities — talk about the result before moving on. Vote for at least one idea, then press “I&apos;m ready”.</p>
     </Panel>
   );
 }

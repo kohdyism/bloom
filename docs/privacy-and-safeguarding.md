@@ -21,9 +21,10 @@ claim of UK GDPR compliance or safeguarding sign-off.
 
 ## Safeguarding position in the MVP
 
-- Canopy does **not** infer risk from student text and does **not** automatically disclose anything. The private assistant (live or simulated) is instructed to signpost the student to "Need help" / a trusted adult when they say they feel unsafe, and the help panel tells students their teacher may follow school safeguarding procedures.
-- The assistant panel tells students exactly what the teacher can see (counts by type, not words). It never describes conversations as absolutely confidential.
-- **Before real use**, the school's Designated Safeguarding Lead must define whether any exceptional disclosure route is needed, who may trigger it, how it is logged and how students are told. No such route exists today.
+- **Teacher flags (added after teacher usability tests).** When moderation in the group chat (supervised chat) or in Pip catches an off-task, unkind or inappropriate message, the student is told kindly at the time and the lesson's teacher gets a flag on the live dashboard: who, which kind, when, and whether it came from the chat or Pip. The words are hidden until the teacher chooses to reveal them, and only the lesson's teacher can read flags (row-level security).
+- **Safeguarding concern flag.** Simple, predictable keyword rules (not AI inference) look for language that may mean a student is at risk (e.g. self-harm, feeling unsafe at home). This works in Pip and in the group chat, even when chat supervision is off. It raises a high-priority flag that can't be missed on the teacher's dashboard. The student sees a supportive message pointing to "Need help" and a trusted adult. Canopy does not contact anyone outside the lesson's teacher.
+- Pip's panel tells students exactly what the teacher can see: counts by type, not the words — unless a message is off-task, not OK or worrying, in which case the teacher is told. It never describes conversations as absolutely confidential.
+- **Before real use**, the school's Designated Safeguarding Lead must review the keyword rules, decide who responds to a safeguarding flag and how quickly, how flags are recorded in the school's own safeguarding system, and how students are told about this. The rules will miss some disclosures and flag some harmless messages; they support, never replace, staff judgement.
 
 ## Required before any real-pupil deployment
 

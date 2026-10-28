@@ -43,7 +43,7 @@ export function Brainstorm() {
   return (
     <div className="flex flex-col gap-3 p-1">
       <div className="flex flex-wrap items-center gap-2">
-        <Buddy who="pip" size={52} mood="happy" cue={buddy.cue} listening={buddy.listening} name="Pip, your private helper" />
+        {group.pipAvailable ? <Buddy who="pip" size={52} mood="happy" cue={buddy.cue} listening={buddy.listening} name="Pip, your private helper" /> : null}
         <label htmlFor="idea-text" className="font-display text-xl font-bold">{editing ? "Edit your idea" : "Your idea"}</label>
         <span className="inline-flex items-center gap-1 rounded-full bg-teal-soft px-2.5 py-0.5 text-xs font-semibold text-teal-strong"><Lock className="size-3.5" aria-hidden="true" />Only you can see this</span>
         {count ? <span className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-sun px-3 py-1 text-sm font-semibold" aria-live="polite">{count} idea{count === 1 ? "" : "s"} added</span> : null}
@@ -58,7 +58,7 @@ export function Brainstorm() {
       </div>
       <div className="flex flex-wrap items-center gap-2 pt-1">
         <SpeechButton onText={(t) => setText((x) => (x ? `${x} ${t}` : t))} />
-        <Button variant="ghost" size="sm" onClick={() => openAssistant({ action: "express_idea", text })}><Sparkles className="text-purple" />Pip, help me say it <span className="sr-only">(private)</span></Button>
+        {group.pipAvailable ? <Button variant="ghost" size="sm" onClick={() => openAssistant({ action: "express_idea", text })}><Sparkles className="text-purple" />Pip, help me say it <span className="sr-only">(private)</span></Button> : null}
         <span className="ml-auto text-xs text-ink-faint">{text.length}/1000</span>
         <Button variant="secondary" size="sm" onClick={() => save(false)} disabled={!text.trim()} pending={saving}><Save />Save draft</Button>
         <Button size="md" onClick={() => save(true)} disabled={!text.trim()} pending={saving} className="bg-purple hover:bg-purple-strong"><Send />Add idea</Button>

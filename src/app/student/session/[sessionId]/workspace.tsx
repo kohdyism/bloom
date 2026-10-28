@@ -47,6 +47,8 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
   const me = initial.me.id;
   const [groupId, setGroupId] = useState(initial.group?.id ?? null);
 
+  // While my first change to the group's work hasn't counted yet, my own edits refresh the state (so "I'm ready" unlocks).
+  const needsWork = useRef(false);
   const channels = useMemo(() => [`session:${sessionId}`, `user:${me}`, ...(groupId ? [`group:${groupId}`] : [])], [sessionId, me, groupId]);
   const { data, connection, refresh } = useLiveState<StudentState>({
     url: `/api/live/student/${sessionId}/state`,
@@ -56,7 +58,7 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
     onEvent: (e) => {
       if (e.event === "artifact.update") {
         artifactBus.emit(e.payload as never);
-        return true;
+        return !(needsWork.current && (e.payload as { from?: string } | undefined)?.from === me);
       }
       if (e.event === "private_ai.new") setAssistantTick((n) => n + 1);
       if (e.event === "teacher_message.new") toast({ title: "Message from your teacher", body: "Open “Need help” to read it.", tone: "teal" });
@@ -64,6 +66,18 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
     },
   });
   const state = data ?? initial;
+  // Pip closes if the teacher switches it off or the group moves to a face-to-face stage.
+  const pipAllowed = useRef(true);
+  const pipNow = !!state.group?.pipAvailable;
+  useEffect(() => {
+    pipAllowed.current = pipNow;
+    // Follows the server: Pip isn't available on this stage any more.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (!pipNow) setPipOpen(false);
+  }, [pipNow]);
+  useEffect(() => {
+    needsWork.current = state.group?.contribution?.kind === "work" && !state.group.contribution.done;
+  }, [state.group?.contribution]);
 
   // Follow group changes (e.g. teacher moved this student).
   useEffect(() => {
@@ -101,6 +115,7 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
   }, [sessionId, refresh]);
 
   const openAssistant = useCallback((prefill?: { action?: string; text?: string }) => {
+    if (!pipAllowed.current) return;
     setAssistantPrefill(prefill);
     setChatOpen(false);
     setPipOpen(true);
@@ -164,6 +179,7 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
     // The teacher chooses which stages have a group chat.
     const chatHere = kind !== "complete" && chatOpenIn(g.stage);
     const discussion = kind === "discussion" && chatHere;
+    const faceToFace = kind === "discussion";
     const showPlant = s.theme !== "none";
     const doneStages = g.stageStatus === "complete" ? s.stages.length : g.stageIndex;
     const ideasBeside = hasIdeasTab(kind);
@@ -177,13 +193,14 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
     } else if (wide) {
       // Task in the middle; a slim rail on the right with Bloom on top and,
       // below it, the group chat (Discussion) or the group's ideas.
-      const working = kind !== "complete";
+      // Discussion is face to face: no Bloom or Pip buttons, only the chat if the teacher left it on.
+      const working = kind !== "complete" && (!faceToFace || discussion);
       main = (
         <div className="flex min-h-0 flex-1 gap-3 p-3">
           <ActivityPanel compact={canvas} ideasBeside headerAction={s.materials.length ? materialsLauncher : null} className="min-w-0 flex-1" />
           {working ? (
             <div className="flex min-h-0 w-[19rem] shrink-0 flex-col gap-3 xl:w-[23rem]">
-              <BloomCoach className={discussion ? "max-h-[40%] shrink-0" : "min-h-0 shrink"} />
+              {faceToFace ? null : <BloomCoach className="min-h-0 shrink" />}
               {discussion ? <GroupChat compact className="min-h-0 flex-1" /> : null}
             </div>
           ) : null}
@@ -193,17 +210,17 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
       main = (
         <div className="flex min-h-0 flex-1 flex-col gap-2 p-2">
           <div role="tablist" aria-label="Ideas or chat" className="flex gap-1 rounded-2xl bg-white/80 p-1 shadow-soft">
-            <button type="button" role="tab" aria-selected={mobileTab === "activity"} onClick={() => setMobileTab("activity")} className={cn("inline-flex flex-1 items-center justify-center gap-2 rounded-xl py-1.5 font-semibold", mobileTab === "activity" ? "bg-ink text-white" : "text-ink-muted")}><Lightbulb className="size-5" aria-hidden="true" />Task &amp; ideas</button>
+            <button type="button" role="tab" aria-selected={mobileTab === "activity"} onClick={() => setMobileTab("activity")} className={cn("inline-flex flex-1 items-center justify-center gap-2 rounded-xl py-1.5 font-semibold", mobileTab === "activity" ? "bg-ink text-white" : "text-ink-muted")}><Lightbulb className="size-5" aria-hidden="true" />Task &amp; my ideas</button>
             <button type="button" role="tab" aria-selected={mobileTab === "chat"} onClick={() => setMobileTab("chat")} className={cn("inline-flex flex-1 items-center justify-center gap-2 rounded-xl py-1.5 font-semibold", mobileTab === "chat" ? "bg-ink text-white" : "text-ink-muted")}><MessagesSquare className="size-5" aria-hidden="true" />Group chat</button>
           </div>
-          <ActivityPanel ideasBeside headerAction={taskActions} top={<BloomCoach variant="bar" />} className={cn("min-w-0 flex-1", mobileTab !== "activity" && "hidden")} />
-          {mobileTab === "chat" ? <GroupChat compact top={<BloomCoach variant="bar" />} className="min-w-0 flex-1" /> : null}
+          <ActivityPanel ideasBeside headerAction={taskActions} className={cn("min-w-0 flex-1", mobileTab !== "activity" && "hidden")} />
+          {mobileTab === "chat" ? <GroupChat compact className="min-w-0 flex-1" /> : null}
         </div>
       );
     } else {
       main = (
         <div className="flex min-h-0 flex-1 p-2 sm:p-3">
-          <ActivityPanel ideasBeside headerAction={taskActions} compact={canvas} top={<BloomCoach variant="bar" />} className="w-full min-w-0" />
+          <ActivityPanel ideasBeside headerAction={taskActions} compact={canvas} top={faceToFace ? undefined : <BloomCoach variant="bar" />} className="w-full min-w-0" />
         </div>
       );
     }
@@ -224,7 +241,7 @@ export function Workspace({ sessionId, initial }: { sessionId: string; initial: 
           {ideasBeside && !small ? ideasLauncher : null}
           <Readiness className="min-w-0 flex-1" />
           {kind === "complete" ? <div className="flex-1" /> : null}
-          <PipLauncher open={pipOpen} onOpenChange={(o) => { setPipOpen(o); if (o) { setChatOpen(false); setIdeasOpen(false); setMaterialsOpen(false); } }} prefill={assistantPrefill} tick={assistantTick} compact={small} />
+          {g.pipAvailable ? <PipLauncher open={pipOpen} onOpenChange={(o) => { setPipOpen(o); if (o) { setChatOpen(false); setIdeasOpen(false); setMaterialsOpen(false); } }} prefill={assistantPrefill} tick={assistantTick} compact={small} /> : null}
         </div>
       </div>
     );

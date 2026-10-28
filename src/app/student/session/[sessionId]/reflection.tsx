@@ -6,7 +6,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { Check, Send } from "lucide-react";
 import type { StudentState } from "@/lib/modules/sessions/state";
-import { REFLECTION_QUESTIONS, REFLECTION_RATINGS } from "@/lib/domain/reflection";
 import { api } from "@/lib/realtime/client";
 import { Button } from "@/components/ui/button";
 import { Card, Notice, Textarea } from "@/components/ui/primitives";
@@ -21,7 +20,8 @@ export function Reflection({ sessionId, state }: { sessionId: string; state: Stu
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const bloomBuddy = useBuddy();
-  const required = REFLECTION_RATINGS.filter((r) => !("allowNa" in r && r.allowNa));
+  const set = state.session.reflection;
+  const required = set.ratings.filter((r) => !r.optional);
   const complete = required.every((r) => ratings[r.key]);
 
   if (done) {
@@ -42,11 +42,11 @@ export function Reflection({ sessionId, state }: { sessionId: string; state: Stu
   return (
     <form className="mx-auto w-full flex max-w-2xl flex-col gap-6 py-4" onSubmit={async (e) => {
       e.preventDefault();
-      if (!complete) { setError("Please answer each rating question (the AI one is optional)."); return; }
+      if (!complete) { setError("Please answer each rating question (the optional ones can be skipped)."); return; }
       setPending(true);
       setError(null);
       try {
-        await api("/api/live/student", { method: "POST", json: { action: "reflection", sessionId, ratings: { ...Object.fromEntries(REFLECTION_RATINGS.map((r) => [r.key, 0])), ...ratings }, answers } });
+        await api("/api/live/student", { method: "POST", json: { action: "reflection", sessionId, ratings, answers } });
         bloomBuddy.fire("cheer");
         setDone(true);
       } catch (err) {
@@ -63,10 +63,10 @@ export function Reflection({ sessionId, state }: { sessionId: string; state: Stu
         </div>
       </div>
       {state.group?.flower ? <GardenNote flower={state.group.flower} /> : null}
-      {REFLECTION_RATINGS.map((r) => (
+      {set.ratings.map((r) => (
         <Card key={r.key} className="p-5">
           <fieldset>
-            <legend className="mb-3 font-semibold">{r.question}{"allowNa" in r && r.allowNa ? <span className="font-normal text-ink-muted"> (optional)</span> : null}</legend>
+            <legend className="mb-3 font-semibold">{r.question}{r.optional ? <span className="font-normal text-ink-muted"> (optional)</span> : null}</legend>
             <div className="flex items-stretch gap-2">
               {[1, 2, 3, 4, 5].map((n) => (
                 <label key={n} className={cn("relative flex flex-1 cursor-pointer flex-col items-center justify-center rounded-xl border-2 py-3 text-lg font-bold has-[:focus-visible]:outline has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-[var(--focus)]", ratings[r.key] === n ? "border-teal bg-teal text-white" : "border-line bg-surface hover:border-line-strong")}>
@@ -76,13 +76,13 @@ export function Reflection({ sessionId, state }: { sessionId: string; state: Stu
               ))}
             </div>
             <div className="mt-1.5 flex justify-between text-xs text-ink-muted" aria-hidden="true"><span>{r.low}</span><span>{r.high}</span></div>
-            {"allowNa" in r && r.allowNa ? (
-              <label className="mt-2 inline-flex items-center gap-2 text-sm text-ink-muted"><input type="checkbox" checked={ratings[r.key] === 0} onChange={(e) => setRatings((prev) => { const next = { ...prev }; if (e.target.checked) next[r.key] = 0; else delete next[r.key]; return next; })} />I didn&apos;t use it</label>
+            {r.optional ? (
+              <label className="mt-2 inline-flex items-center gap-2 text-sm text-ink-muted"><input type="checkbox" checked={ratings[r.key] === 0} onChange={(e) => setRatings((prev) => { const next = { ...prev }; if (e.target.checked) next[r.key] = 0; else delete next[r.key]; return next; })} />{r.key === "ai_helpful" ? "I didn't use it" : "Skip this one"}</label>
             ) : null}
           </fieldset>
         </Card>
       ))}
-      {REFLECTION_QUESTIONS.map((q) => (
+      {set.questions.map((q) => (
         <div key={q.key} className="flex flex-col gap-1.5">
           <label htmlFor={`rq-${q.key}`} className="font-semibold">{q.question} <span className="font-normal text-ink-muted">(optional — skip if you like)</span></label>
           <Textarea id={`rq-${q.key}`} rows={2} value={answers[q.key] ?? ""} onChange={(e) => { setAnswers({ ...answers, [q.key]: e.target.value }); bloomBuddy.listen(); }} maxLength={1000} />

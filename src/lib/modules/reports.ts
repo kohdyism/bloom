@@ -1,6 +1,6 @@
 import "server-only";
 import { asUser, NotFoundError } from "@/lib/db";
-import { REFLECTION_QUESTIONS, REFLECTION_RATINGS } from "@/lib/domain/reflection";
+import { reflectionFor } from "@/lib/domain/reflection";
 import { reflectionThemes, reportSchema, summariseLesson, type ReportFacts, type ReportSummary } from "@/lib/ai/report";
 import { loadSession } from "./sessions/common";
 
@@ -76,12 +76,13 @@ export async function lessonReport(uid: string, sessionId: string, opts: { regen
     );
     const averages: Record<string, number | null> = {};
     const distributions: Record<string, number[]> = {};
-    for (const r of REFLECTION_RATINGS) {
+    const set = reflectionFor(s.snapshot.config);
+    for (const r of set.ratings) {
       const vals = reflections.map((x) => x.ratings[r.key]).filter((v): v is number => typeof v === "number" && v >= 1 && v <= 5);
       averages[r.key] = vals.length ? Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10 : null;
       distributions[r.key] = [1, 2, 3, 4, 5].map((n) => vals.filter((v) => v === n).length);
     }
-    const freeText = reflections.flatMap((r) => REFLECTION_QUESTIONS.map((q) => r.answers[q.key]).filter((t): t is string => !!t && t.trim().length > 2));
+    const freeText = reflections.flatMap((r) => set.questions.map((q) => r.answers[q.key]).filter((t): t is string => !!t && t.trim().length > 2));
     const help = await db.query<{ reason: string; n: string }>("select reason, count(*) as n from help_requests where session_id = $1 group by reason", [sessionId]);
     const ai = await db.query<{ action: string; request_count: string }>("select action, sum(request_count) as request_count from public.private_ai_usage($1) group by action", [sessionId]);
     const existing = await db.maybeOne<{ summary: ReportSummary; origin: string; created_at: Date }>("select summary, origin, created_at from lesson_reports where session_id = $1", [sessionId]);
@@ -92,6 +93,7 @@ export async function lessonReport(uid: string, sessionId: string, opts: { regen
       help: help.map((h) => ({ reason: h.reason, label: REASON_LABELS[h.reason] ?? h.reason, count: Number(h.n) })),
       aiUsage: ai.map((a) => ({ action: a.action, count: Number(a.request_count) })),
       durationMinutes: Math.max(1, Math.round((new Date(end).getTime() - new Date(start).getTime()) / 60000)),
+      set,
     };
   });
 
@@ -132,6 +134,7 @@ export async function lessonReport(uid: string, sessionId: string, opts: { regen
     stages: facts.session.snapshot.stages.map((s) => ({ kind: s.kind, title: s.title })),
     groups: facts.groupDetails,
     reflection: {
+      questions: facts.set,
       responses: facts.reflections.length,
       averages: facts.averages,
       distributions: facts.distributions,
@@ -172,7 +175,7 @@ export function reportToCsv(r: LessonReport): string {
     ...r.groups.map((g) => [g.name, g.members.join("; "), g.stagesCompleted, g.totalStages, Math.round(g.extensionsSeconds / 60), Object.values(g.helpRequests).reduce((a, b) => a + b, 0), g.ideasShared, g.messages, g.submitted ? "yes" : "no"].map(esc).join(",")),
     "",
     ["Reflection item", "Average (1-5)", "Responses"].map(esc).join(","),
-    ...REFLECTION_RATINGS.map((q) => [q.question, r.reflection.averages[q.key] ?? "", r.reflection.distributions[q.key]?.reduce((a, b) => a + b, 0) ?? 0].map(esc).join(",")),
+    ...r.reflection.questions.ratings.map((q) => [q.question, r.reflection.averages[q.key] ?? "", r.reflection.distributions[q.key]?.reduce((a, b) => a + b, 0) ?? 0].map(esc).join(",")),
   ];
   return lines.join("\n");
 }

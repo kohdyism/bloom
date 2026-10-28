@@ -5,7 +5,6 @@ import { requireUser } from "@/lib/auth/current-user";
 import { uuid } from "@/lib/api";
 import { studentState, studentOwnSubmission } from "@/lib/modules/sessions/state";
 import { myLookBack } from "@/lib/modules/past-lessons";
-import { REFLECTION_QUESTIONS, REFLECTION_RATINGS } from "@/lib/domain/reflection";
 import { FLOWERS } from "@/lib/domain/flowers";
 import { FlowerPicture } from "@/components/flower";
 import { Button } from "@/components/ui/button";
@@ -29,7 +28,8 @@ export default async function LookBackPage(props: { params: Promise<{ sessionId:
   const myIdeas = g?.ideas.mine.filter((i) => i.status === "submitted") ?? [];
   const groupIdeas = g?.ideas.shared.filter((i) => !i.mine) ?? [];
   const chat = g?.messages.filter((m) => m.kind === "student" || m.kind === "teacher") ?? [];
-  const answered = REFLECTION_QUESTIONS.filter((q) => look.reflection?.answers[q.key]?.trim());
+  const set = state.session.reflection;
+  const answered = set.questions.filter((q) => look.reflection?.answers[q.key]?.trim());
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 py-6 sm:py-8">
@@ -77,7 +77,7 @@ export default async function LookBackPage(props: { params: Promise<{ sessionId:
           {look.reflection ? (
             <>
               <ul className="grid gap-2 sm:grid-cols-2">
-                {REFLECTION_RATINGS.map((r) => {
+                {set.ratings.map((r) => {
                   const v = look.reflection!.ratings[r.key];
                   if (!v) return null;
                   return (

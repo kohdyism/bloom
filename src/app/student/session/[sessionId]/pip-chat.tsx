@@ -100,7 +100,7 @@ export function PipChat({ active, prefill, tick, className, composerClassName }:
         <Buddy who="pip" size={48} mood={busy ? "thinking" : "happy"} cue={buddy.cue} talking={buddy.talking && !busy} listening={buddy.listening && !busy} />
         <div className="min-w-0 flex-1">
           <h2 className="font-display text-lg font-bold leading-tight">Pip · just for you</h2>
-          <p className="flex items-start gap-1.5 text-xs text-ink-muted"><Lock className="mt-0.5 size-3 shrink-0" aria-hidden="true" />Only you see this. Your teacher sees how often you asked for each kind of help, not the words. Pip gives hints, not answers.</p>
+          <p className="flex items-start gap-1.5 text-xs text-ink-muted"><Lock className="mt-0.5 size-3 shrink-0" aria-hidden="true" />Only you see this. Your teacher sees how often you asked for each kind of help, not the words — unless you write something off-task, not OK, or worrying: then your teacher is told. Pip only helps with today&apos;s task, and gives hints, not answers.</p>
         </div>
       </div>
       <div ref={listRef} className="min-h-0 flex-1 overflow-y-auto px-4 py-3" aria-label="Conversation with Pip" role="log" aria-live="polite">

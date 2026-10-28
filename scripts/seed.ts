@@ -5,6 +5,7 @@
 import type { Client } from "pg";
 import { hashPassword } from "../src/lib/auth/password";
 import { DEFAULT_ROLES, defaultConfig, makeStage, type LessonDraft } from "../src/lib/domain/lesson";
+import { DEFAULT_REFLECTION } from "../src/lib/domain/reflection";
 
 export const DEMO_TEACHER = { username: "teacher.demo", password: "bloom-demo", name: "Ms Rivera" };
 export const DEMO_STUDENT_PASSWORD = "bloom-student";
@@ -89,7 +90,18 @@ export const DEMO_LESSONS: { classKey: string; draft: LessonDraft; materials: { 
         "Support an interpretation with a quotation",
         "Build a shared response that includes more than one reading",
       ],
-      config: defaultConfig({ groupSizeMin: 3, groupSizeMax: 4, outputType: "document", presentationRequired: true, gamificationTheme: "garden", roles: pick("facilitator", "note_taker", "questioner", "presenter") }),
+      config: defaultConfig({
+        groupSizeMin: 3, groupSizeMax: 4, outputType: "document", presentationRequired: true, gamificationTheme: "garden", roles: pick("facilitator", "note_taker", "questioner", "presenter"),
+        tags: ["Year 8", "English", "Poetry"],
+        // The teacher's own reflection: the usual group-work questions plus one about the poem itself.
+        reflection: {
+          ratings: [
+            ...DEFAULT_REFLECTION.ratings,
+            { key: "understood", question: "How well did you understand the poem?", low: "Not well", high: "Very well", optional: false },
+          ],
+          questions: [...DEFAULT_REFLECTION.questions, { key: "poem_line", question: "Which line of the poem will you remember, and why?" }],
+        },
+      }),
       stages: [
         makeStage("brainstorm", { title: "Think", durationSeconds: 300, instructions: "Read the poem on your own. Write one or two ideas about how the speaker feels and why. A single word or phrase from the poem is a great place to start." }),
         makeStage("synthesis", { title: "AI idea synthesis", durationSeconds: 240, instructions: "Look at how your group's ideas have been grouped. Does anything feel wrong or missing? You can rename groups or move ideas." }),
@@ -110,7 +122,7 @@ export const DEMO_LESSONS: { classKey: string; draft: LessonDraft; materials: { 
       subject: "Design & Technology",
       yearLevel: "Year 8",
       objectives: ["Plan and share out tasks", "Test a design and record results fairly", "Reflect on how the group worked together"],
-      config: defaultConfig({ modality: "mostly_in_person", outputType: "photo", gamificationTheme: "journey", roles: pick("facilitator", "timekeeper", "materials", "note_taker", "presenter") }),
+      config: defaultConfig({ modality: "mostly_in_person", outputType: "photo", gamificationTheme: "journey", roles: pick("facilitator", "timekeeper", "materials", "note_taker", "presenter"), tags: ["Year 8", "Design & Technology", "Hands-on"] }),
       stages: [
         makeStage("orientation", { durationSeconds: 180, instructions: "Your challenge: build a paper aeroplane that flies as far as possible using only the supplied materials. You'll test three times and record every result." }),
         makeStage("role_selection", { durationSeconds: 180 }),
@@ -130,7 +142,7 @@ export const DEMO_LESSONS: { classKey: string; draft: LessonDraft; materials: { 
       subject: "Citizenship",
       yearLevel: "Year 9",
       objectives: ["Generate ideas that consider different students' needs", "Agree priorities democratically", "Present a persuasive plan"],
-      config: defaultConfig({ outputType: "slides", presentationRequired: true, gamificationTheme: "constellation", ideaAnonymity: "anonymous", chatSupervision: "ai", roles: pick("facilitator", "synthesiser", "timekeeper", "presenter", "encourager") }),
+      config: defaultConfig({ outputType: "slides", presentationRequired: true, gamificationTheme: "constellation", ideaAnonymity: "anonymous", chatSupervision: "ai", roles: pick("facilitator", "synthesiser", "timekeeper", "presenter", "encourager"), tags: ["Year 9", "Citizenship"] }),
       stages: [
         makeStage("brainstorm", { durationSeconds: 300, instructions: "What would make school better for everyone? Think about people whose experience might be different from yours.", config: { groupChat: false } }),
         makeStage("synthesis", { title: "Cluster ideas", durationSeconds: 240 }),
@@ -172,6 +184,17 @@ async function createUser(client: Client, opts: { username: string; name: string
 export async function seed(client: Client) {
   const existing = await client.query("select 1 from public.profiles where username = $1", [DEMO_TEACHER.username]);
   if (existing.rowCount) {
+    // Newer lesson settings (tags, the poem's own reflection question) are added to the demo
+    // lessons if they don't have them yet. Anything a teacher already changed is kept.
+    for (const lesson of DEMO_LESSONS) {
+      const extra: Record<string, unknown> = { tags: lesson.draft.config.tags };
+      if (lesson.draft.config.reflection) extra.reflection = lesson.draft.config.reflection;
+      await client.query(
+        `update public.lessons set config = $1::jsonb || config
+         where title = $2 and teacher_id = (select id from public.profiles where username = $3)`,
+        [JSON.stringify(extra), lesson.draft.title, DEMO_TEACHER.username],
+      );
+    }
     console.log("  demo data already present — skipping (use db:reset for a clean slate)");
     return;
   }

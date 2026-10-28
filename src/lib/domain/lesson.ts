@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { stageAttachmentSchema } from "./stage-media";
+import { reflectionSetSchema } from "./reflection";
 
 /** The twelve configurable stage building blocks (spec §6.5). */
 export const STAGE_KINDS = [
@@ -54,6 +56,10 @@ export const stageConfigSchema = z.object({
   prompts: z.array(z.string().min(1).max(200)).max(6).default([]),
   /** Whether the group chat is available during this stage (teacher's choice). */
   groupChat: z.boolean().default(true),
+  /** Whether Pip, the private assistant, is available during this stage (only when it is on for the lesson). */
+  privateAssistant: z.boolean().default(true),
+  /** Pictures, videos, links/simulations and files shown inline with the instructions. */
+  attachments: z.array(stageAttachmentSchema).max(8).default([]),
 });
 export type StageConfig = z.infer<typeof stageConfigSchema>;
 
@@ -107,6 +113,12 @@ export const lessonConfigSchema = z.object({
   timerWarningSeconds: z.number().int().min(0).max(600).default(60),
   /** Supervised chat: Bloom checks each group-chat message first and holds back off-task or unkind ones. */
   chatSupervision: z.enum(["off", "ai"]).default("off"),
+  /** Pip, the private assistant, for the whole lesson. Each stage can also turn it off. */
+  privateAssistant: z.boolean().default(true),
+  /** The teacher's own post-lesson reflection questions (null = the default set). */
+  reflection: reflectionSetSchema.nullable().default(null),
+  /** Labels for finding the lesson in the library (e.g. "Year 8", "Poetry"). */
+  tags: z.array(z.string().trim().min(1).max(30)).max(10).default([]),
 });
 export type LessonConfig = z.infer<typeof lessonConfigSchema>;
 
@@ -158,4 +170,28 @@ export type SessionSnapshot = z.infer<typeof sessionSnapshotSchema>;
 export function chatOpenIn(stage: { kind: StageKind; config: { groupChat?: boolean } } | null | undefined): boolean {
   if (!stage || stage.kind === "talk" || stage.kind === "reflection") return false;
   return stage.config.groupChat !== false;
+}
+
+/** Stages meant for talking face to face: no Pip, no AI buttons. */
+export const FACE_TO_FACE_STAGES: readonly StageKind[] = ["talk", "discussion"];
+
+/**
+ * Can students reach Pip during this stage? Only if the teacher left it on
+ * for the lesson AND for this stage, and never while the group is meant to be
+ * talking face to face.
+ */
+export function pipAvailableIn(stage: { kind: StageKind; config: { privateAssistant?: boolean } } | null | undefined, lesson: { privateAssistant?: boolean }): boolean {
+  if (lesson.privateAssistant === false) return false;
+  if (!stage) return true;
+  if (FACE_TO_FACE_STAGES.includes(stage.kind)) return false;
+  return stage.config.privateAssistant !== false;
+}
+
+/** Stages where each student must add something before they can say they're ready. */
+export function contributionNeeded(stage: { kind: StageKind; config: { minIdeasPerStudent?: number } } | null | undefined): null | { kind: "idea" | "vote" | "work"; hint: string } {
+  if (!stage) return null;
+  if (stage.kind === "brainstorm") return (stage.config.minIdeasPerStudent ?? 1) > 0 ? { kind: "idea", hint: "Add at least one idea first" } : null;
+  if (stage.kind === "voting") return { kind: "vote", hint: "Vote for at least one idea first" };
+  if (stage.kind === "creation") return { kind: "work", hint: "Add something to your group's work first" };
+  return null;
 }

@@ -1,13 +1,15 @@
 import "server-only";
 import { reviewChatMessage, quickCheck } from "@/lib/ai/chat-guard";
-import { chatOpenIn } from "@/lib/domain/lesson";
+import { chatOpenIn, contributionNeeded } from "@/lib/domain/lesson";
 import { asServer, asUser, NotFoundError, type Db } from "@/lib/db";
 import { publish, ch } from "@/lib/realtime/server";
 import { ApiError, badRequest, conflict, forbidden } from "@/lib/api";
 import { rateLimit } from "@/lib/security/rate-limit";
-import { mentionsHelper } from "@/lib/domain/mentions";
+import { safeguardingConcern, type FlagCategory } from "@/lib/domain/moderation";
+import { cleanReflection, reflectionFor } from "@/lib/domain/reflection";
+import { raiseFlag } from "@/lib/modules/flags";
 import { background } from "@/lib/background";
-import { loadGroup, loadSession, type GroupRow, type SessionRow } from "./common";
+import { hasContributed, loadGroup, loadSession, type GroupRow, type SessionRow } from "./common";
 import { checkParticipationBalance, facilitate, notifyGroup, runSynthesis, syncGroup } from "./engine";
 import { placeLateJoiner, publishPresentation } from "./teacher";
 import type { FacilitatorTrigger } from "@/lib/ai/facilitator";
@@ -94,6 +96,10 @@ export async function setReadiness(uid: string, sessionId: string, state: "ready
     if (group.stage_status === "complete") throw conflict("Your group has finished every stage.");
     // A tap from a screen that hadn't caught up yet mustn't count for the next stage.
     if (stageIndex !== undefined && stageIndex !== group.stage_index) throw conflict("Your group has already moved on — have a look at the new stage.");
+    if (state === "ready") {
+      const need = contributionNeeded(ctx.session.snapshot.stages[group.stage_index]);
+      if (need && !(await hasContributed(db, group, uid, need.kind))) throw conflict(`${need.hint}, then press “I’m ready”.`);
+    }
     const prev = await db.maybeOne<{ state: string }>("select state from stage_readiness where group_id = $1 and stage_index = $2 and student_id = $3", [group.id, group.stage_index, uid]);
     if (state === null) await db.query("delete from stage_readiness where group_id = $1 and stage_index = $2 and student_id = $3", [group.id, group.stage_index, uid]);
     else await db.query(
@@ -209,7 +215,7 @@ export async function requestResynthesis(uid: string, sessionId: string) {
 // ---------------------------------------------------------------------------
 // Discussion
 // ---------------------------------------------------------------------------
-export async function postMessage(uid: string, sessionId: string, body: string, replyTo: string | null): Promise<{ ok: true } | { held: { verdict: "off_task" | "unkind"; note: string } }> {
+export async function postMessage(uid: string, sessionId: string, body: string, replyTo: string | null): Promise<{ ok: true } | { held: { verdict: FlagCategory; note: string } }> {
   const text = body.trim();
   if (!text) throw badRequest("Write a message first.");
   if (text.length > 2000) throw badRequest("Messages can be up to 2000 characters.");
@@ -243,19 +249,18 @@ export async function postMessage(uid: string, sessionId: string, body: string, 
         "insert into audit_events(actor_id, session_id, action, target, details) values ($1,$2,'chat.held',$3,$4)",
         [uid, sessionId, group.id, JSON.stringify({ verdict: check.verdict })],
       )).catch(() => {});
+      // The teacher is told too (who, which kind, when; the words are hidden until they choose to look).
+      await raiseFlag({ sessionId, groupId: group.id, studentId: uid, source: "chat", category: check.verdict, excerpt: text }).catch(() => {});
       return { held: { verdict: check.verdict, note: check.note } };
     }
+  } else if (safeguardingConcern(text)) {
+    // Even in an open chat, words that suggest a student may be at risk always reach the teacher.
+    await raiseFlag({ sessionId, groupId: group.id, studentId: uid, source: "chat", category: "safeguarding", excerpt: text }).catch(() => {});
   }
   await asUser(uid, (db) => db.query("insert into group_messages(group_id, author_id, kind, body, reply_to) values ($1,$2,'student',$3,$4)", [group.id, uid, text, replyTo]));
   await notifyGroup(group, "message.new");
   background(() => checkParticipationBalance(group.id));
-  // Talking to the group helper by name ("@Bloom …", "Bloom, …") gets a reply in the chat.
-  // (Only in Discussion stages; the rest of the time Bloom helps from the top of the task.)
-  const discussing = (await asServer((db) => loadSession(db, group.session_id)))?.snapshot.stages[group.stage_index]?.kind === "discussion";
-  if (discussing && mentionsHelper(text) && group.ai_enabled) {
-    const allowed = await rateLimit(`ask-group:${uid}`, 8, 300).then(() => true, () => false);
-    if (allowed) background(() => facilitate(group.id, { kind: "ask", quick: "question", question: text.slice(0, 500) }, null));
-  }
+  // Discussion is face to face, so Bloom doesn't answer in the chat there (no AI during talk).
   return { ok: true };
 }
 
@@ -414,6 +419,10 @@ export async function submitReflection(uid: string, sessionId: string, ratings: 
   await asUser(uid, async (db) => {
     const ctx = await studentContext(db, uid, sessionId);
     if (ctx.session.status !== "ended") throw conflict("Reflection opens when your teacher ends the lesson.");
+    // Only this lesson's questions are kept; every required scale must be answered.
+    const clean = cleanReflection(reflectionFor(ctx.session.snapshot.config), ratings, answers);
+    if ("error" in clean) throw badRequest(clean.error!);
+    ({ ratings, answers } = clean);
     await db.query(
       `insert into reflection_responses(session_id, student_id, ratings, answers) values ($1,$2,$3,$4)
        on conflict (session_id, student_id) do update set ratings = excluded.ratings, answers = excluded.answers, submitted_at = now()`,

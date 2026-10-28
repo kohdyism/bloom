@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Eye, Lock } from "lucide-react";
 import { api } from "@/lib/realtime/client";
-import { REFLECTION_QUESTIONS, REFLECTION_RATINGS } from "@/lib/domain/reflection";
+import type { ReflectionSet } from "@/lib/domain/reflection";
 import { Dialog, DialogContent } from "@/components/ui/overlay";
 import { Button } from "@/components/ui/button";
 import { Notice, Select } from "@/components/ui/primitives";
@@ -11,7 +11,7 @@ import { Notice, Select } from "@/components/ui/primitives";
 type Detail = { name: string; ratings: Record<string, number>; answers: Record<string, string>; submittedAt: string };
 
 /** Deliberate, logged drill-down into one student's reflection (spec §25). */
-export function IndividualReflections({ sessionId, respondents }: { sessionId: string; respondents: { id: string; name: string }[] }) {
+export function IndividualReflections({ sessionId, respondents, questions }: { sessionId: string; respondents: { id: string; name: string }[]; questions: ReflectionSet }) {
   const [choice, setChoice] = useState("");
   const [detail, setDetail] = useState<Detail | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -37,11 +37,11 @@ export function IndividualReflections({ sessionId, respondents }: { sessionId: s
           {detail ? (
             <div className="flex flex-col gap-4 text-sm">
               <dl className="grid gap-2">
-                {REFLECTION_RATINGS.map((q) => (
+                {questions.ratings.map((q) => (
                   <div key={q.key} className="flex justify-between gap-4"><dt className="text-ink-muted">{q.question}</dt><dd className="font-semibold">{detail.ratings[q.key] ? `${detail.ratings[q.key]} / 5` : "—"}</dd></div>
                 ))}
               </dl>
-              {REFLECTION_QUESTIONS.map((q) => detail.answers[q.key] ? (
+              {questions.questions.map((q) => detail.answers[q.key] ? (
                 <div key={q.key}><p className="font-semibold">{q.question}</p><p className="mt-0.5 rounded-lg bg-surface-2 px-3 py-2">{detail.answers[q.key]}</p></div>
               ) : null)}
             </div>

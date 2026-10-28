@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Lock } from "lucide-react";
+import { ArrowLeft, FileDown, Lock } from "lucide-react";
 import { requireUser } from "@/lib/auth/current-user";
 import { getStudentDetail } from "@/lib/modules/classes";
 import { NotFoundError } from "@/lib/db";
 import { SURVEY_QUESTIONS, surveyLabel } from "@/lib/domain/students";
 import { Avatar, Badge, Card, CardBody, CardHeader, CardTitle, Notice } from "@/components/ui/primitives";
 import { AccommodationEditor } from "./accommodation-editor";
+import { Button } from "@/components/ui/button";
 
 export const metadata = { title: "Student profile" };
 
@@ -29,6 +30,7 @@ export default async function StudentPage({ params }: { params: Promise<{ studen
           <h1 className="font-display text-2xl font-bold">{s.displayName}</h1>
           <p className="text-ink-muted">@{s.username} · {s.classes.map((c) => c.name).join(", ")}</p>
         </div>
+        <Button asChild variant="secondary" className="ml-auto"><Link href={`/print/student/${s.id}`}><FileDown />Progress report (PDF)</Link></Button>
       </div>
       <div className="grid gap-6 xl:grid-cols-2">
         <Card>

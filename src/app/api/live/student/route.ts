@@ -3,7 +3,7 @@ import { route, uuid } from "@/lib/api";
 import * as S from "@/lib/modules/sessions/student";
 import { submitGroupWork } from "@/lib/modules/artifacts";
 import { askPrivateAssistant } from "@/lib/modules/private-ai";
-import { reflectionSchema } from "@/lib/domain/reflection";
+import { reflectionSubmitSchema } from "@/lib/domain/reflection";
 
 const cluster = z.object({ id: z.string().max(20), title: z.string().max(80), summary: z.string().max(300), ideaIds: z.array(uuid).max(100) });
 
@@ -30,7 +30,7 @@ const action = z.discriminatedUnion("action", [
   z.object({ action: z.literal("submit"), sessionId: uuid, note: z.string().max(2000).default(""), expectedVersion: z.number().int().min(0) }),
   z.object({ action: z.literal("request_present"), sessionId: uuid }),
   z.object({ action: z.literal("presenter_slide"), sessionId: uuid, slide: z.number().int().min(0).max(200) }),
-  z.object({ action: z.literal("reflection"), sessionId: uuid, ratings: reflectionSchema.shape.ratings, answers: reflectionSchema.shape.answers }),
+  z.object({ action: z.literal("reflection"), sessionId: uuid, ratings: reflectionSubmitSchema.shape.ratings, answers: reflectionSubmitSchema.shape.answers }),
   z.object({
     action: z.literal("assistant"), sessionId: uuid,
     request: z.enum(["explain_simply", "break_into_steps", "show_example", "what_is_group_doing", "summarise_discussion", "express_idea", "prepare_to_contribute", "stuck", "question"]),
@@ -59,7 +59,7 @@ export const POST = route({ role: "student", body: action }, async ({ user, body
     case "submit": return submitGroupWork(u, b.sessionId, b.note, b.expectedVersion);
     case "request_present": return S.requestToPresent(u, b.sessionId);
     case "presenter_slide": return S.presenterNavigate(u, b.sessionId, b.slide);
-    case "reflection": return S.submitReflection(u, b.sessionId, b.ratings, Object.fromEntries(Object.entries(b.answers).filter(([, v]) => v && v.trim()).map(([k, v]) => [k, v!.trim()])));
+    case "reflection": return S.submitReflection(u, b.sessionId, b.ratings, b.answers);
     case "assistant": return askPrivateAssistant(u, b.sessionId, b.request, b.text);
   }
 });

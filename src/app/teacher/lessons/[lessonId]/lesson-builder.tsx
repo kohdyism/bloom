@@ -16,6 +16,7 @@ import {
   addMaterialAction, approveDraftAction, deleteLessonAction, duplicateLessonAction, removeMaterialAction, saveLessonAction, type MaterialState,
 } from "../actions";
 import { launchSessionAction } from "@/app/teacher/sessions/actions";
+import { ReflectionEditor, StageMediaEditor, TagEditor } from "./builder-extras";
 
 type Props = {
   lessonId: string;
@@ -148,6 +149,7 @@ export function LessonBuilder(props: Props) {
         <TabsList aria-label="Lesson builder sections">
           <TabsTrigger value="stages">Stages</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
+          <TabsTrigger value="reflection">Reflection</TabsTrigger>
           <TabsTrigger value="materials">Materials ({props.materials.length})</TabsTrigger>
         </TabsList>
 
@@ -192,6 +194,7 @@ export function LessonBuilder(props: Props) {
                   <Field id="stage-instructions" label="Instructions for students" hint="Write directly to students. Short numbered steps work well.">
                     <Textarea rows={5} value={stage.instructions} onChange={(e) => updateStage(selected, { instructions: e.target.value })} />
                   </Field>
+                  <StageMediaEditor lessonId={props.lessonId} items={stage.config.attachments ?? []} onChange={(v) => updateStageConfig(selected, { attachments: v })} />
                   <div className="grid gap-4 sm:grid-cols-2">
                     <Field id="stage-minutes" label="Duration (minutes)" hint="Timers warn and can be extended. Work is never removed when time is up.">
                       <Input type="number" min={0} max={120} value={Math.round(stage.durationSeconds / 60)} onChange={(e) => updateStage(selected, { durationSeconds: Math.max(0, Math.min(120, Number(e.target.value) || 0)) * 60 })} />
@@ -207,6 +210,14 @@ export function LessonBuilder(props: Props) {
                     <Switch id="stage-chat" label="Group chat during this stage" description={stage.kind === "discussion" ? "Turn off if the group should only talk out loud." : "Turn off to keep students focused on the task. Bloom and Pip stay available."}
                       checked={stage.config.groupChat !== false} onCheckedChange={(v) => updateStageConfig(selected, { groupChat: v })} />
                   ) : null}
+                  {stage.kind === "talk" || stage.kind === "discussion" ? (
+                    <p className="rounded-xl bg-surface-2 px-3 py-2 text-sm text-ink-muted">Pip, the private assistant, is always hidden in talk and discussion stages so students talk face to face.</p>
+                  ) : draft.config.privateAssistant === false ? (
+                    <p className="rounded-xl bg-surface-2 px-3 py-2 text-sm text-ink-muted">Pip is switched off for this whole lesson (Settings).</p>
+                  ) : (
+                    <Switch id="stage-pip" label="Enable private assistant (Pip) during this stage" description="Turn off and no student can see or open Pip during this stage."
+                      checked={stage.config.privateAssistant !== false} onCheckedChange={(v) => updateStageConfig(selected, { privateAssistant: v })} />
+                  )}
                 </CardBody>
               </Card>
             ) : null}
@@ -215,6 +226,10 @@ export function LessonBuilder(props: Props) {
 
         <TabsContent value="settings" className="mt-4">
           <SettingsPanel draft={draft} update={update} classId={classId} setClassId={(v) => { setClassId(v); setDirty(true); }} classes={props.classes} isTemplate={props.isTemplate} />
+        </TabsContent>
+
+        <TabsContent value="reflection" className="mt-4">
+          <ReflectionEditor value={draft.config.reflection ?? null} onChange={(v) => update((d) => ({ ...d, config: { ...d.config, reflection: v } }))} />
         </TabsContent>
 
         <TabsContent value="materials" className="mt-4">
@@ -279,7 +294,7 @@ function StageSpecific({ stage, onChange }: { stage: Stage; onChange: (p: Partia
   switch (stage.kind) {
     case "brainstorm":
       return (
-        <Field id="stage-min-ideas" label="Ideas each student submits before the group can move on" hint="Students who prefer to contribute verbally can still mark themselves ready; teachers can always move a group on.">
+        <Field id="stage-min-ideas" label="Ideas each student submits before the group can move on" hint="Each student needs to add at least one idea before they can press “I’m done thinking” (set 0 to make ideas optional). You can always move a group on.">
           <Input type="number" min={0} max={10} value={stage.config.minIdeasPerStudent} onChange={(e) => onChange({ minIdeasPerStudent: Math.max(0, Math.min(10, Number(e.target.value) || 0)) })} />
         </Field>
       );
@@ -348,6 +363,7 @@ function SettingsPanel({ draft, update, classId, setClassId, classes, isTemplate
             <Field id="lesson-year" label="Year level"><Input value={draft.yearLevel} onChange={(e) => update((d) => ({ ...d, yearLevel: e.target.value }))} /></Field>
           </div>
           <ListEditor id="objectives" label="Learning objectives" items={draft.objectives} onChange={(v) => update((d) => ({ ...d, objectives: v }))} placeholder="Add objective" />
+          <TagEditor tags={c.tags ?? []} onChange={(v) => setConfig({ tags: v })} />
         </CardBody>
       </Card>
 
@@ -449,6 +465,8 @@ function SettingsPanel({ draft, update, classId, setClassId, classes, isTemplate
               <option value="ai">Supervised by Bloom (AI)</option>
             </Select>
           </Field>
+          <Switch id="lesson-pip" label="Enable private assistant (Pip)" description="Pip gives each student private help with the task. Turn off and no student can see or open Pip in this lesson. You can also turn it off for single stages."
+            checked={c.privateAssistant !== false} onCheckedChange={(v) => setConfig({ privateAssistant: v })} />
           <Switch id="pres" label="Groups present their work" checked={c.presentationRequired} onCheckedChange={(v) => setConfig({ presentationRequired: v })} />
           <Switch id="resub" label="Allow resubmission" description="Groups can submit an improved version after submitting." checked={c.allowResubmission} onCheckedChange={(v) => setConfig({ allowResubmission: v })} />
           <Field id="theme" label="Group progress theme" hint="Progress grows with completed stages — never with message counts. Students can minimise it.">
@@ -538,6 +556,8 @@ function lessonWarnings(d: LessonDraft): string[] {
   if (kinds.includes("presentation") && !kinds.includes("submission")) w.push("Presentations show submitted work, so add a submission stage before presenting.");
   if (d.stages.some((s) => !s.instructions.trim() && s.kind !== "synthesis")) w.push("Some stages have no instructions for students yet.");
   if (d.objectives.length === 0) w.push("Add at least one learning objective.");
+  const r = d.config.reflection;
+  if (r && (r.ratings.some((x) => !x.question.trim()) || r.questions.some((x) => !x.question.trim()))) w.push("Some reflection questions are empty — fill them in or remove them before saving.");
   return w;
 }
 

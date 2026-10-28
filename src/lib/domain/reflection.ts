@@ -18,11 +18,67 @@ export const REFLECTION_QUESTIONS = [
 
 export const SCALE_LABELS = ["1", "2", "3", "4", "5"];
 
-export const reflectionSchema = z.object({
-  ratings: z.object(
-    Object.fromEntries(REFLECTION_RATINGS.map((r) => [r.key, z.number().int().min(0).max(5)])) as Record<(typeof REFLECTION_RATINGS)[number]["key"], z.ZodNumber>,
-  ),
-  answers: z.object(
-    Object.fromEntries(REFLECTION_QUESTIONS.map((q) => [q.key, z.string().max(1000).optional()])) as Record<(typeof REFLECTION_QUESTIONS)[number]["key"], z.ZodOptional<z.ZodString>>,
-  ),
+const key = z.string().min(1).max(40).regex(/^[a-z0-9_]+$/);
+
+/**
+ * A lesson's own reflection questions, set by the teacher: 1–5 scales and
+ * written answers, about the group work or the task itself ("How well did you
+ * understand the poem?"). Lessons without their own set use the defaults.
+ */
+export const reflectionRatingSchema = z.object({
+  key,
+  question: z.string().min(1).max(200),
+  low: z.string().max(40).default("Not at all"),
+  high: z.string().max(40).default("Very much"),
+  optional: z.boolean().default(false),
 });
+export const reflectionTextSchema = z.object({ key, question: z.string().min(1).max(200) });
+export const reflectionSetSchema = z.object({
+  ratings: z.array(reflectionRatingSchema).max(10),
+  questions: z.array(reflectionTextSchema).max(6),
+});
+export type ReflectionRating = z.infer<typeof reflectionRatingSchema>;
+export type ReflectionSet = z.infer<typeof reflectionSetSchema>;
+
+export const DEFAULT_REFLECTION: ReflectionSet = {
+  ratings: REFLECTION_RATINGS.map((r) => ({ key: r.key, question: r.question, low: r.low, high: r.high, optional: "allowNa" in r && !!r.allowNa })),
+  questions: REFLECTION_QUESTIONS.map((q) => ({ key: q.key, question: q.question })),
+};
+
+/** The questions for a lesson: the teacher's own set, or the defaults. */
+export function reflectionFor(config: { reflection?: ReflectionSet | null } | null | undefined): ReflectionSet {
+  const set = config?.reflection;
+  return set && (set.ratings.length || set.questions.length) ? set : DEFAULT_REFLECTION;
+}
+
+/** What a student sends: answers keyed by question. Checked against the lesson's set on the server. */
+export const reflectionSubmitSchema = z.object({
+  ratings: z.record(z.string().max(40), z.number().int().min(0).max(5)),
+  answers: z.record(z.string().max(40), z.string().max(1000)),
+});
+
+/** Keep only answers to this lesson's questions; every non-optional scale must be answered. */
+export function cleanReflection(set: ReflectionSet, ratings: Record<string, number>, answers: Record<string, string>) {
+  const r: Record<string, number> = {};
+  for (const q of set.ratings) {
+    const v = ratings[q.key];
+    if (typeof v === "number" && v >= 1 && v <= 5) r[q.key] = v;
+    else if (q.optional) r[q.key] = 0;
+    else return { error: "Please answer each rating question (the optional ones can be skipped)." } as const;
+  }
+  const a: Record<string, string> = {};
+  for (const q of set.questions) {
+    const t = answers[q.key]?.trim();
+    if (t) a[q.key] = t.slice(0, 1000);
+  }
+  return { ratings: r, answers: a } as const;
+}
+
+/** A tidy key for a new teacher-written question. */
+export function newQuestionKey(existing: string[]): string {
+  for (let i = 1; i < 100; i++) {
+    const k = `q${i}`;
+    if (!existing.includes(k)) return k;
+  }
+  return `q${Date.now() % 100000}`;
+}

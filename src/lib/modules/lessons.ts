@@ -7,15 +7,16 @@ import {
 export type LessonListItem = {
   id: string; title: string; subject: string; yearLevel: string; className: string | null; classId: string | null;
   stageCount: number; totalSeconds: number; isTemplate: boolean; source: string; needsApproval: boolean; updatedAt: string;
+  tags: string[];
 };
 
 export async function listLessons(uid: string): Promise<LessonListItem[]> {
   return asUser(uid, async (db) => {
     const rows = await db.query<{
       id: string; title: string; subject: string; year_level: string; class_name: string | null; class_id: string | null;
-      stages: string; seconds: string | null; is_template: boolean; source: string; ai_draft_approved_at: Date | null; updated_at: Date;
+      stages: string; seconds: string | null; is_template: boolean; source: string; ai_draft_approved_at: Date | null; updated_at: Date; tags: unknown;
     }>(
-      `select l.id, l.title, l.subject, l.year_level, c.name as class_name, l.class_id, l.is_template, l.source, l.ai_draft_approved_at, l.updated_at,
+      `select l.id, l.title, l.subject, l.year_level, c.name as class_name, l.class_id, l.is_template, l.source, l.ai_draft_approved_at, l.updated_at, l.config -> 'tags' as tags,
               (select count(*) from lesson_stages s where s.lesson_id = l.id) as stages,
               (select sum(duration_seconds) from lesson_stages s where s.lesson_id = l.id) as seconds
        from lessons l left join classes c on c.id = l.class_id
@@ -26,6 +27,7 @@ export async function listLessons(uid: string): Promise<LessonListItem[]> {
       id: r.id, title: r.title, subject: r.subject, yearLevel: r.year_level, className: r.class_name, classId: r.class_id,
       stageCount: Number(r.stages), totalSeconds: Number(r.seconds ?? 0), isTemplate: r.is_template, source: r.source,
       needsApproval: r.source === "ai" && !r.ai_draft_approved_at, updatedAt: r.updated_at.toISOString(),
+      tags: Array.isArray(r.tags) ? r.tags.filter((t): t is string => typeof t === "string").slice(0, 10) : [],
     }));
   });
 }
@@ -46,7 +48,7 @@ export async function loadLesson(db: Db, uid: string, lessonId: string): Promise
     [lessonId],
   );
   const materials = await db.query<{ id: string; kind: string; title: string; body: string; storage_path: string | null; mime_type: string | null }>(
-    "select id, kind, title, body, storage_path, mime_type from lesson_materials where lesson_id = $1 order by created_at",
+    "select id, kind, title, body, storage_path, mime_type from lesson_materials where lesson_id = $1 and kind <> 'stage_file' order by created_at",
     [lessonId],
   );
   return {
@@ -127,9 +129,21 @@ export async function duplicateLesson(uid: string, lessonId: string, asTemplate:
   await asUser(uid, async (db) => {
     await db.query(
       `insert into lesson_materials(lesson_id, kind, title, body, storage_path, mime_type)
-       select $2, kind, title, body, storage_path, mime_type from lesson_materials where lesson_id = $1`,
+       select $2, kind, title, body, storage_path, mime_type from lesson_materials where lesson_id = $1 and kind <> 'stage_file'`,
       [lessonId, id],
     );
+    // Files attached to stages are copied too, and the copy's stages point at the new copies.
+    const files = await db.query<{ id: string; title: string; storage_path: string; mime_type: string }>(
+      "select id, title, storage_path, mime_type from lesson_materials where lesson_id = $1 and kind = 'stage_file'",
+      [lessonId],
+    );
+    for (const f of files) {
+      const copy = await db.one<{ id: string }>(
+        "insert into lesson_materials(lesson_id, kind, title, storage_path, mime_type) values ($1, 'stage_file', $2, $3, $4) returning id",
+        [id, f.title, f.storage_path, f.mime_type],
+      );
+      await db.query("update lesson_stages set config = replace(config::text, $2, $3)::jsonb where lesson_id = $1", [id, f.id, copy.id]);
+    }
   });
   return id;
 }
@@ -148,6 +162,18 @@ export async function addFileMaterial(uid: string, lessonId: string, title: stri
   await asUser(uid, (db) =>
     db.query("insert into lesson_materials(lesson_id, kind, title, storage_path, mime_type) values ($1, 'file', $2, $3, $4)", [lessonId, title.slice(0, 160), storagePath, mimeType]),
   );
+}
+
+/** A file attached to one stage's instructions (kept out of the general materials list). */
+export async function addStageFile(uid: string, lessonId: string, title: string, storagePath: string, mimeType: string) {
+  return asUser(uid, async (db) => {
+    const owns = await db.maybeOne("select 1 from lessons where id = $1 and teacher_id = $2", [lessonId, uid]);
+    if (!owns) throw new NotFoundError();
+    return db.one<{ id: string }>(
+      "insert into lesson_materials(lesson_id, kind, title, storage_path, mime_type) values ($1, 'stage_file', $2, $3, $4) returning id",
+      [lessonId, title.slice(0, 160), storagePath, mimeType],
+    );
+  });
 }
 
 export async function removeMaterial(uid: string, materialId: string) {

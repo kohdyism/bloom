@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { useWorkspace } from "./context";
 import { StagePanel } from "./stage-panel";
 import { IdeaBank } from "./idea-bank";
+import { StageMedia } from "@/components/live/stage-media";
 
 /**
  * The group's task: what to do, then the activity itself (Bloom sits beside
@@ -62,7 +63,10 @@ export function ActivityPanel({ className, compact = false, top, ideasBeside = f
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-3">
         {/* The activity stays mounted (hidden) while Ideas is open, so "Add" can reach the editor. */}
         {showIdeas ? <IdeaBank /> : null}
-        <div className={cn("flex min-h-0 flex-1 flex-col", showIdeas && "hidden")}><StagePanel /></div>
+        <div className={cn("flex min-h-0 flex-1 flex-col", showIdeas && "hidden")}>
+          {stage && kind !== "complete" && stage.config.attachments?.length ? <StageMedia items={stage.config.attachments} className="mb-3" /> : null}
+          <StagePanel />
+        </div>
       </div>
     </section>
   );
