@@ -1,4 +1,4 @@
-# Temporary: recent errors from the live app log (safe lines only).
+# Temporary: check the live app after a deploy (migrations, seed, pages up).
 name: Diagnose live AI
 on:
   push:
@@ -9,9 +9,10 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: superfly/flyctl-actions/setup-flyctl@master
-      - name: Errors
+      - name: Check
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: |
-          flyctl logs -a bloom-kohdyism --no-tail 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | grep -viE "bloom:ai|GET /_next|health" | grep -iE "error|fail|exception|unhandled|denied|violat|constraint|TypeError|500" | sed -E 's/sk-ant[A-Za-z0-9_-]*/[key]/g' | tail -9 | while read -r l; do echo "::notice::${l:0:420}"; done
-          echo "::notice::END $(flyctl logs -a bloom-kohdyism --no-tail 2>&1 | wc -l) lines"
+          flyctl logs -a bloom-kohdyism --no-tail 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | grep -iE "applying|demo data|seeded|migrat|error|exception" | grep -viE "GET /_next" | tail -8 | while read -r l; do echo "::notice::${l:0:300}"; done
+          echo "::notice::sign-in $(curl -s -o /dev/null -w '%{http_code}' https://bloom-kohdyism.fly.dev/sign-in)"
+          echo "::notice::print route $(curl -s -o /dev/null -w '%{http_code}' https://bloom-kohdyism.fly.dev/print/student/00000000-0000-0000-0000-000000000000)"
